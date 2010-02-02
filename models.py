@@ -18,7 +18,7 @@ except ImportError:
 	import simplejson as json
 from UserDict import DictMixin
 from templatetags.containers import ContainerNode
-from django.template.loader_tags import ExtendsNode, ConstantIncludeNode, IncludeNode, BlockNode
+from django.template.loader_tags import ExtendsNode, ConstantIncludeNode, IncludeNode
 from django.template.loader import get_template
 
 
@@ -84,7 +84,7 @@ class QuerySetMapper(object, DictMixin):
 		self.passthrough = passthrough
 	def __getitem__(self, key):
 		try:
-			return queryset.get(key__exact=key)
+			return self.queryset.get(key__exact=key).value
 		except ObjectDoesNotExist:
 			if self.passthrough:
 				return self.passthrough.__getitem__(key)
@@ -202,13 +202,13 @@ class TreeEntity(TreeModel, Entity):
 	def attributes(self):
 		if self.parent:
 			return QuerySetMapper(self.attribute_set, passthrough=self.parent.attributes)
-		return super(Entity, self).attributes()
+		return super(TreeEntity, self).attributes
 	
 	@property
 	def relationships(self):
 		if self.parent:
 			return QuerySetMapper(self.relationship_set, passthrough=self.parent.relationships)
-		return super(Entity, self).relationships()
+		return super(TreeEntity, self).relationships
 	
 	class Meta:
 		abstract = True
@@ -240,10 +240,11 @@ class Template(TreeModel):
 				names = []
 				for node in nodelist:
 					try:
+						if hasattr(node, 'nodelist'):
+							names.extend(nodelist_container_node_names(node.nodelist))
 						if isinstance(node, ContainerNode):
 							names.append(node.name)
 						elif isinstance(node, ExtendsNode):
-							names.extend(nodelist_container_node_names(node.nodelist))
 							extended_template = node.get_parent(Context())
 							if extended_template:
 								names.extend(container_node_names(extended_template))
@@ -255,8 +256,6 @@ class Template(TreeModel):
 							included_template = get_template(node.template_name.resolve(Context()))
 							if included_template:
 								names.extend(container_node_names(included_template))
-						elif isinstance(node, BlockNode):
-							names.extend(nodelist_container_node_names(node.nodelist))
 					except:
 						pass # fail for this node
 				return names

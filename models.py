@@ -240,8 +240,9 @@ class Template(TreeModel):
 				names = []
 				for node in nodelist:
 					try:
-						if hasattr(node, 'nodelist'):
-							names.extend(nodelist_container_node_names(node.nodelist))
+						for nodelist_name in ('nodelist', 'nodelist_loop', 'nodelist_empty', 'nodelist_true', 'nodelist_false'):
+							if hasattr(node, nodelist_name):
+								names.extend(nodelist_container_node_names(getattr(node, nodelist_name)))
 						if isinstance(node, ContainerNode):
 							names.append(node.name)
 						elif isinstance(node, ExtendsNode):

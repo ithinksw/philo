@@ -126,5 +126,7 @@ class PageAdmin(EntityAdmin):
 
 
 admin.site.register(Collection, CollectionAdmin)
+admin.site.register(Redirect)
+admin.site.register(File)
 admin.site.register(Page, PageAdmin)
 admin.site.register(Template, TemplateAdmin)

@@ -5,12 +5,11 @@ from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.contrib.sites.models import Site
-import mptt
 from utils import fattr
 from django.template import add_to_builtins as register_templatetags
 from django.template import Template as DjangoTemplate
 from django.template import TemplateDoesNotExist
-from django.template import Context
+from django.template import Context, RequestContext
 from django.core.exceptions import ObjectDoesNotExist
 try:
 	import json
@@ -20,6 +19,8 @@ from UserDict import DictMixin
 from templatetags.containers import ContainerNode
 from django.template.loader_tags import ExtendsNode, ConstantIncludeNode, IncludeNode
 from django.template.loader import get_template
+from django.http import HttpResponse, HttpResponseServerError, HttpResponseRedirect
+from django.core.servers.basehttp import FileWrapper
 
 
 def _ct_model_name(model):
@@ -214,6 +215,50 @@ class TreeEntity(TreeModel, Entity):
 		abstract = True
 
 
+class Node(TreeEntity):
+	instance_type = models.ForeignKey(ContentType, editable=False)
+	
+	def save(self, force_insert=False, force_update=False):
+		if not hasattr(self, 'instance_type_ptr'):
+			self.instance_type = ContentType.objects.get_for_model(self.__class__)
+		super(Node, self).save(force_insert, force_update)
+	
+	@property
+	def instance(self):
+		return self.instance_type.get_object_for_this_type(id=self.id)
+	
+	accepts_subpath = False
+	
+	def render_to_response(self, request, path=None, subpath=None):
+		return HttpResponseServerError()
+
+
+class Redirect(Node):
+	STATUS_CODES = (
+		(302, 'Temporary'),
+		(301, 'Permanent'),
+	)
+	target = models.URLField()
+	status_code = models.IntegerField(choices=STATUS_CODES, default=302, verbose_name="redirect type")
+	
+	def render_to_response(self, request, path=None, subpath=None):
+		response = HttpResponseRedirect(self.target)
+		response.status_code = self.status_code
+		return response
+
+
+class File(Node):
+	""" For storing arbitrary files """
+	mimetype = models.CharField(max_length=255)
+	file = models.FileField(upload_to='philo/files/%Y/%m/%d')
+	
+	def render_to_response(self, request, path=None, subpath=None):
+		wrapper = FileWrapper(self.file)
+		response = HttpResponse(wrapper, content_type=self.mimetype)
+		response['Content-Length'] = self.file.size
+		return response
+
+
 class Template(TreeModel):
 	name = models.CharField(max_length=255)
 	documentation = models.TextField(null=True, blank=True)
@@ -274,20 +319,21 @@ class Template(TreeModel):
 		except Template.DoesNotExist:
 			raise TemplateDoesNotExist(template_name)
 		return (template.code, template.origin)
-mptt.register(Template)
 
 
-class Page(TreeEntity):
+class Page(Node):
 	template = models.ForeignKey(Template, related_name='pages')
 	title = models.CharField(max_length=255)
 	
+	def render_to_response(self, request, path=None, subpath=None):
+		return HttpResponse(self.template.django_template.render(RequestContext(request, {'page': self})), mimetype=self.template.mimetype)
+	
 	def __unicode__(self):
 		return self.get_path(u' › ', 'title')
-mptt.register(Page)
 
 
-# the following line enables the selection of a page as the root for a given django.contrib.sites Site object
-models.ForeignKey(Page, related_name='sites', null=True, blank=True).contribute_to_class(Site, 'root_page')
+# the following line enables the selection of a node as the root for a given django.contrib.sites Site object
+models.ForeignKey(Node, related_name='sites', null=True, blank=True).contribute_to_class(Site, 'root_node')
 
 
 class Contentlet(models.Model):

@@ -1,18 +1,19 @@
 from django.http import Http404, HttpResponse
 from django.template import RequestContext
 from django.contrib.sites.models import Site
-from models import Page
+from models import Node
 
-def page_view(request, path=None, **kwargs):
-	page = None
+
+def node_view(request, path=None, **kwargs):
+	node = None
 	if path is None:
 		path = '/'
 	try:
 		current_site = Site.objects.get_current()
 		if current_site:
-			page = Page.objects.get_with_path(path, root=current_site.root_page)
-	except Page.DoesNotExist:
+			node = Node.objects.get_with_path(path, root=current_site.root_node)
+	except Node.DoesNotExist:
 		raise Http404
-	if not page:
+	if not node:
 		raise Http404
-	return HttpResponse(page.template.django_template.render(RequestContext(request, {'page': page})), mimetype=page.template.mimetype)
+	return node.instance.render_to_response(request, path=path)

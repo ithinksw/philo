@@ -1,8 +1,8 @@
 from django.conf.urls.defaults import url, include, patterns, handler404, handler500
-from philo.views import page_view
+from philo.views import node_view
 
 
 urlpatterns = patterns('',
-	url(r'^$', page_view, name='philo-root'),
-	url(r'^(?P<path>.*)$', page_view, name='philo-page-by-path')
+	url(r'^$', node_view, name='philo-root'),
+	url(r'^(?P<path>.*)$', node_view, name='philo-node-by-path')
 )

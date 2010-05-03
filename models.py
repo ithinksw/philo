@@ -19,7 +19,7 @@ from UserDict import DictMixin
 from templatetags.containers import ContainerNode
 from django.template.loader_tags import ExtendsNode, ConstantIncludeNode, IncludeNode
 from django.template.loader import get_template
-from django.http import HttpResponse, HttpResponseServerError, HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponseServerError, HttpResponseRedirect
 from django.core.servers.basehttp import FileWrapper
 
 
@@ -162,18 +162,33 @@ class TreeManager(models.Manager):
 	def roots(self):
 		return self.filter(parent__isnull=True)
 	
-	def get_with_path(self, path, root=None, pathsep='/'):
+	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/'):
+		"""
+		Returns the object with the path, or None if there is no object with that path,
+		unless absolute_result is set to False, in which case it returns a tuple containing
+		the deepest object found along the path, and the remainder of the path after that
+		object as a string (or None in the case that there is no remaining path).
+		"""
 		slugs = path.split(pathsep)
 		obj = root
+		remaining_slugs = list(slugs)
+		remainder = None
 		for slug in slugs:
+			remaining_slugs.remove(slug)
 			if slug: # ignore blank slugs, handles for multiple consecutive pathseps
 				try:
 					obj = self.get(slug__exact=slug, parent__exact=obj)
 				except self.model.DoesNotExist:
-					obj = None
+					if absolute_result:
+						obj = None
+					remaining_slugs.insert(0, slug)
+					remainder = pathsep.join(remaining_slugs)
 					break
 		if obj:
-			return obj
+			if absolute_result:
+				return obj
+			else:
+				return (obj, remainder)
 		raise self.model.DoesNotExist('%s matching query does not exist.' % self.model._meta.object_name)
 
 
@@ -233,13 +248,32 @@ class Node(TreeEntity):
 		return HttpResponseServerError()
 
 
+class MultiNode(Node):
+	accepts_subpath = True
+	
+	@property
+	def urlpatterns(self):
+		return []
+	
+	def render_to_response(self, request, path=None, subpath=None):
+		if not subpath:
+			subpath = ""
+		subpath = "/" + subpath
+		from django.core.urlresolvers import resolve
+		view, args, kwargs = resolve(subpath, urlconf=self)
+		return view(request, *args, **kwargs)
+	
+	class Meta:
+		abstract = True
+
+
 class Redirect(Node):
 	STATUS_CODES = (
 		(302, 'Temporary'),
 		(301, 'Permanent'),
 	)
 	target = models.URLField()
-	status_code = models.IntegerField(choices=STATUS_CODES, default=302, verbose_name="redirect type")
+	status_code = models.IntegerField(choices=STATUS_CODES, default=302, verbose_name='redirect type')
 	
 	def render_to_response(self, request, path=None, subpath=None):
 		response = HttpResponseRedirect(self.target)

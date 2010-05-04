@@ -23,12 +23,26 @@ from django.http import Http404, HttpResponse, HttpResponseServerError, HttpResp
 from django.core.servers.basehttp import FileWrapper
 
 
-def _ct_model_name(model):
-	opts = model._meta
-	while opts.proxy:
-		model = opts.proxy_for_model
-		opts = model._meta
-	return opts.object_name.lower()
+_value_models = {}
+_value_models_ct_pks = []
+
+
+def register_value_model(model):
+	if issubclass(model, models.Model):
+		if model not in _value_models:
+			_value_models[model] = ContentType.objects.get_for_model(model)
+			_value_models_ct_pks.append(_value_models[model].pk)
+	else:
+		raise TypeError('philo.models.register_value_model only accepts subclasses of django.db.models.Model')
+
+
+def unregister_value_model(model):
+	if issubclass(model, models.Model):
+		if model in _value_models:
+			_value_models_ct_pks.remove(_value_models[model].pk)
+			del _value_models[model]
+	else:
+		raise TypeError('philo.models.unregister_value_model only accepts subclasses of django.db.models.Model')
 
 
 class Attribute(models.Model):
@@ -38,40 +52,27 @@ class Attribute(models.Model):
 	key = models.CharField(max_length=255)
 	json_value = models.TextField(verbose_name='Value (JSON)', help_text='This value must be valid JSON.')
 	
-	@property
-	def value(self):
+	def get_value(self):
 		return json.loads(self.json_value)
+	
+	def set_value(self, value):
+		self.json_value = json.dumps(value)
+	
+	def delete_value(self):
+		self.json_value = json.dumps(None)
+	
+	value = property(get_value, set_value, delete_value)
 	
 	def __unicode__(self):
 		return u'"%s": %s' % (self.key, self.value)
 
 
 class Relationship(models.Model):
-	_value_models = []
-	
-	@staticmethod
-	def register_value_model(model):
-		if issubclass(model, models.Model):
-			model_name = _ct_model_name(model)
-			if model_name not in Relationship._value_models:
-				Relationship._value_models.append(model_name)
-		else:
-			raise TypeError('Relationship.register_value_model only accepts subclasses of django.db.models.Model')
-	
-	@staticmethod
-	def unregister_value_model(model):
-		if issubclass(model, models.Model):
-			model_name = _ct_model_name(model)
-			if model_name in Relationship._value_models:
-				Relationship._value_models.remove(model_name)
-		else:
-			raise TypeError('Relationship.unregister_value_model only accepts subclasses of django.db.models.Model')
-	
 	entity_content_type = models.ForeignKey(ContentType, related_name='relationship_entity_set', verbose_name='Entity type')
 	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID')
 	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
 	key = models.CharField(max_length=255)
-	value_content_type = models.ForeignKey(ContentType, related_name='relationship_value_set', limit_choices_to={'model__in':_value_models}, verbose_name='Value type')
+	value_content_type = models.ForeignKey(ContentType, related_name='relationship_value_set', limit_choices_to={'pk__in': _value_models_ct_pks}, verbose_name='Value type')
 	value_object_id = models.PositiveIntegerField(verbose_name='Value ID')
 	value = generic.GenericForeignKey('value_content_type', 'value_object_id')
 	
@@ -118,42 +119,23 @@ class Collection(models.Model):
 	description = models.TextField(blank=True, null=True)
 
 
+class CollectionMemberManager(models.Manager):
+	use_for_related_fields = True
+
+	def with_model(self, model):
+		if model in _value_models:
+			return model._default_manager.filter(pk__in=self.filter(member_content_type=_value_models[model]).values_list('member_object_id', flat=True))
+		else:
+			raise TypeError('CollectionMemberManager.with_model only accepts models previously registered with philo.models.register_value_model')
+
+
 class CollectionMember(models.Model):
-	_value_models = []
-	
-	@staticmethod
-	def register_value_model(model):
-		if issubclass(model, models.Model):
-			model_name = _ct_model_name(model)
-			if model_name not in CollectionMember._value_models:
-				CollectionMember._value_models.append(model_name)
-		else:
-			raise TypeError('CollectionMember.register_value_model only accepts subclasses of django.db.models.Model')
-	
-	@staticmethod
-	def unregister_value_model(model):
-		if issubclass(model, models.Model):
-			model_name = _ct_model_name(model)
-			if model_name in CollectionMember._value_models:
-				CollectionMember._value_models.remove(model_name)
-		else:
-			raise TypeError('CollectionMember.unregister_value_model only accepts subclasses of django.db.models.Model')
-	
+	objects = CollectionMemberManager()
 	collection = models.ForeignKey(Collection, related_name='members')
 	index = models.PositiveIntegerField(verbose_name='Index', help_text='This will determine the ordering of the item within the collection. (Optional)', null=True, blank=True)
-	member_content_type = models.ForeignKey(ContentType, limit_choices_to={'model__in':_value_models}, verbose_name='Member type')
+	member_content_type = models.ForeignKey(ContentType, limit_choices_to={'pk__in': _value_models_ct_pks}, verbose_name='Member type')
 	member_object_id = models.PositiveIntegerField(verbose_name='Member ID')
 	member = generic.GenericForeignKey('member_content_type', 'member_object_id')
-
-
-def register_value_model(model):
-	Relationship.register_value_model(model)
-	CollectionMember.register_value_model(model)
-
-
-def unregister_value_model(model):
-	Relationship.unregister_value_model(model)
-	CollectionMember.unregister_value_model(model)
 
 
 class TreeManager(models.Manager):
@@ -251,9 +233,7 @@ class Node(TreeEntity):
 class MultiNode(Node):
 	accepts_subpath = True
 	
-	@property
-	def urlpatterns(self):
-		return []
+	urlpatterns = []
 	
 	def render_to_response(self, request, path=None, subpath=None):
 		if not subpath:

@@ -215,6 +215,15 @@ class TreeEntity(TreeModel, Entity):
 class Node(TreeEntity):
 	instance_type = models.ForeignKey(ContentType, editable=False)
 	
+	def get_path(self, pathsep='/', field='slug'):
+		path = getattr(self.instance, field)
+		parent = self.parent
+		while parent:
+			path = getattr(parent.instance, field) + pathsep + path
+			parent = parent.parent
+		return path
+	path = property(get_path)
+	
 	def save(self, force_insert=False, force_update=False):
 		if not hasattr(self, 'instance_type_ptr'):
 			self.instance_type = ContentType.objects.get_for_model(self.__class__)

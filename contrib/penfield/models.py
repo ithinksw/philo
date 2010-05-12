@@ -1,21 +1,20 @@
 from django.db import models
-from philo.models import Entity, Collection, MultiNode, Template, register_value_model
+from philo.models import Entity, MultiNode, Template, register_value_model
 from django.contrib.auth.models import User
 from django.conf.urls.defaults import url, patterns
 from django.http import Http404, HttpResponse
+from django.template import RequestContext
+from datetime import datetime
 
 
-class Entry(Entity):
-	author = models.ForeignKey(User, related_name='blogpost_author')
-	pub_date = models.DateTimeField(auto_now_add=True)
-	mod_date = models.DateTimeField(auto_now=True)
+class TitledContent(models.Model):
 	title = models.CharField(max_length=255)
 	slug = models.SlugField()
 	content = models.TextField()
 	excerpt = models.TextField()
-
-
-register_value_model(Entry)
+	
+	class Meta:
+		abstract = True
 
 
 class Blog(MultiNode):
@@ -27,65 +26,88 @@ class Blog(MultiNode):
 		('N', 'No base')
 	)
 	
-	posts = models.ForeignKey(Collection, related_name='blogs')
+	title = models.CharField(max_length=255)
+	
 	index_template = models.ForeignKey(Template, related_name='blog_index_related')
 	archive_template = models.ForeignKey(Template, related_name='blog_archive_related')
 	tag_template = models.ForeignKey(Template, related_name='blog_tag_related')
-	post_template = models.ForeignKey(Template, related_name='blog_post_related')
+	entry_template = models.ForeignKey(Template, related_name='blog_entry_related')
 	
-	post_permalink_style = models.CharField(max_length=1, choices=PERMALINK_STYLE_CHOICES)
-	post_permalink_base = models.CharField(max_length=255, blank=False, default='posts')
+	entry_permalink_style = models.CharField(max_length=1, choices=PERMALINK_STYLE_CHOICES)
+	entry_permalink_base = models.CharField(max_length=255, blank=False, default='entries')
 	tag_permalink_base = models.CharField(max_length=255, blank=False, default='tags')
-	
-	@property
-	def post_queryset(self):
-		# this won't be ordered according to the collection member indexes
-		return self.posts.members.with_model(Entry)
 	
 	@property
 	def urlpatterns(self):
 		base_patterns = patterns('',
 			url(r'^$', self.index_view),
 			url((r'^(?:%s)/?' % self.tag_permalink_base), self.tag_view),
-			url((r'^(?:%s)/(?P<tag>\w+)/?' % self.tag_permalink_base), self.tag_view)
+			url((r'^(?:%s)/(?P<tag>>[-\w]+)/?' % self.tag_permalink_base), self.tag_view)
 		)
-		if self.post_permalink_style == 'D':
-			post_patterns = patterns('',
+		if self.entry_permalink_style == 'D':
+			entry_patterns = patterns('',
 				url(r'^(?P<year>\d{4})/?$', self.archive_view),
 				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/?$', self.archive_view),
 				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d+)/?$', self.archive_view),
-				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d+)/(?P<slug>\w+)/?', self.archive_view)
+				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d+)/(?P<slug>[-\w]+)/?', self.entry_view)
 			)
-		elif self.post_permalink_style == 'M':
-			post_patterns = patterns('',
+		elif self.entry_permalink_style == 'M':
+			entry_patterns = patterns('',
 				url(r'^(?P<year>\d{4})/?$', self.archive_view),
 				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/?$', self.archive_view),
-				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<slug>\w+)/?', self.archive_view)
+				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<slug>>[-\w]+)/?', self.entry_view)
 			)
-		elif self.post_permalink_style == 'Y':
-			post_patterns = patterns('',
+		elif self.entry_permalink_style == 'Y':
+			entry_patterns = patterns('',
 				url(r'^(?P<year>\d{4})/?$', self.archive_view),
-				url(r'^(?P<year>\d{4})/(?P<slug>\w+)/?', self.post_view)
+				url(r'^(?P<year>\d{4})/(?P<slug>>[-\w]+)/?', self.entry_view)
 			)
-		elif self.post_permalink_style == 'B':
-			post_patterns = patterns('',
-				url((r'^(?:%s)/?' % self.post_permalink_base), self.archive_view),
-				url((r'^(?:%s)/(?P<slug>\w+)/?' % self.post_permalink_base), self.post_view)
+		elif self.entry_permalink_style == 'B':
+			entry_patterns = patterns('',
+				url((r'^(?:%s)/?' % self.entry_permalink_base), self.archive_view),
+				url((r'^(?:%s)/(?P<slug>>[-\w]+)/?' % self.entry_permalink_base), self.entry_view)
 			)
 		else:
-			post_patterns = patterns('',
-				url(r'^(?P<slug>\w+)/?', self.post_view)
+			entry_patterns = patterns('',
+				url(r'^(?P<slug>>[-\w]+)/?', self.entry_view)
 			)
-		return base_patterns + post_patterns
+		return base_patterns + entry_patterns
 	
 	def index_view(self, request):
-		raise Http404
+		return HttpResponse(self.index_template.django_template.render(RequestContext(request, {'blog': self})), mimetype=self.index_template.mimetype)
 	
 	def archive_view(self, request, year=None, month=None, day=None):
-		raise Http404
+		entries = self.entries.all()
+		if year:
+			entries = entries.filter(date__year=year)
+		if month:
+			entries = entries.filter(date__month=month)
+		if day:
+			entries = entries.filter(date__day=day)
+		return HttpResponse(self.archive_template.django_template.render(RequestContext(request, {'blog': self, 'year': year, 'month': month, 'day': day, 'entries': entries})), mimetype=self.archive_template.mimetype)
 	
 	def tag_view(self, request, tag=None):
-		raise Http404
+		return HttpResponse(self.tag_template.django_template.render(RequestContext(request, {'blog': self, 'tag': tag, 'entries': None})), mimetype=self.tag_template.mimetype)
 	
-	def post_view(self, request, year=None, month=None, day=None, slug=None):
-		raise Http404
+	def entry_view(self, request, slug, year=None, month=None, day=None):
+		entries = self.entries.all()
+		if year:
+			entries = entries.filter(date__year=year)
+		if month:
+			entries = entries.filter(date__month=month)
+		if day:
+			entries = entries.filter(date__day=day)
+		try:
+			entry = entries.get(slug=slug)
+		except:
+			raise Http404
+		return HttpResponse(self.entry_template.django_template.render(RequestContext(request, {'blog': self, 'entry': entry})), mimetype=self.entry_template.mimetype)
+
+
+class BlogEntry(Entity, TitledContent):
+	blog = models.ForeignKey(Blog, related_name='entries')
+	author = models.ForeignKey(User, related_name='blogentries')
+	date = models.DateTimeField(default=datetime.now)
+
+
+register_value_model(BlogEntry)

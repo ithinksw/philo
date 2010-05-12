@@ -23,26 +23,12 @@ from django.http import Http404, HttpResponse, HttpResponseServerError, HttpResp
 from django.core.servers.basehttp import FileWrapper
 
 
-_value_models = {}
-_value_models_ct_pks = []
-
-
 def register_value_model(model):
-	if issubclass(model, models.Model):
-		if model not in _value_models:
-			_value_models[model] = ContentType.objects.get_for_model(model)
-			_value_models_ct_pks.append(_value_models[model].pk)
-	else:
-		raise TypeError('philo.models.register_value_model only accepts subclasses of django.db.models.Model')
+	pass
 
 
 def unregister_value_model(model):
-	if issubclass(model, models.Model):
-		if model in _value_models:
-			_value_models_ct_pks.remove(_value_models[model].pk)
-			del _value_models[model]
-	else:
-		raise TypeError('philo.models.unregister_value_model only accepts subclasses of django.db.models.Model')
+	pass
 
 
 class Attribute(models.Model):
@@ -72,7 +58,7 @@ class Relationship(models.Model):
 	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID')
 	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
 	key = models.CharField(max_length=255)
-	value_content_type = models.ForeignKey(ContentType, related_name='relationship_value_set', limit_choices_to={'pk__in': _value_models_ct_pks}, verbose_name='Value type')
+	value_content_type = models.ForeignKey(ContentType, related_name='relationship_value_set', verbose_name='Value type')
 	value_object_id = models.PositiveIntegerField(verbose_name='Value ID')
 	value = generic.GenericForeignKey('value_content_type', 'value_object_id')
 	
@@ -123,17 +109,14 @@ class CollectionMemberManager(models.Manager):
 	use_for_related_fields = True
 
 	def with_model(self, model):
-		if model in _value_models:
-			return model._default_manager.filter(pk__in=self.filter(member_content_type=_value_models[model]).values_list('member_object_id', flat=True))
-		else:
-			raise TypeError('CollectionMemberManager.with_model only accepts models previously registered with philo.models.register_value_model')
+		return model._default_manager.filter(pk__in=self.filter(member_content_type=ContentType.objects.get_for_model(model)).values_list('member_object_id', flat=True))
 
 
 class CollectionMember(models.Model):
 	objects = CollectionMemberManager()
 	collection = models.ForeignKey(Collection, related_name='members')
 	index = models.PositiveIntegerField(verbose_name='Index', help_text='This will determine the ordering of the item within the collection. (Optional)', null=True, blank=True)
-	member_content_type = models.ForeignKey(ContentType, limit_choices_to={'pk__in': _value_models_ct_pks}, verbose_name='Member type')
+	member_content_type = models.ForeignKey(ContentType, verbose_name='Member type')
 	member_object_id = models.PositiveIntegerField(verbose_name='Member ID')
 	member = generic.GenericForeignKey('member_content_type', 'member_object_id')
 

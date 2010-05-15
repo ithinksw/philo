@@ -7,17 +7,30 @@ from django.template import RequestContext
 from datetime import datetime
 
 
-class TitledContent(models.Model):
+class Titled(models.Model):
 	title = models.CharField(max_length=255)
 	slug = models.SlugField()
-	content = models.TextField()
-	excerpt = models.TextField()
 	
 	class Meta:
 		abstract = True
 
 
-class Blog(MultiNode):
+class Blog(Entity, Titled):
+	pass
+
+
+class BlogEntry(Entity, Titled):
+	blog = models.ForeignKey(Blog, related_name='entries')
+	author = models.ForeignKey(User, related_name='blogentries')
+	date = models.DateTimeField(default=datetime.now)
+	content = models.TextField()
+	excerpt = models.TextField()
+
+
+register_value_model(BlogEntry)
+
+
+class BlogNode(MultiNode):
 	PERMALINK_STYLE_CHOICES = (
 		('D', 'Year, month, and day'),
 		('M', 'Year and month'),
@@ -26,7 +39,7 @@ class Blog(MultiNode):
 		('N', 'No base')
 	)
 	
-	title = models.CharField(max_length=255)
+	blog = models.ForeignKey(Blog, related_name='nodes')
 	
 	index_template = models.ForeignKey(Template, related_name='blog_index_related')
 	archive_template = models.ForeignKey(Template, related_name='blog_archive_related')
@@ -74,23 +87,23 @@ class Blog(MultiNode):
 		return base_patterns + entry_patterns
 	
 	def index_view(self, request):
-		return HttpResponse(self.index_template.django_template.render(RequestContext(request, {'blog': self})), mimetype=self.index_template.mimetype)
+		return HttpResponse(self.index_template.django_template.render(RequestContext(request, {'blog': self.blog})), mimetype=self.index_template.mimetype)
 	
 	def archive_view(self, request, year=None, month=None, day=None):
-		entries = self.entries.all()
+		entries = self.blog.entries.all()
 		if year:
 			entries = entries.filter(date__year=year)
 		if month:
 			entries = entries.filter(date__month=month)
 		if day:
 			entries = entries.filter(date__day=day)
-		return HttpResponse(self.archive_template.django_template.render(RequestContext(request, {'blog': self, 'year': year, 'month': month, 'day': day, 'entries': entries})), mimetype=self.archive_template.mimetype)
+		return HttpResponse(self.archive_template.django_template.render(RequestContext(request, {'blog': self.blog, 'year': year, 'month': month, 'day': day, 'entries': entries})), mimetype=self.archive_template.mimetype)
 	
 	def tag_view(self, request, tag=None):
-		return HttpResponse(self.tag_template.django_template.render(RequestContext(request, {'blog': self, 'tag': tag, 'entries': None})), mimetype=self.tag_template.mimetype)
+		return HttpResponse(self.tag_template.django_template.render(RequestContext(request, {'blog': self.blog, 'tag': tag, 'entries': None})), mimetype=self.tag_template.mimetype)
 	
 	def entry_view(self, request, slug, year=None, month=None, day=None):
-		entries = self.entries.all()
+		entries = self.blog.entries.all()
 		if year:
 			entries = entries.filter(date__year=year)
 		if month:
@@ -101,13 +114,4 @@ class Blog(MultiNode):
 			entry = entries.get(slug=slug)
 		except:
 			raise Http404
-		return HttpResponse(self.entry_template.django_template.render(RequestContext(request, {'blog': self, 'entry': entry})), mimetype=self.entry_template.mimetype)
-
-
-class BlogEntry(Entity, TitledContent):
-	blog = models.ForeignKey(Blog, related_name='entries')
-	author = models.ForeignKey(User, related_name='blogentries')
-	date = models.DateTimeField(default=datetime.now)
-
-
-register_value_model(BlogEntry)
+		return HttpResponse(self.entry_template.django_template.render(RequestContext(request, {'blog': self.blog, 'entry': entry})), mimetype=self.entry_template.mimetype)

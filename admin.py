@@ -82,12 +82,15 @@ class PageAdmin(EntityAdmin):
 		if obj: # if no obj, creating a new page, thus no template set, thus no containers
 			page = obj
 			template = page.template
-			containers = template.containers
-			if len(containers) > 0:
-				for container in containers:
-					fieldsets.append((('Container: %s' % container), {
-						'fields': (('container_content_%s' % container), ('container_dynamic_%s' % container))
-					}))
+			contentlet_containers, contentreference_containers = template.containers
+			for container_name in contentlet_containers:
+				fieldsets.append((('Container: %s' % container_name), {
+					'fields': (('contentlet_container_content_%s' % container_name), ('contentlet_container_dynamic_%s' % container_name))
+				}))
+			for container_name, container_content_type in contentreference_containers:
+				fieldsets.append((('Container: %s' % container_name), {
+					'fields': (('contentreference_container_%s' % container_name),)
+				}))
 		return fieldsets
 	
 	def get_form(self, request, obj=None, **kwargs):
@@ -95,34 +98,47 @@ class PageAdmin(EntityAdmin):
 		if obj: # if no obj, creating a new page, thus no template set, thus no containers
 			page = obj
 			template = page.template
-			containers = template.containers
-			for container in containers:
+			contentlet_containers, contentreference_containers = template.containers
+			for container_name in contentlet_containers:
 				initial_content = None
 				initial_dynamic = False
 				try:
-					contentlet = page.contentlets.get(name__exact=container)
+					contentlet = page.contentlets.get(name__exact=container_name)
 					initial_content = contentlet.content
 					initial_dynamic = contentlet.dynamic
 				except Contentlet.DoesNotExist:
 					pass
-				form.base_fields[('container_content_%s' % container)] = forms.CharField(label='Content', widget=forms.Textarea(), initial=initial_content, required=False)
-				form.base_fields[('container_dynamic_%s' % container)] = forms.BooleanField(label='Dynamic', help_text='Specify whether this content contains dynamic template code', initial=initial_dynamic, required=False)
+				form.base_fields[('contentlet_container_content_%s' % container_name)] = forms.CharField(label='Content', widget=forms.Textarea(), initial=initial_content, required=False)
+				form.base_fields[('contentlet_container_dynamic_%s' % container_name)] = forms.BooleanField(label='Dynamic', help_text='Specify whether this content contains dynamic template code', initial=initial_dynamic, required=False)
+			for container_name, container_content_type in contentreference_containers:
+				initial_content = None
+				try:
+					initial_content = page.contentreferences.get(name__exact=container_name, content_type=container_content_type)
+				except ContentReference.DoesNotExist:
+					pass
+				form.base_fields[('contentreference_container_%s' % container_name)] = forms.ModelChoiceField(label='References', initial=initial_content, required=False, queryset=container_content_type.model_class().objects.all())
 		return form
 	
 	def save_model(self, request, page, form, change):
 		page.save()
-		
 		template = page.template
-		containers = template.containers
-		for container in containers:
-			if (("container_content_%s" % container) in form.cleaned_data) and (("container_dynamic_%s" % container) in form.cleaned_data):
-				content = form.cleaned_data[('container_content_%s' % container)]
-				dynamic = form.cleaned_data[('container_dynamic_%s' % container)]
-				contentlet, created = page.contentlets.get_or_create(name=container, defaults={'content': content, 'dynamic': dynamic})
+		contentlet_containers, contentreference_containers = template.containers
+		for container_name in contentlet_containers:
+			if (('contentlet_container_content_%s' % container_name) in form.cleaned_data) and (('contentlet_container_dynamic_%s' % container_name) in form.cleaned_data):
+				content = form.cleaned_data[('contentlet_container_content_%s' % container_name)]
+				dynamic = form.cleaned_data[('contentlet_container_dynamic_%s' % container_name)]
+				contentlet, created = page.contentlets.get_or_create(name=container_name, defaults={'content': content, 'dynamic': dynamic})
 				if not created:
 					contentlet.content = content
 					contentlet.dynamic = dynamic
 					contentlet.save()
+		for container_name, container_content_type in contentreference_containers:
+			if ('contentreference_container_%s' % container_name) in form.cleaned_data:
+				content = form.cleaned_data[('contentreference_container_%s' % container_name)]
+				contentreference, created = page.contentreferences.get_or_create(name=container_name, defaults={'content': content})
+				if not created:
+					contentreference.content = content
+					contentreference.save()
 
 
 admin.site.register(Collection, CollectionAdmin)

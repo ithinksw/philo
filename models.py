@@ -163,10 +163,10 @@ class TreeModel(models.Model):
 	slug = models.SlugField()
 	
 	def get_path(self, pathsep='/', field='slug'):
-		path = getattr(self, field)
+		path = getattr(self, field, '?')
 		parent = self.parent
 		while parent:
-			path = getattr(parent, field) + pathsep + path
+			path = getattr(parent, field, '?') + pathsep + path
 			parent = parent.parent
 		return path
 	path = property(get_path)
@@ -199,10 +199,10 @@ class Node(TreeEntity):
 	instance_type = models.ForeignKey(ContentType, editable=False)
 	
 	def get_path(self, pathsep='/', field='slug'):
-		path = getattr(self.instance, field)
+		path = getattr(self.instance, field, '?')
 		parent = self.parent
 		while parent:
-			path = getattr(parent.instance, field) + pathsep + path
+			path = getattr(parent.instance, field, '?') + pathsep + path
 			parent = parent.parent
 		return path
 	path = property(get_path)

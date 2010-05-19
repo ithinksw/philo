@@ -11,6 +11,9 @@ class Titled(models.Model):
 	title = models.CharField(max_length=255)
 	slug = models.SlugField()
 	
+	def __unicode__(self):
+		return self.title
+	
 	class Meta:
 		abstract = True
 
@@ -100,7 +103,8 @@ class BlogNode(MultiNode):
 		return HttpResponse(self.archive_template.django_template.render(RequestContext(request, {'blog': self.blog, 'year': year, 'month': month, 'day': day, 'entries': entries})), mimetype=self.archive_template.mimetype)
 	
 	def tag_view(self, request, tag=None):
-		return HttpResponse(self.tag_template.django_template.render(RequestContext(request, {'blog': self.blog, 'tag': tag, 'entries': None})), mimetype=self.tag_template.mimetype)
+		# return HttpResponse(self.tag_template.django_template.render(RequestContext(request, {'blog': self.blog, 'tag': tag, 'entries': None})), mimetype=self.tag_template.mimetype)
+		raise Http404
 	
 	def entry_view(self, request, slug, year=None, month=None, day=None):
 		entries = self.blog.entries.all()
@@ -115,3 +119,18 @@ class BlogNode(MultiNode):
 		except:
 			raise Http404
 		return HttpResponse(self.entry_template.django_template.render(RequestContext(request, {'blog': self.blog, 'entry': entry})), mimetype=self.entry_template.mimetype)
+
+
+class Newsletter(Entity, Titled):
+	pass
+
+
+class NewsStory(Entity, Titled):
+	newsletter = models.ForeignKey(Newsletter, related_name='stories')
+	authors = models.ManyToManyField(User, related_name='newsstories')
+	date = models.DateTimeField(default=datetime.now)
+	lede = models.TextField(null=True, blank=True)
+	full_text = models.TextField()
+
+
+register_value_model(NewsStory)

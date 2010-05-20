@@ -282,37 +282,46 @@ class Template(TreeModel):
 	@property
 	def containers(self):
 		"""
-		Returns a list of names of contentlets referenced by containers. 
+		Returns a tuple where the first item is a list of names of contentlets referenced by containers,
+		and the second item is a list of tuples of names and contenttypes of contentreferences referenced by containers.
 		This will break if there is a recursive extends or includes in the template code.
 		Due to the use of an empty Context, any extends or include tags with dynamic arguments probably won't work.
 		"""
-		def container_node_names(template):
-			def nodelist_container_node_names(nodelist):
-				names = []
+		def container_nodes(template):
+			def nodelist_container_nodes(nodelist):
+				nodes = []
 				for node in nodelist:
 					try:
 						for nodelist_name in ('nodelist', 'nodelist_loop', 'nodelist_empty', 'nodelist_true', 'nodelist_false'):
 							if hasattr(node, nodelist_name):
-								names.extend(nodelist_container_node_names(getattr(node, nodelist_name)))
+								nodes.extend(nodelist_container_nodes(getattr(node, nodelist_name)))
 						if isinstance(node, ContainerNode):
-							names.append(node.name)
+							nodes.append(node)
 						elif isinstance(node, ExtendsNode):
 							extended_template = node.get_parent(Context())
 							if extended_template:
-								names.extend(container_node_names(extended_template))
+								nodes.extend(container_nodes(extended_template))
 						elif isinstance(node, ConstantIncludeNode):
 							included_template = node.template
 							if included_template:
-								names.extend(container_node_names(included_template))
+								nodes.extend(container_nodes(included_template))
 						elif isinstance(node, IncludeNode):
 							included_template = get_template(node.template_name.resolve(Context()))
 							if included_template:
-								names.extend(container_node_names(included_template))
+								nodes.extend(container_nodes(included_template))
 					except:
 						pass # fail for this node
-				return names
-			return nodelist_container_node_names(template.nodelist)
-		return set(container_node_names(self.django_template))
+				return nodes
+			return nodelist_container_nodes(template.nodelist)
+		all_nodes = container_nodes(self.django_template)
+		contentlet_node_names = set([node.name for node in all_nodes if not node.references])
+		contentreference_node_names = []
+		contentreference_node_specs = []
+		for node in all_nodes:
+			if node.references and node.name not in contentreference_node_names:
+				contentreference_node_specs.append((node.name, node.references))
+				contentreference_node_names.append(node.name)
+		return contentlet_node_names, contentreference_node_specs
 	
 	def __unicode__(self):
 		return self.get_path(u' › ', 'name')
@@ -347,6 +356,14 @@ class Contentlet(models.Model):
 	name = models.CharField(max_length=255)
 	content = models.TextField()
 	dynamic = models.BooleanField(default=False)
+
+
+class ContentReference(models.Model):
+	page = models.ForeignKey(Page, related_name='contentreferences')
+	name = models.CharField(max_length=255)
+	content_type = models.ForeignKey(ContentType, verbose_name='Content type')
+	content_id = models.PositiveIntegerField(verbose_name='Content ID')
+	content = generic.GenericForeignKey('content_type', 'content_id')
 
 
 register_templatetags('philo.templatetags.containers')

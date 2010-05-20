@@ -2,6 +2,11 @@ from django.contrib import admin
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django import forms
+from django.conf import settings
+from django.utils.translation import ugettext as _
+from django.utils.safestring import mark_safe
+from django.utils.html import escape
+from django.utils.text import truncate_words
 from models import *
 
 
@@ -62,6 +67,33 @@ class TemplateAdmin(admin.ModelAdmin):
 	save_as = True
 
 
+class ModelLookupWidget(forms.TextInput):
+	# is_hidden = False
+	
+	def __init__(self, content_type, attrs=None):
+		self.content_type = content_type
+		super(ModelLookupWidget, self).__init__(attrs)
+	
+	def render(self, name, value, attrs=None):
+		related_url = '../../../%s/%s/' % (self.content_type.app_label, self.content_type.model)
+		if attrs is None:
+			attrs = {}
+		if not attrs.has_key('class'):
+			attrs['class'] = 'vForeignKeyRawIdAdminField'
+		output = super(ModelLookupWidget, self).render(name, value, attrs)
+		output += '<a href="%s" class="related-lookup" id="lookup_id_%s" onclick="return showRelatedObjectLookupPopup(this);">' % (related_url, name)
+		output += '<img src="%simg/admin/selector-search.gif" width="16" height="16" alt="%s" />' % (settings.ADMIN_MEDIA_PREFIX, _('Lookup'))
+		output += '</a>'
+		if value:
+			value_class = self.content_type.model_class()
+			try:
+				value_object = value_class.objects.get(pk=value)
+				output += '&nbsp;<strong>%s</strong>' % escape(truncate_words(value_object, 14))
+			except value_class.DoesNotExist:
+				pass
+		return mark_safe(output)
+
+
 class PageAdmin(EntityAdmin):
 	prepopulated_fields = {'slug': ('title',)}
 	fieldsets = (
@@ -113,10 +145,10 @@ class PageAdmin(EntityAdmin):
 			for container_name, container_content_type in contentreference_containers:
 				initial_content = None
 				try:
-					initial_content = page.contentreferences.get(name__exact=container_name, content_type=container_content_type)
+					initial_content = page.contentreferences.get(name__exact=container_name, content_type=container_content_type).content.pk
 				except ContentReference.DoesNotExist:
 					pass
-				form.base_fields[('contentreference_container_%s' % container_name)] = forms.ModelChoiceField(label='References', initial=initial_content, required=False, queryset=container_content_type.model_class().objects.all())
+				form.base_fields[('contentreference_container_%s' % container_name)] = forms.ModelChoiceField(label='References', widget=ModelLookupWidget(container_content_type), initial=initial_content, required=False, queryset=container_content_type.model_class().objects.all())
 		return form
 	
 	def save_model(self, request, page, form, change):

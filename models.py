@@ -195,8 +195,17 @@ class TreeEntity(TreeModel, Entity):
 		abstract = True
 
 
-class Node(TreeEntity):
+class InheritableTreeEntity(TreeEntity):
 	instance_type = models.ForeignKey(ContentType, editable=False)
+	
+	def save(self, force_insert=False, force_update=False):
+		if not hasattr(self, 'instance_type_ptr'):
+			self.instance_type = ContentType.objects.get_for_model(self.__class__)
+		super(InheritableTreeEntity, self).save(force_insert, force_update)
+	
+	@property
+	def instance(self):
+		return self.instance_type.get_object_for_this_type(id=self.id)
 	
 	def get_path(self, pathsep='/', field='slug'):
 		path = getattr(self.instance, field, '?')
@@ -207,15 +216,23 @@ class Node(TreeEntity):
 		return path
 	path = property(get_path)
 	
-	def save(self, force_insert=False, force_update=False):
-		if not hasattr(self, 'instance_type_ptr'):
-			self.instance_type = ContentType.objects.get_for_model(self.__class__)
-		super(Node, self).save(force_insert, force_update)
-	
 	@property
-	def instance(self):
-		return self.instance_type.get_object_for_this_type(id=self.id)
+	def attributes(self):
+		if self.parent:
+			return QuerySetMapper(self.instance.attribute_set, passthrough=self.parent.instance.attributes)
+		return QuerySetMapper(self.instance.attribute_set)
+
+	@property
+	def relationships(self):
+		if self.parent:
+			return QuerySetMapper(self.instance.relationship_set, passthrough=self.parent.instance.relationships)
+		return QuerySetMapper(self.instance.relationship_set)
 	
+	class Meta:
+		abstract = True
+
+
+class Node(InheritableTreeEntity):
 	accepts_subpath = False
 	
 	def render_to_response(self, request, path=None, subpath=None):

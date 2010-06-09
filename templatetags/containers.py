@@ -41,12 +41,18 @@ class ContainerNode(template.Node):
 		if container_content:
 			if self.as_var is None:
 				self.as_var = self.name
+			
+			#make a new context 
 			context.push()
 			context[self.as_var] = container_content
-			return nodelist_main.render(context)
+			nodelist = template.NodeList()
+			for node in self.nodelist_main:
+				nodelist.append(node.render(context))
+			context.pop()
+			return nodelist.render(context)
 		
-		if nodelist_empty is not None:
-			return nodelist_empty.render(context)
+		if self.nodelist_empty is not None:
+			return self.nodelist_empty.render(context)
 		
 		return ''
 	
@@ -115,7 +121,7 @@ def do_container(parser, token):
 			parser.delete_first_token()
 		else:
 			nodelist_empty = None
-		return BlockContainerNode(name, references, as_var, nodelist_main, nodelist_empty)
+		return ContainerNode(name, references, as_var, nodelist_main, nodelist_empty)
 		
 	else: # error
 		raise template.TemplateSyntaxError('"%s" template tag provided without arguments (at least one required)' % tag)

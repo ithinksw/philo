@@ -9,12 +9,22 @@ register = template.Library()
 
 
 class ContainerNode(template.Node):
+	child_nodelists = ('nodelist_main', 'nodelist_empty',)
+	
 	def __init__(self, name, references=None, as_var=None, nodelist_main=None, nodelist_empty=None):
 		self.name = name
 		self.as_var = as_var
 		self.references = references
-		self.nodelist_main = nodelist_main
-		self.nodelist_empty = nodelist_empty
+		
+		if nodelist_main is None:
+			self.nodelist_main = template.NodeList()
+		else:
+			self.nodelist_main = nodelist_main
+		
+		if nodelist_empty is None:
+			self.nodelist_empty = template.NodeList()
+		else:
+			self.nodelist_empty = nodelist_empty
 		
 	def render(self, context):
 		content = settings.TEMPLATE_STRING_IF_INVALID
@@ -22,6 +32,7 @@ class ContainerNode(template.Node):
 			container_content = self.get_container_content(context['page'])
 		
 		if self.nodelist_main is None:
+			self.nodelist_main
 			if container_content and self.as_var:
 				context[self.as_var] = container_content
 				return ''

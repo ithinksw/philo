@@ -8,6 +8,7 @@ from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.utils.text import truncate_words
 from models import *
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 
 
 class AttributeInline(generic.GenericTabularInline):
@@ -65,6 +66,7 @@ class TemplateAdmin(admin.ModelAdmin):
 	)
 	save_on_top = True
 	save_as = True
+	list_display = ('__unicode__', 'slug', 'get_path',)
 
 
 class ModelLookupWidget(forms.TextInput):
@@ -93,6 +95,40 @@ class ModelLookupWidget(forms.TextInput):
 				pass
 		return mark_safe(output)
 
+class NodeForm(forms.ModelForm):
+	
+	def __init__(self, *args, **kwargs):
+		super(NodeForm, self).__init__(*args, **kwargs)
+		instance = self.instance
+		try:
+			self.fields['parent'].queryset = instance.node_ptr.__class__.objects.exclude(id=instance.id)
+		except ObjectDoesNotExist:
+			pass
+	
+	def clean(self):
+		cleaned_data = self.cleaned_data
+		parent = self.cleaned_data['parent']
+		self.instance.validate_parents(parent)
+			
+		try:
+			Node.objects.get(slug=self.cleaned_data['slug'], parent=parent)
+			raise ValidationError("A node with that path (parent and slug) already exists.")
+		except ObjectDoesNotExist:
+			pass
+		
+		return cleaned_data
+
+class PageAdminForm(NodeForm):
+	class Meta:
+		model=Page
+
+class RedirectAdminForm(NodeForm):
+	class Meta:
+		model=Redirect
+		
+class FileAdminForm(NodeForm):
+	class Meta:
+		model=File
 
 class PageAdmin(EntityAdmin):
 	prepopulated_fields = {'slug': ('title',)}
@@ -108,6 +144,7 @@ class PageAdmin(EntityAdmin):
 	list_display = ('title', 'path', 'template')
 	list_filter = ('template',)
 	search_fields = ['title', 'slug', 'contentlets__content']
+	form = PageAdminForm
 	
 	def get_fieldsets(self, request, obj=None, **kwargs):
 		fieldsets = list(self.fieldsets)
@@ -172,9 +209,17 @@ class PageAdmin(EntityAdmin):
 					contentreference.content = content
 					contentreference.save()
 
+class RedirectAdmin(admin.ModelAdmin):
+	list_display=('slug', 'target', 'path', 'status_code',)
+	list_filter=('status_code',)
+	form = RedirectAdminForm
+
+class FileAdmin(admin.ModelAdmin):
+	form=FileAdminForm
+	list_display=('slug', 'mimetype', 'path', 'file',)
 
 admin.site.register(Collection, CollectionAdmin)
-admin.site.register(Redirect)
-admin.site.register(File)
+admin.site.register(Redirect, RedirectAdmin)
+admin.site.register(File, FileAdmin)
 admin.site.register(Page, PageAdmin)
 admin.site.register(Template, TemplateAdmin)

@@ -10,7 +10,7 @@ from django.template import add_to_builtins as register_templatetags
 from django.template import Template as DjangoTemplate
 from django.template import TemplateDoesNotExist
 from django.template import Context, RequestContext
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 try:
 	import json
 except ImportError:
@@ -157,7 +157,6 @@ class TreeManager(models.Manager):
 				return (obj, remainder)
 		raise self.model.DoesNotExist('%s matching query does not exist.' % self.model._meta.object_name)
 
-
 class TreeModel(models.Model):
 	objects = TreeManager()
 	parent = models.ForeignKey('self', related_name='children', null=True, blank=True)
@@ -167,6 +166,7 @@ class TreeModel(models.Model):
 		path = getattr(self, field, '?')
 		parent = self.parent
 		while parent:
+			self.validate_parent(parent)
 			path = getattr(parent, field, '?') + pathsep + path
 			parent = parent.parent
 		return path
@@ -177,6 +177,30 @@ class TreeModel(models.Model):
 	
 	class Meta:
 		abstract = True
+		
+	def validate_parents(self, parent=None):
+		if parent == None:
+			parent = self.parent
+		
+		while parent:
+			try:
+				self.validate_parent(parent)
+				parent = parent.parent
+			except ObjectDoesNotExist:
+				return # because it likely means the child doesn't exist 
+			
+	def validate_parent(self, parent):
+		#Why doesn't this stop the Admin site from saving a model with itself as parent?
+		if self == parent:
+			raise ValidationError("A %s can't be its own parent." % self.__class__.__name__)
+	
+	def clean(self):
+		super(TreeModel, self).clean()
+		self.validate_parents()
+	
+	def save(self, *args, **kwargs):
+		self.clean()
+		super(TreeModel, self).save(*args, **kwargs)
 
 
 class TreeEntity(TreeModel, Entity):
@@ -207,6 +231,10 @@ class InheritableTreeEntity(TreeEntity):
 	@property
 	def instance(self):
 		return self.instance_type.get_object_for_this_type(id=self.id)
+		
+	def validate_parent(self, parent):
+		if self.instance == parent.instance:
+			raise ValidationError("A %s can't be its own parent." % self.__class__.__name__)
 	
 	def get_path(self, pathsep='/', field='slug'):
 		path = getattr(self.instance, field, '?')
@@ -238,6 +266,9 @@ class Node(InheritableTreeEntity):
 	
 	def render_to_response(self, request, path=None, subpath=None):
 		return HttpResponseServerError()
+		
+	class Meta:
+		unique_together=(('parent', 'slug',),)
 
 
 class MultiNode(Node):
@@ -356,9 +387,7 @@ class Template(TreeModel):
 
 class Page(Node):
 	"""
-	Represents an HTML page. The page will have a number of related Contentlets
-	depending on the template selected - but these will appear only after the
-	page has been saved with that template.
+	Represents an HTML page. The page will have a number of related Contentlets depending on the template selected - but these will appear only after the page has been saved with that template.
 	"""
 	template = models.ForeignKey(Template, related_name='pages')
 	title = models.CharField(max_length=255)

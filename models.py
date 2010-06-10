@@ -21,6 +21,7 @@ from django.template.loader_tags import ExtendsNode, ConstantIncludeNode, Includ
 from django.template.loader import get_template
 from django.http import Http404, HttpResponse, HttpResponseServerError, HttpResponseRedirect
 from django.core.servers.basehttp import FileWrapper
+from django.conf import settings
 
 
 def register_value_model(model):
@@ -195,8 +196,17 @@ class TreeEntity(TreeModel, Entity):
 		abstract = True
 
 
-class Node(TreeEntity):
+class InheritableTreeEntity(TreeEntity):
 	instance_type = models.ForeignKey(ContentType, editable=False)
+	
+	def save(self, force_insert=False, force_update=False):
+		if not hasattr(self, 'instance_type_ptr'):
+			self.instance_type = ContentType.objects.get_for_model(self.__class__)
+		super(InheritableTreeEntity, self).save(force_insert, force_update)
+	
+	@property
+	def instance(self):
+		return self.instance_type.get_object_for_this_type(id=self.id)
 	
 	def get_path(self, pathsep='/', field='slug'):
 		path = getattr(self.instance, field, '?')
@@ -207,15 +217,23 @@ class Node(TreeEntity):
 		return path
 	path = property(get_path)
 	
-	def save(self, force_insert=False, force_update=False):
-		if not hasattr(self, 'instance_type_ptr'):
-			self.instance_type = ContentType.objects.get_for_model(self.__class__)
-		super(Node, self).save(force_insert, force_update)
-	
 	@property
-	def instance(self):
-		return self.instance_type.get_object_for_this_type(id=self.id)
+	def attributes(self):
+		if self.parent:
+			return QuerySetMapper(self.instance.attribute_set, passthrough=self.parent.instance.attributes)
+		return QuerySetMapper(self.instance.attribute_set)
+
+	@property
+	def relationships(self):
+		if self.parent:
+			return QuerySetMapper(self.instance.relationship_set, passthrough=self.parent.instance.relationships)
+		return QuerySetMapper(self.instance.relationship_set)
 	
+	class Meta:
+		abstract = True
+
+
+class Node(InheritableTreeEntity):
 	accepts_subpath = False
 	
 	def render_to_response(self, request, path=None, subpath=None):
@@ -244,7 +262,7 @@ class Redirect(Node):
 		(302, 'Temporary'),
 		(301, 'Permanent'),
 	)
-	target = models.URLField()
+	target = models.URLField(help_text='Must be a valid, absolute URL (i.e. http://)')
 	status_code = models.IntegerField(choices=STATUS_CODES, default=302, verbose_name='redirect type')
 	
 	def render_to_response(self, request, path=None, subpath=None):
@@ -268,8 +286,8 @@ class File(Node):
 class Template(TreeModel):
 	name = models.CharField(max_length=255)
 	documentation = models.TextField(null=True, blank=True)
-	mimetype = models.CharField(max_length=255, null=True, blank=True)
-	code = models.TextField()
+	mimetype = models.CharField(max_length=255, null=True, blank=True, help_text='Default: %s' % settings.DEFAULT_CONTENT_TYPE)
+	code = models.TextField(verbose_name='django template code')
 	
 	@property
 	def origin(self):
@@ -292,7 +310,7 @@ class Template(TreeModel):
 				nodes = []
 				for node in nodelist:
 					try:
-						for nodelist_name in ('nodelist', 'nodelist_loop', 'nodelist_empty', 'nodelist_true', 'nodelist_false'):
+						for nodelist_name in ('nodelist', 'nodelist_loop', 'nodelist_empty', 'nodelist_true', 'nodelist_false', 'nodelist_main'):
 							if hasattr(node, nodelist_name):
 								nodes.extend(nodelist_container_nodes(getattr(node, nodelist_name)))
 						if isinstance(node, ContainerNode):
@@ -337,6 +355,11 @@ class Template(TreeModel):
 
 
 class Page(Node):
+	"""
+	Represents an HTML page. The page will have a number of related Contentlets
+	depending on the template selected - but these will appear only after the
+	page has been saved with that template.
+	"""
 	template = models.ForeignKey(Template, related_name='pages')
 	title = models.CharField(max_length=255)
 	

@@ -25,7 +25,7 @@ class ContainerNode(template.Node):
 			self.nodelist_empty = template.NodeList()
 		else:
 			self.nodelist_empty = nodelist_empty
-		
+	
 	def render(self, context):
 		content = settings.TEMPLATE_STRING_IF_INVALID
 		if 'page' in context:
@@ -78,6 +78,7 @@ class ContainerNode(template.Node):
 				content = ''
 		return content
 
+
 def do_container(parser, token):
 	"""
 	{% container <name> [[references <type>] as <variable>] %} 
@@ -125,5 +126,7 @@ def do_container(parser, token):
 		
 	else: # error
 		raise template.TemplateSyntaxError('"%s" template tag provided without arguments (at least one required)' % tag)
+
+
 register.tag('container', do_container)
 register.tag('blockcontainer', do_container)

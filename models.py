@@ -286,8 +286,7 @@ class File(Node):
 class Template(TreeModel):
 	name = models.CharField(max_length=255)
 	documentation = models.TextField(null=True, blank=True)
-	mimetype = models.CharField(max_length=255, null=True, blank=True,
-	    help_text='Default: %s' % settings.DEFAULT_CONTENT_TYPE)
+	mimetype = models.CharField(max_length=255, null=True, blank=True, help_text='Default: %s' % settings.DEFAULT_CONTENT_TYPE)
 	code = models.TextField(verbose_name='django template code')
 	
 	@property

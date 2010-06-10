@@ -356,9 +356,7 @@ class Template(TreeModel):
 
 class Page(Node):
 	"""
-	Represents an HTML page. The page will have a number of related Contentlets
-	depending on the template selected - but these will appear only after the
-	page has been saved with that template.
+	Represents an HTML page. The page will have a number of related Contentlets depending on the template selected - but these will appear only after the page has been saved with that template.
 	"""
 	template = models.ForeignKey(Template, related_name='pages')
 	title = models.CharField(max_length=255)

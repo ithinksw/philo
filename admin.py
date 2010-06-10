@@ -65,6 +65,7 @@ class TemplateAdmin(admin.ModelAdmin):
 	)
 	save_on_top = True
 	save_as = True
+	list_display = ('__unicode__', 'slug', 'get_path',)
 
 
 class ModelLookupWidget(forms.TextInput):
@@ -172,9 +173,12 @@ class PageAdmin(EntityAdmin):
 					contentreference.content = content
 					contentreference.save()
 
+class RedirectAdmin(admin.ModelAdmin):
+	list_display=('slug', 'target', 'status_code',)
+	list_filter=('status_code',)
 
 admin.site.register(Collection, CollectionAdmin)
-admin.site.register(Redirect)
+admin.site.register(Redirect, RedirectAdmin)
 admin.site.register(File)
 admin.site.register(Page, PageAdmin)
 admin.site.register(Template, TemplateAdmin)

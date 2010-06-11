@@ -9,6 +9,7 @@ from django.utils.html import escape
 from django.utils.text import truncate_words
 from models import *
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from validators import TreeParentValidator, TreePositionValidator
 
 
 class AttributeInline(generic.GenericTabularInline):
@@ -46,6 +47,38 @@ class CollectionAdmin(admin.ModelAdmin):
 	inlines = [CollectionMemberInline]
 
 
+class TreeForm(forms.ModelForm):
+	def __init__(self, *args, **kwargs):
+		super(TreeForm, self).__init__(*args, **kwargs)
+		instance = self.instance
+		instance_class=self.get_instance_class()
+		try:
+			self.fields['parent'].queryset = instance_class.objects.exclude(id=instance.id)
+		except ObjectDoesNotExist:
+			pass
+		self.fields['parent'].validators = [TreeParentValidator(*self.get_validator_args())]
+	
+	def get_instance_class(self):
+		return self.instance.__class__
+		
+	def get_validator_args(self):
+		return [self.instance]
+	
+	def clean(self):
+		cleaned_data = self.cleaned_data
+		
+		try:
+			parent = cleaned_data['parent']
+			slug = cleaned_data['slug']
+			obj_class = self.get_instance_class()
+			tpv = TreePositionValidator(parent, slug, obj_class)
+			tpv(self.instance)
+		except KeyError:
+			pass
+		
+		return cleaned_data
+
+
 class TemplateAdmin(admin.ModelAdmin):
 	prepopulated_fields = {'slug': ('name',)}
 	fieldsets = (
@@ -67,6 +100,7 @@ class TemplateAdmin(admin.ModelAdmin):
 	save_on_top = True
 	save_as = True
 	list_display = ('__unicode__', 'slug', 'get_path',)
+	form = TreeForm
 
 
 class ModelLookupWidget(forms.TextInput):
@@ -95,40 +129,29 @@ class ModelLookupWidget(forms.TextInput):
 				pass
 		return mark_safe(output)
 
-class NodeForm(forms.ModelForm):
-	
-	def __init__(self, *args, **kwargs):
-		super(NodeForm, self).__init__(*args, **kwargs)
-		instance = self.instance
-		try:
-			self.fields['parent'].queryset = instance.node_ptr.__class__.objects.exclude(id=instance.id)
-		except ObjectDoesNotExist:
-			pass
-	
-	def clean(self):
-		cleaned_data = self.cleaned_data
-		parent = self.cleaned_data['parent']
-		self.instance.validate_parents(parent)
-			
-		try:
-			Node.objects.get(slug=self.cleaned_data['slug'], parent=parent)
-			raise ValidationError("A node with that path (parent and slug) already exists.")
-		except ObjectDoesNotExist:
-			pass
+
+class NodeForm(TreeForm):
+	def get_instance_class(self):
+		return self.instance.node_ptr.__class__
 		
-		return cleaned_data
+	def get_validator_args(self):
+		return [self.instance, 'instance']
+
 
 class PageAdminForm(NodeForm):
 	class Meta:
 		model=Page
 
+
 class RedirectAdminForm(NodeForm):
 	class Meta:
 		model=Redirect
-		
+
+
 class FileAdminForm(NodeForm):
 	class Meta:
 		model=File
+
 
 class PageAdmin(EntityAdmin):
 	prepopulated_fields = {'slug': ('title',)}
@@ -209,14 +232,17 @@ class PageAdmin(EntityAdmin):
 					contentreference.content = content
 					contentreference.save()
 
+
 class RedirectAdmin(admin.ModelAdmin):
 	list_display=('slug', 'target', 'path', 'status_code',)
 	list_filter=('status_code',)
 	form = RedirectAdminForm
 
+
 class FileAdmin(admin.ModelAdmin):
 	form=FileAdminForm
 	list_display=('slug', 'mimetype', 'path', 'file',)
+
 
 admin.site.register(Collection, CollectionAdmin)
 admin.site.register(Redirect, RedirectAdmin)

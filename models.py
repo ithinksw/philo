@@ -99,12 +99,18 @@ class Entity(models.Model):
 	
 	class Meta:
 		abstract = True
-
+	
 
 class Collection(models.Model):
 	name = models.CharField(max_length=255)
 	description = models.TextField(blank=True, null=True)
-
+	
+	def get_count(self):
+		return self.members.count()
+	get_count.short_description = 'Members'
+	
+	def __unicode__(self):
+		return self.name
 
 class CollectionMemberManager(models.Manager):
 	use_for_related_fields = True
@@ -120,6 +126,9 @@ class CollectionMember(models.Model):
 	member_content_type = models.ForeignKey(ContentType, verbose_name='Member type')
 	member_object_id = models.PositiveIntegerField(verbose_name='Member ID')
 	member = generic.GenericForeignKey('member_content_type', 'member_object_id')
+	
+	def __unicode__(self):
+		return '%s - %s' % (self.collection, self.member)
 
 
 class TreeManager(models.Manager):
@@ -289,7 +298,7 @@ class File(Node):
 class Template(TreeModel):
 	name = models.CharField(max_length=255)
 	documentation = models.TextField(null=True, blank=True)
-	mimetype = models.CharField(max_length=255, null=True, blank=True, help_text='Default: %s' % settings.DEFAULT_CONTENT_TYPE)
+	mimetype = models.CharField(max_length=255, null=True, blank=True, help_text='Default: %s' % settings.DEFAULT_CONTENT_TYPE, default=settings.DEFAULT_CONTENT_TYPE)
 	code = models.TextField(verbose_name='django template code')
 	
 	@property
@@ -359,7 +368,7 @@ class Template(TreeModel):
 
 class Page(Node):
 	"""
-	Represents an HTML page. The page will have a number of related Contentlets depending on the template selected - but these will appear only after the page has been saved with that template.
+	Represents a page - something which is rendered according to a template. The page will have a number of related Contentlets depending on the template selected - but these will appear only after the page has been saved with that template.
 	"""
 	template = models.ForeignKey(Template, related_name='pages')
 	title = models.CharField(max_length=255)

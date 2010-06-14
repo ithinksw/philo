@@ -29,7 +29,7 @@ class ContainerNode(template.Node):
 	def render(self, context):
 		content = settings.TEMPLATE_STRING_IF_INVALID
 		if 'page' in context:
-			container_content = self.get_container_content(context['page'])
+			container_content = self.get_container_content(context)
 		
 		if self.nodelist_main is None:
 			self.nodelist_main
@@ -56,7 +56,8 @@ class ContainerNode(template.Node):
 		
 		return ''
 	
-	def get_container_content(self, page):
+	def get_container_content(self, context):
+		page = context['page']
 		if self.references:
 			try:
 				contentreference = page.contentreferences.get(name__exact=self.name, content_type=self.references)
@@ -71,7 +72,7 @@ class ContainerNode(template.Node):
 						content = mark_safe(template.Template(contentlet.content, name=contentlet.name).render(context))
 					except template.TemplateSyntaxError, error:
 						if settings.DEBUG:
-							content = ('[Error parsing contentlet \'%s\': %s]' % self.name, error)
+							content = ('[Error parsing contentlet \'%s\': %s]' % (self.name, error))
 				else:
 					content = contentlet.content
 			except ObjectDoesNotExist:

@@ -45,6 +45,7 @@ class CollectionMemberInline(admin.TabularInline):
 
 class CollectionAdmin(admin.ModelAdmin):
 	inlines = [CollectionMemberInline]
+	list_display = ('name', 'description', 'get_count')
 
 
 class TreeForm(forms.ModelForm):
@@ -52,10 +53,13 @@ class TreeForm(forms.ModelForm):
 		super(TreeForm, self).__init__(*args, **kwargs)
 		instance = self.instance
 		instance_class=self.get_instance_class()
-		try:
-			self.fields['parent'].queryset = instance_class.objects.exclude(id=instance.id)
-		except ObjectDoesNotExist:
-			pass
+		
+		if instance_class is not None:
+			try:
+				self.fields['parent'].queryset = instance_class.objects.exclude(id=instance.id)
+			except ObjectDoesNotExist:
+				pass
+			
 		self.fields['parent'].validators = [TreeParentValidator(*self.get_validator_args())]
 	
 	def get_instance_class(self):
@@ -132,7 +136,7 @@ class ModelLookupWidget(forms.TextInput):
 
 class NodeForm(TreeForm):
 	def get_instance_class(self):
-		return self.instance.node_ptr.__class__
+		return Node
 		
 	def get_validator_args(self):
 		return [self.instance, 'instance']

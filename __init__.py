@@ -1,4 +1,4 @@
-from models import Template
+from philo.models import Template
 
 
 load_template_source = Template.loader

@@ -11,10 +11,7 @@ from django.template import Template as DjangoTemplate
 from django.template import TemplateDoesNotExist
 from django.template import Context, RequestContext
 from django.core.exceptions import ObjectDoesNotExist
-try:
-	import json
-except ImportError:
-	import simplejson as json
+from django.utils import simplejson as json
 from UserDict import DictMixin
 from templatetags.containers import ContainerNode
 from django.template.loader_tags import ExtendsNode, ConstantIncludeNode, IncludeNode

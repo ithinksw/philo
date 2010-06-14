@@ -1,7 +1,7 @@
 from django.http import Http404, HttpResponse
 from django.template import RequestContext
 from django.contrib.sites.models import Site
-from models import Node
+from philo.models import Node
 
 
 def node_view(request, path=None, **kwargs):

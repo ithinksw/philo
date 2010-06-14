@@ -5,7 +5,7 @@ from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.contrib.sites.models import Site
-from utils import fattr
+from philo.utils import fattr
 from django.template import add_to_builtins as register_templatetags
 from django.template import Template as DjangoTemplate
 from django.template import TemplateDoesNotExist
@@ -13,7 +13,7 @@ from django.template import Context, RequestContext
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import simplejson as json
 from UserDict import DictMixin
-from templatetags.containers import ContainerNode
+from philo.templatetags.containers import ContainerNode
 from django.template.loader_tags import ExtendsNode, ConstantIncludeNode, IncludeNode
 from django.template.loader import get_template
 from django.http import Http404, HttpResponse, HttpResponseServerError, HttpResponseRedirect

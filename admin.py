@@ -7,7 +7,7 @@ from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.utils.text import truncate_words
-from models import *
+from philo.models import *
 
 
 class AttributeInline(generic.GenericTabularInline):

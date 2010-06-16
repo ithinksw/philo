@@ -45,26 +45,8 @@ class CollectionAdmin(admin.ModelAdmin):
 	inlines = [CollectionMemberInline]
 
 
-class TemplateAdmin(admin.ModelAdmin):
-	prepopulated_fields = {'slug': ('name',)}
-	fieldsets = (
-		(None, {
-			'fields': ('parent', 'name', 'slug')
-		}),
-		('Documentation', {
-			'classes': ('collapse', 'collapse-closed'),
-			'fields': ('documentation',)
-		}),
-		(None, {
-			'fields': ('code',)
-		}),
-		('Advanced', {
-			'classes': ('collapse','collapse-closed'),
-			'fields': ('mimetype',)
-		}),
-	)
-	save_on_top = True
-	save_as = True
+class NodeAdmin(EntityAdmin):
+	pass
 
 
 class ModelLookupWidget(forms.TextInput):
@@ -94,15 +76,40 @@ class ModelLookupWidget(forms.TextInput):
 		return mark_safe(output)
 
 
-class PageAdmin(EntityAdmin):
-	prepopulated_fields = {'slug': ('title',)}
+class RedirectAdmin(NodeAdmin):
 	fieldsets = (
 		(None, {
-			'fields': ('title', 'template')
+			'fields': ('slug', 'target', 'status_code')
 		}),
 		('URL/Tree/Hierarchy', {
 			'classes': ('collapse', 'collapse-closed'),
-			'fields': ('parent', 'slug')
+			'fields': ('parent',)
+		}),
+	)
+
+
+class FileAdmin(NodeAdmin):
+	prepopulated_fields = {'slug': ('file',)}
+	fieldsets = (
+		(None, {
+			'fields': ('file', 'slug', 'mimetype')
+		}),
+		('URL/Tree/Hierarchy', {
+			'classes': ('collapse', 'collapse-closed'),
+			'fields': ('parent',)
+		}),
+	)
+
+
+class PageAdmin(NodeAdmin):
+	prepopulated_fields = {'slug': ('title',)}
+	fieldsets = (
+		(None, {
+			'fields': ('title', 'slug', 'template')
+		}),
+		('URL/Tree/Hierarchy', {
+			'classes': ('collapse', 'collapse-closed'),
+			'fields': ('parent',)
 		}),
 	)
 	list_display = ('title', 'path', 'template')
@@ -173,8 +180,30 @@ class PageAdmin(EntityAdmin):
 					contentreference.save()
 
 
+class TemplateAdmin(admin.ModelAdmin):
+	prepopulated_fields = {'slug': ('name',)}
+	fieldsets = (
+		(None, {
+			'fields': ('parent', 'name', 'slug')
+		}),
+		('Documentation', {
+			'classes': ('collapse', 'collapse-closed'),
+			'fields': ('documentation',)
+		}),
+		(None, {
+			'fields': ('code',)
+		}),
+		('Advanced', {
+			'classes': ('collapse','collapse-closed'),
+			'fields': ('mimetype',)
+		}),
+	)
+	save_on_top = True
+	save_as = True
+
+
 admin.site.register(Collection, CollectionAdmin)
-admin.site.register(Redirect)
-admin.site.register(File)
+admin.site.register(Redirect, RedirectAdmin)
+admin.site.register(File, FileAdmin)
 admin.site.register(Page, PageAdmin)
 admin.site.register(Template, TemplateAdmin)

@@ -281,6 +281,17 @@ class PageAdmin(NodeAdmin):
 					contentreference.save()
 
 
+class RedirectAdmin(admin.ModelAdmin):
+	list_display=('slug', 'target', 'path', 'status_code',)
+	list_filter=('status_code',)
+	form = RedirectAdminForm
+
+
+class FileAdmin(admin.ModelAdmin):
+	form=FileAdminForm
+	list_display=('slug', 'mimetype', 'path', 'file',)
+
+
 admin.site.register(Collection, CollectionAdmin)
 admin.site.register(Redirect, RedirectAdmin)
 admin.site.register(File, FileAdmin)

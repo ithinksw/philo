@@ -2,7 +2,6 @@ Philo is a foundation for developing web content management systems.
 
 Prerequisites:
 	* Python 2.5.4+ <http://www.python.org/>
-	* simplejson <http://code.google.com/p/simplejson/> (Not required with Python 2.6+)
 	* Django 1.1.1+ <http://www.djangoproject.com/>
 	* (Optional) django-grappelli 2.0+ <http://code.google.com/p/django-grappelli/>
 

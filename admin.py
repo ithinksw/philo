@@ -15,7 +15,7 @@ class AttributeInline(generic.GenericTabularInline):
 	ct_fk_field = 'entity_object_id'
 	model = Attribute
 	extra = 1
-	classes = ('collapse-closed',)
+	template = 'admin/philo/edit_inline/tabular_collapse.html'
 	allow_add = True
 
 
@@ -24,7 +24,7 @@ class RelationshipInline(generic.GenericTabularInline):
 	ct_fk_field = 'entity_object_id'
 	model = Relationship
 	extra = 1
-	classes = ('collapse-closed',)
+	template = 'admin/philo/edit_inline/tabular_collapse.html'
 	allow_add = True
 
 

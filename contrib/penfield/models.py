@@ -7,6 +7,14 @@ from django.template import RequestContext
 from datetime import datetime
 
 
+class Tag(models.Model):
+	name = models.CharField(max_length=250)
+	slug = models.SlugField()
+	
+	def __unicode__(self):
+		return self.name
+
+
 class Titled(models.Model):
 	title = models.CharField(max_length=255)
 	slug = models.SlugField()
@@ -28,6 +36,7 @@ class BlogEntry(Entity, Titled):
 	date = models.DateTimeField(default=datetime.now)
 	content = models.TextField()
 	excerpt = models.TextField()
+	tags = models.ManyToManyField(Tag)
 	
 	class Meta:
 		ordering = ['-date']

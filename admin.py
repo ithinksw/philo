@@ -102,6 +102,7 @@ class FileAdmin(NodeAdmin):
 
 
 class PageAdmin(NodeAdmin):
+	add_form_template = 'admin/philo/page/add_form.html'
 	prepopulated_fields = {'slug': ('title',)}
 	fieldsets = (
 		(None, {

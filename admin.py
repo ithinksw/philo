@@ -120,8 +120,11 @@ class PageAdmin(NodeAdmin):
 	def get_fieldsets(self, request, obj=None, **kwargs):
 		fieldsets = list(self.fieldsets)
 		if obj: # if no obj, creating a new page, thus no template set, thus no containers
-			page = obj
-			template = page.template
+			template = obj.template
+			if template.documentation:
+				fieldsets.append(('Template Documentation', {
+					'description': template.documentation
+				}))
 			contentlet_containers, contentreference_containers = template.containers
 			for container_name in contentlet_containers:
 				fieldsets.append((('Container: %s' % container_name), {

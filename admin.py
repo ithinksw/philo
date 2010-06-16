@@ -17,7 +17,7 @@ class AttributeInline(generic.GenericTabularInline):
 	ct_fk_field = 'entity_object_id'
 	model = Attribute
 	extra = 1
-	classes = ('collapse-closed',)
+	template = 'admin/philo/edit_inline/tabular_collapse.html'
 	allow_add = True
 
 
@@ -26,7 +26,7 @@ class RelationshipInline(generic.GenericTabularInline):
 	ct_fk_field = 'entity_object_id'
 	model = Relationship
 	extra = 1
-	classes = ('collapse-closed',)
+	template = 'admin/philo/edit_inline/tabular_collapse.html'
 	allow_add = True
 
 
@@ -158,15 +158,50 @@ class FileAdminForm(NodeForm):
 		model=File
 
 
-class PageAdmin(EntityAdmin):
-	prepopulated_fields = {'slug': ('title',)}
+class NodeAdmin(EntityAdmin):
+	pass
+
+
+class RedirectAdmin(NodeAdmin):
 	fieldsets = (
 		(None, {
-			'fields': ('title', 'template')
+			'fields': ('slug', 'target', 'status_code')
 		}),
 		('URL/Tree/Hierarchy', {
 			'classes': ('collapse', 'collapse-closed'),
-			'fields': ('parent', 'slug')
+			'fields': ('parent',)
+		}),
+	)
+	list_display=('slug', 'target', 'path', 'status_code',)
+	list_filter=('status_code',)
+	form = RedirectAdminForm
+
+
+class FileAdmin(NodeAdmin):
+	prepopulated_fields = {'slug': ('file',)}
+	fieldsets = (
+		(None, {
+			'fields': ('file', 'slug', 'mimetype')
+		}),
+		('URL/Tree/Hierarchy', {
+			'classes': ('collapse', 'collapse-closed'),
+			'fields': ('parent',)
+		}),
+	)
+	form=FileAdminForm
+	list_display=('slug', 'mimetype', 'path', 'file',)
+
+
+class PageAdmin(NodeAdmin):
+	add_form_template = 'admin/philo/page/add_form.html'
+	prepopulated_fields = {'slug': ('title',)}
+	fieldsets = (
+		(None, {
+			'fields': ('title', 'slug', 'template')
+		}),
+		('URL/Tree/Hierarchy', {
+			'classes': ('collapse', 'collapse-closed'),
+			'fields': ('parent',)
 		}),
 	)
 	list_display = ('title', 'path', 'template')
@@ -177,8 +212,11 @@ class PageAdmin(EntityAdmin):
 	def get_fieldsets(self, request, obj=None, **kwargs):
 		fieldsets = list(self.fieldsets)
 		if obj: # if no obj, creating a new page, thus no template set, thus no containers
-			page = obj
-			template = page.template
+			template = obj.template
+			if template.documentation:
+				fieldsets.append(('Template Documentation', {
+					'description': template.documentation
+				}))
 			contentlet_containers, contentreference_containers = template.containers
 			for container_name in contentlet_containers:
 				fieldsets.append((('Container: %s' % container_name), {
@@ -238,17 +276,6 @@ class PageAdmin(EntityAdmin):
 				if not created:
 					contentreference.content = content
 					contentreference.save()
-
-
-class RedirectAdmin(admin.ModelAdmin):
-	list_display=('slug', 'target', 'path', 'status_code',)
-	list_filter=('status_code',)
-	form = RedirectAdminForm
-
-
-class FileAdmin(admin.ModelAdmin):
-	form=FileAdminForm
-	list_display=('slug', 'mimetype', 'path', 'file',)
 
 
 admin.site.register(Collection, CollectionAdmin)

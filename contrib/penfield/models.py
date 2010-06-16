@@ -30,7 +30,7 @@ class BlogEntry(Entity, Titled):
 	excerpt = models.TextField()
 	
 	class Meta:
-		ordering = ['date']
+		ordering = ['-date']
 		verbose_name_plural = "Blog Entries"
 
 

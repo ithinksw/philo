@@ -12,6 +12,9 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from validators import TreeParentValidator, TreePositionValidator
 
 
+COLLAPSE_CLASSES = ('collapse', 'collapse-closed', 'closed',)
+
+
 class AttributeInline(generic.GenericTabularInline):
 	ct_field = 'entity_content_type'
 	ct_fk_field = 'entity_object_id'
@@ -39,7 +42,7 @@ class CollectionMemberInline(admin.TabularInline):
 	fk_name = 'collection'
 	model = CollectionMember
 	extra = 1
-	classes = ('collapse-closed',)
+	classes = COLLAPSE_CLASSES
 	allow_add = True
 	fields = ('member_content_type', 'member_object_id', 'index',)
 
@@ -91,14 +94,14 @@ class TemplateAdmin(admin.ModelAdmin):
 			'fields': ('parent', 'name', 'slug')
 		}),
 		('Documentation', {
-			'classes': ('collapse', 'collapse-closed'),
+			'classes': COLLAPSE_CLASSES,
 			'fields': ('documentation',)
 		}),
 		(None, {
 			'fields': ('code',)
 		}),
 		('Advanced', {
-			'classes': ('collapse','collapse-closed'),
+			'classes': COLLAPSE_CLASSES,
 			'fields': ('mimetype',)
 		}),
 	)
@@ -168,7 +171,7 @@ class RedirectAdmin(NodeAdmin):
 			'fields': ('slug', 'target', 'status_code')
 		}),
 		('URL/Tree/Hierarchy', {
-			'classes': ('collapse', 'collapse-closed'),
+			'classes': COLLAPSE_CLASSES,
 			'fields': ('parent',)
 		}),
 	)
@@ -184,7 +187,7 @@ class FileAdmin(NodeAdmin):
 			'fields': ('file', 'slug', 'mimetype')
 		}),
 		('URL/Tree/Hierarchy', {
-			'classes': ('collapse', 'collapse-closed'),
+			'classes': COLLAPSE_CLASSES,
 			'fields': ('parent',)
 		}),
 	)
@@ -200,7 +203,7 @@ class PageAdmin(NodeAdmin):
 			'fields': ('title', 'slug', 'template')
 		}),
 		('URL/Tree/Hierarchy', {
-			'classes': ('collapse', 'collapse-closed'),
+			'classes': COLLAPSE_CLASSES,
 			'fields': ('parent',)
 		}),
 	)

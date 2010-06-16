@@ -125,7 +125,7 @@ class CollectionMember(models.Model):
 	member = generic.GenericForeignKey('member_content_type', 'member_object_id')
 	
 	def __unicode__(self):
-		return '%s - %s' % (self.collection, self.member)
+		return u'%s - %s' % (self.collection, self.member)
 
 
 class TreeManager(models.Manager):

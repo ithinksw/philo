@@ -31,8 +31,7 @@ class ContainerNode(template.Node):
 		if 'page' in context:
 			container_content = self.get_container_content(context)
 		
-		if self.nodelist_main is None:
-			self.nodelist_main
+		if not self.nodelist_main:
 			if container_content and self.as_var:
 				context[self.as_var] = container_content
 				return ''

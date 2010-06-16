@@ -389,6 +389,9 @@ class Contentlet(models.Model):
 	name = models.CharField(max_length=255)
 	content = models.TextField()
 	dynamic = models.BooleanField(default=False)
+	
+	def __unicode__(self):
+		return self.name
 
 
 class ContentReference(models.Model):
@@ -397,6 +400,9 @@ class ContentReference(models.Model):
 	content_type = models.ForeignKey(ContentType, verbose_name='Content type')
 	content_id = models.PositiveIntegerField(verbose_name='Content ID')
 	content = generic.GenericForeignKey('content_type', 'content_id')
+	
+	def __unicode__(self):
+		return self.name
 
 
 register_templatetags('philo.templatetags.containers')

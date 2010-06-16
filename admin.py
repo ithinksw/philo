@@ -41,6 +41,7 @@ class CollectionMemberInline(admin.TabularInline):
 	extra = 1
 	classes = ('collapse-closed',)
 	allow_add = True
+	fields = ('member_content_type', 'member_object_id', 'index',)
 
 
 class CollectionAdmin(admin.ModelAdmin):

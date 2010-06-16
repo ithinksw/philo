@@ -28,6 +28,10 @@ class BlogEntry(Entity, Titled):
 	date = models.DateTimeField(default=datetime.now)
 	content = models.TextField()
 	excerpt = models.TextField()
+	
+	class Meta:
+		ordering = ['date']
+		verbose_name_plural = "Blog Entries"
 
 
 register_value_model(BlogEntry)

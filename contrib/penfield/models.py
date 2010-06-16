@@ -94,7 +94,8 @@ class BlogNode(MultiNode):
 		return base_patterns + entry_patterns
 	
 	def index_view(self, request):
-		return HttpResponse(self.index_template.django_template.render(RequestContext(request, {'blog': self.blog})), mimetype=self.index_template.mimetype)
+		entries = self.blog.entries.order_by('-date')
+		return HttpResponse(self.index_template.django_template.render(RequestContext(request, {'blog': self.blog, 'entries': entries})), mimetype=self.index_template.mimetype)
 	
 	def archive_view(self, request, year=None, month=None, day=None):
 		entries = self.blog.entries.all()

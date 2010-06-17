@@ -101,6 +101,13 @@ class Entity(models.Model):
 class Collection(models.Model):
 	name = models.CharField(max_length=255)
 	description = models.TextField(blank=True, null=True)
+	
+	@fattr(short_description='Members')
+	def get_count(self):
+		return self.members.count()
+	
+	def __unicode__(self):
+		return self.name
 
 
 class CollectionMemberManager(models.Manager):
@@ -117,6 +124,9 @@ class CollectionMember(models.Model):
 	member_content_type = models.ForeignKey(ContentType, verbose_name='Member type')
 	member_object_id = models.PositiveIntegerField(verbose_name='Member ID')
 	member = generic.GenericForeignKey('member_content_type', 'member_object_id')
+	
+	def __unicode__(self):
+		return u'%s - %s' % (self.collection, self.member)
 
 
 class TreeManager(models.Manager):
@@ -235,6 +245,9 @@ class Node(InheritableTreeEntity):
 	
 	def render_to_response(self, request, path=None, subpath=None):
 		return HttpResponseServerError()
+		
+	class Meta:
+		unique_together = (('parent', 'slug'),)
 
 
 class MultiNode(Node):
@@ -278,6 +291,9 @@ class File(Node):
 		response = HttpResponse(wrapper, content_type=self.mimetype)
 		response['Content-Length'] = self.file.size
 		return response
+	
+	def __unicode__(self):
+		return self.file
 
 
 class Template(TreeModel):
@@ -353,9 +369,7 @@ class Template(TreeModel):
 
 class Page(Node):
 	"""
-	Represents an HTML page. The page will have a number of related Contentlets
-	depending on the template selected - but these will appear only after the
-	page has been saved with that template.
+	Represents a page - something which is rendered according to a template. The page will have a number of related Contentlets depending on the template selected - but these will appear only after the page has been saved with that template.
 	"""
 	template = models.ForeignKey(Template, related_name='pages')
 	title = models.CharField(max_length=255)
@@ -376,6 +390,9 @@ class Contentlet(models.Model):
 	name = models.CharField(max_length=255)
 	content = models.TextField()
 	dynamic = models.BooleanField(default=False)
+	
+	def __unicode__(self):
+		return self.name
 
 
 class ContentReference(models.Model):
@@ -384,6 +401,9 @@ class ContentReference(models.Model):
 	content_type = models.ForeignKey(ContentType, verbose_name='Content type')
 	content_id = models.PositiveIntegerField(verbose_name='Content ID')
 	content = generic.GenericForeignKey('content_type', 'content_id')
+	
+	def __unicode__(self):
+		return self.name
 
 
 register_templatetags('philo.templatetags.containers')

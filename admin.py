@@ -8,6 +8,11 @@ from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.utils.text import truncate_words
 from philo.models import *
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from validators import TreeParentValidator, TreePositionValidator
+
+
+COLLAPSE_CLASSES = ('collapse', 'collapse-closed', 'closed',)
 
 
 class AttributeInline(generic.GenericTabularInline):
@@ -37,12 +42,14 @@ class CollectionMemberInline(admin.TabularInline):
 	fk_name = 'collection'
 	model = CollectionMember
 	extra = 1
-	classes = ('collapse-closed',)
+	classes = COLLAPSE_CLASSES
 	allow_add = True
+	fields = ('member_content_type', 'member_object_id', 'index',)
 
 
 class CollectionAdmin(admin.ModelAdmin):
 	inlines = [CollectionMemberInline]
+	list_display = ('name', 'description', 'get_count')
 
 
 class NodeAdmin(EntityAdmin):
@@ -76,16 +83,77 @@ class ModelLookupWidget(forms.TextInput):
 		return mark_safe(output)
 
 
+class TreeForm(forms.ModelForm):
+	def __init__(self, *args, **kwargs):
+		super(TreeForm, self).__init__(*args, **kwargs)
+		instance = self.instance
+		instance_class = self.get_instance_class()
+		
+		if instance_class is not None:
+			try:
+				self.fields['parent'].queryset = instance_class.objects.exclude(id=instance.id)
+			except ObjectDoesNotExist:
+				pass
+			
+		self.fields['parent'].validators = [TreeParentValidator(*self.get_validator_args())]
+	
+	def get_instance_class(self):
+		return self.instance.__class__
+		
+	def get_validator_args(self):
+		return [self.instance]
+	
+	def clean(self):
+		cleaned_data = self.cleaned_data
+		
+		try:
+			parent = cleaned_data['parent']
+			slug = cleaned_data['slug']
+			obj_class = self.get_instance_class()
+			tpv = TreePositionValidator(parent, slug, obj_class)
+			tpv(self.instance)
+		except KeyError:
+			pass
+		
+		return cleaned_data
+
+
+class NodeForm(TreeForm):
+	def get_instance_class(self):
+		return Node
+		
+	def get_validator_args(self):
+		return [self.instance, 'instance']
+
+
+class PageAdminForm(NodeForm):
+	class Meta:
+		model = Page
+
+
+class RedirectAdminForm(NodeForm):
+	class Meta:
+		model = Redirect
+
+
+class FileAdminForm(NodeForm):
+	class Meta:
+		model = File
+
+
 class RedirectAdmin(NodeAdmin):
 	fieldsets = (
 		(None, {
 			'fields': ('slug', 'target', 'status_code')
 		}),
 		('URL/Tree/Hierarchy', {
-			'classes': ('collapse', 'collapse-closed'),
+			'classes': COLLAPSE_CLASSES,
 			'fields': ('parent',)
 		}),
 	)
+	list_display=('slug', 'target', 'path', 'status_code',)
+	list_filter=('status_code',)
+	form = RedirectAdminForm
 
 
 class FileAdmin(NodeAdmin):
@@ -95,10 +163,12 @@ class FileAdmin(NodeAdmin):
 			'fields': ('file', 'slug', 'mimetype')
 		}),
 		('URL/Tree/Hierarchy', {
-			'classes': ('collapse', 'collapse-closed'),
+			'classes': COLLAPSE_CLASSES,
 			'fields': ('parent',)
 		}),
 	)
+	form=FileAdminForm
+	list_display=('slug', 'mimetype', 'path', 'file',)
 
 
 class PageAdmin(NodeAdmin):
@@ -109,13 +179,14 @@ class PageAdmin(NodeAdmin):
 			'fields': ('title', 'slug', 'template')
 		}),
 		('URL/Tree/Hierarchy', {
-			'classes': ('collapse', 'collapse-closed'),
+			'classes': COLLAPSE_CLASSES,
 			'fields': ('parent',)
 		}),
 	)
 	list_display = ('title', 'path', 'template')
 	list_filter = ('template',)
 	search_fields = ['title', 'slug', 'contentlets__content']
+	form = PageAdminForm
 	
 	def get_fieldsets(self, request, obj=None, **kwargs):
 		fieldsets = list(self.fieldsets)
@@ -191,19 +262,21 @@ class TemplateAdmin(admin.ModelAdmin):
 			'fields': ('parent', 'name', 'slug')
 		}),
 		('Documentation', {
-			'classes': ('collapse', 'collapse-closed'),
+			'classes': COLLAPSE_CLASSES,
 			'fields': ('documentation',)
 		}),
 		(None, {
 			'fields': ('code',)
 		}),
 		('Advanced', {
-			'classes': ('collapse','collapse-closed'),
+			'classes': COLLAPSE_CLASSES,
 			'fields': ('mimetype',)
 		}),
 	)
 	save_on_top = True
 	save_as = True
+	list_display = ('__unicode__', 'slug', 'get_path',)
+	form = TreeForm
 
 
 admin.site.register(Collection, CollectionAdmin)

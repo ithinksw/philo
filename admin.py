@@ -249,8 +249,6 @@ class PageAdmin(NodeAdmin):
 		for container_name, container_content_type in contentreference_containers:
 			if ('contentreference_container_%s' % container_name) in form.cleaned_data:
 				content = form.cleaned_data[('contentreference_container_%s' % container_name)]
-				if content == None:
-					continue
 				contentreference, created = page.contentreferences.get_or_create(name=container_name, defaults={'content': content})
 				if not created:
 					contentreference.content = content

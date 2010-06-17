@@ -96,18 +96,19 @@ class Entity(models.Model):
 	
 	class Meta:
 		abstract = True
-	
+
 
 class Collection(models.Model):
 	name = models.CharField(max_length=255)
 	description = models.TextField(blank=True, null=True)
 	
+	@fattr(short_description='Members')
 	def get_count(self):
 		return self.members.count()
-	get_count.short_description = 'Members'
 	
 	def __unicode__(self):
 		return self.name
+
 
 class CollectionMemberManager(models.Manager):
 	use_for_related_fields = True
@@ -246,7 +247,7 @@ class Node(InheritableTreeEntity):
 		return HttpResponseServerError()
 		
 	class Meta:
-		unique_together=(('parent', 'slug',),)
+		unique_together = (('parent', 'slug'),)
 
 
 class MultiNode(Node):
@@ -298,7 +299,7 @@ class File(Node):
 class Template(TreeModel):
 	name = models.CharField(max_length=255)
 	documentation = models.TextField(null=True, blank=True)
-	mimetype = models.CharField(max_length=255, null=True, blank=True, help_text='Default: %s' % settings.DEFAULT_CONTENT_TYPE, default=settings.DEFAULT_CONTENT_TYPE)
+	mimetype = models.CharField(max_length=255, null=True, blank=True, help_text='Default: %s' % settings.DEFAULT_CONTENT_TYPE)
 	code = models.TextField(verbose_name='django template code')
 	
 	@property

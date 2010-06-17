@@ -52,11 +52,42 @@ class CollectionAdmin(admin.ModelAdmin):
 	list_display = ('name', 'description', 'get_count')
 
 
+class NodeAdmin(EntityAdmin):
+	pass
+
+
+class ModelLookupWidget(forms.TextInput):
+	# is_hidden = False
+	
+	def __init__(self, content_type, attrs=None):
+		self.content_type = content_type
+		super(ModelLookupWidget, self).__init__(attrs)
+	
+	def render(self, name, value, attrs=None):
+		related_url = '../../../%s/%s/' % (self.content_type.app_label, self.content_type.model)
+		if attrs is None:
+			attrs = {}
+		if not attrs.has_key('class'):
+			attrs['class'] = 'vForeignKeyRawIdAdminField'
+		output = super(ModelLookupWidget, self).render(name, value, attrs)
+		output += '<a href="%s" class="related-lookup" id="lookup_id_%s" onclick="return showRelatedObjectLookupPopup(this);">' % (related_url, name)
+		output += '<img src="%simg/admin/selector-search.gif" width="16" height="16" alt="%s" />' % (settings.ADMIN_MEDIA_PREFIX, _('Lookup'))
+		output += '</a>'
+		if value:
+			value_class = self.content_type.model_class()
+			try:
+				value_object = value_class.objects.get(pk=value)
+				output += '&nbsp;<strong>%s</strong>' % escape(truncate_words(value_object, 14))
+			except value_class.DoesNotExist:
+				pass
+		return mark_safe(output)
+
+
 class TreeForm(forms.ModelForm):
 	def __init__(self, *args, **kwargs):
 		super(TreeForm, self).__init__(*args, **kwargs)
 		instance = self.instance
-		instance_class=self.get_instance_class()
+		instance_class = self.get_instance_class()
 		
 		if instance_class is not None:
 			try:
@@ -87,57 +118,6 @@ class TreeForm(forms.ModelForm):
 		return cleaned_data
 
 
-class TemplateAdmin(admin.ModelAdmin):
-	prepopulated_fields = {'slug': ('name',)}
-	fieldsets = (
-		(None, {
-			'fields': ('parent', 'name', 'slug')
-		}),
-		('Documentation', {
-			'classes': COLLAPSE_CLASSES,
-			'fields': ('documentation',)
-		}),
-		(None, {
-			'fields': ('code',)
-		}),
-		('Advanced', {
-			'classes': COLLAPSE_CLASSES,
-			'fields': ('mimetype',)
-		}),
-	)
-	save_on_top = True
-	save_as = True
-	list_display = ('__unicode__', 'slug', 'get_path',)
-	form = TreeForm
-
-
-class ModelLookupWidget(forms.TextInput):
-	# is_hidden = False
-	
-	def __init__(self, content_type, attrs=None):
-		self.content_type = content_type
-		super(ModelLookupWidget, self).__init__(attrs)
-	
-	def render(self, name, value, attrs=None):
-		related_url = '../../../%s/%s/' % (self.content_type.app_label, self.content_type.model)
-		if attrs is None:
-			attrs = {}
-		if not attrs.has_key('class'):
-			attrs['class'] = 'vForeignKeyRawIdAdminField'
-		output = super(ModelLookupWidget, self).render(name, value, attrs)
-		output += '<a href="%s" class="related-lookup" id="lookup_id_%s" onclick="return showRelatedObjectLookupPopup(this);">' % (related_url, name)
-		output += '<img src="%simg/admin/selector-search.gif" width="16" height="16" alt="%s" />' % (settings.ADMIN_MEDIA_PREFIX, _('Lookup'))
-		output += '</a>'
-		if value:
-			value_class = self.content_type.model_class()
-			try:
-				value_object = value_class.objects.get(pk=value)
-				output += '&nbsp;<strong>%s</strong>' % escape(truncate_words(value_object, 14))
-			except value_class.DoesNotExist:
-				pass
-		return mark_safe(output)
-
-
 class NodeForm(TreeForm):
 	def get_instance_class(self):
 		return Node
@@ -148,21 +128,17 @@ class NodeForm(TreeForm):
 
 class PageAdminForm(NodeForm):
 	class Meta:
-		model=Page
+		model = Page
 
 
 class RedirectAdminForm(NodeForm):
 	class Meta:
-		model=Redirect
+		model = Redirect
 
 
 class FileAdminForm(NodeForm):
 	class Meta:
-		model=File
-
-
-class NodeAdmin(EntityAdmin):
-	pass
+		model = File
 
 
 class RedirectAdmin(NodeAdmin):
@@ -281,15 +257,28 @@ class PageAdmin(NodeAdmin):
 					contentreference.save()
 
 
-class RedirectAdmin(admin.ModelAdmin):
-	list_display=('slug', 'target', 'path', 'status_code',)
-	list_filter=('status_code',)
-	form = RedirectAdminForm
-
-
-class FileAdmin(admin.ModelAdmin):
-	form=FileAdminForm
-	list_display=('slug', 'mimetype', 'path', 'file',)
+class TemplateAdmin(admin.ModelAdmin):
+	prepopulated_fields = {'slug': ('name',)}
+	fieldsets = (
+		(None, {
+			'fields': ('parent', 'name', 'slug')
+		}),
+		('Documentation', {
+			'classes': COLLAPSE_CLASSES,
+			'fields': ('documentation',)
+		}),
+		(None, {
+			'fields': ('code',)
+		}),
+		('Advanced', {
+			'classes': COLLAPSE_CLASSES,
+			'fields': ('mimetype',)
+		}),
+	)
+	save_on_top = True
+	save_as = True
+	list_display = ('__unicode__', 'slug', 'get_path',)
+	form = TreeForm
 
 
 admin.site.register(Collection, CollectionAdmin)

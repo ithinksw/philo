@@ -1,5 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
+from django.core.validators import URLValidator
+import re
 
 
 class TreeParentValidator(object):
@@ -43,6 +45,7 @@ class TreeParentValidator(object):
 		return self.static_message or _(u"A %s can't be its own parent." % self.instance.__class__.__name__)
 	message = property(get_message)
 	
+	
 class TreePositionValidator(object):
 	code = 'invalid'
 	
@@ -75,3 +78,25 @@ class TreePositionValidator(object):
 	def get_message(self):
 		return self.static_message or _(u"A %s with that path (parent and slug) already exists." % self.obj_class.__name__)
 	message = property(get_message)
+
+
+class URLRedirectValidator(URLValidator):
+	regex = re.compile(
+        r'^(?:https?://' # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|' #domain...
+        r'localhost|' #localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+        r'(?::\d+)?' # optional port
+        r'|)' # also allow internal redirects
+        r'(?:/?|[/?]?\S+)$', re.IGNORECASE)
+
+
+class URLLinkValidator(URLValidator):
+	regex = re.compile(
+        r'^(?:https?://' # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|' #domain...
+        r'localhost|' #localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+        r'(?::\d+)?' # optional port
+        r'|)' # also allow internal links
+        r'(?:/?|[/?#]?\S+)$', re.IGNORECASE)

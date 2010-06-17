@@ -228,7 +228,7 @@ class PageAdmin(NodeAdmin):
 				initial_content = None
 				try:
 					initial_content = page.contentreferences.get(name__exact=container_name, content_type=container_content_type).content.pk
-				except ContentReference.DoesNotExist:
+				except (ContentReference.DoesNotExist, AttributeError):
 					pass
 				form.base_fields[('contentreference_container_%s' % container_name)] = forms.ModelChoiceField(label='References', widget=ModelLookupWidget(container_content_type), initial=initial_content, required=False, queryset=container_content_type.model_class().objects.all())
 		return form
@@ -249,10 +249,17 @@ class PageAdmin(NodeAdmin):
 		for container_name, container_content_type in contentreference_containers:
 			if ('contentreference_container_%s' % container_name) in form.cleaned_data:
 				content = form.cleaned_data[('contentreference_container_%s' % container_name)]
-				contentreference, created = page.contentreferences.get_or_create(name=container_name, defaults={'content': content})
-				if not created:
-					contentreference.content = content
-					contentreference.save()
+				try:
+					contentreference = page.contentreferences.get(name=container_name)
+				except:
+					contentreference = ContentReference(name=container_name, page=page, content_type=container_content_type)
+					
+				if content == None:
+					contentreference.content_id = None
+				else:
+					contentreference.content_id = content.id
+				
+				contentreference.save()
 
 
 class TemplateAdmin(admin.ModelAdmin):

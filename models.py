@@ -213,7 +213,10 @@ class InheritableTreeEntity(TreeEntity):
 	
 	@property
 	def instance(self):
-		return self.instance_type.get_object_for_this_type(id=self.id)
+		try:
+			return self.instance_type.get_object_for_this_type(id=self.id)
+		except:
+			return None
 	
 	def get_path(self, pathsep='/', field='slug'):
 		path = getattr(self.instance, field, '?')
@@ -399,7 +402,7 @@ class ContentReference(models.Model):
 	page = models.ForeignKey(Page, related_name='contentreferences')
 	name = models.CharField(max_length=255)
 	content_type = models.ForeignKey(ContentType, verbose_name='Content type')
-	content_id = models.PositiveIntegerField(verbose_name='Content ID')
+	content_id = models.PositiveIntegerField(verbose_name='Content ID', blank=True, null=True)
 	content = generic.GenericForeignKey('content_type', 'content_id')
 	
 	def __unicode__(self):

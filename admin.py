@@ -251,7 +251,7 @@ class PageAdmin(NodeAdmin):
 				content = form.cleaned_data[('contentreference_container_%s' % container_name)]
 				try:
 					contentreference = page.contentreferences.get(name=container_name)
-				except:
+				except ContentReference.DoesNotExist:
 					contentreference = ContentReference(name=container_name, page=page, content_type=container_content_type)
 					
 				if content == None:

@@ -298,9 +298,6 @@ class File(Node):
 		response = HttpResponse(wrapper, content_type=self.mimetype)
 		response['Content-Length'] = self.file.size
 		return response
-	
-	def __unicode__(self):
-		return self.file
 
 
 class Template(TreeModel):

@@ -283,6 +283,9 @@ class Redirect(Node):
 		response = HttpResponseRedirect(self.target)
 		response.status_code = self.status_code
 		return response
+	
+	def __unicode__(self):
+		return self.slug
 
 
 class File(Node):

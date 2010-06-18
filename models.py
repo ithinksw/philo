@@ -220,10 +220,10 @@ class InheritableTreeEntity(TreeEntity):
 			return None
 	
 	def get_path(self, pathsep='/', field='slug'):
-		path = getattr(self.instance, field, '?')
+		path = getattr(self.instance, field, getattr(self.instance, 'slug', '?'))
 		parent = self.parent
 		while parent:
-			path = getattr(parent.instance, field, '?') + pathsep + path
+			path = getattr(parent.instance, field, getattr(parent.instance, 'slug', '?')) + pathsep + path
 			parent = parent.parent
 		return path
 	path = property(get_path)

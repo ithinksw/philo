@@ -292,8 +292,8 @@ class File(Node):
 		response['Content-Length'] = self.file.size
 		return response
 	
-	def __unicode__(self):
-		return self.file
+#	def __unicode__(self):
+#		return self.file
 
 
 class Template(TreeModel):

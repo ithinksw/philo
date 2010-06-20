@@ -1,5 +1,6 @@
 from django.db import models
 from philo.models import Entity, MultiNode, Template, register_value_model
+from django.core.paginator import Paginator, InvalidPage, EmptyPage
 from django.contrib.auth.models import User
 from django.conf.urls.defaults import url, patterns
 from django.http import Http404, HttpResponse
@@ -58,8 +59,11 @@ class BlogNode(MultiNode):
 	blog = models.ForeignKey(Blog, related_name='nodes')
 	
 	index_template = models.ForeignKey(Template, related_name='blog_index_related')
+	index_pages = models.IntegerField(help_text="Please enter a number between 0 and 9999.")
 	archive_template = models.ForeignKey(Template, related_name='blog_archive_related')
+	archive_pages = models.IntegerField(help_text="Please enter a number between 0 and 9999.")
 	tag_template = models.ForeignKey(Template, related_name='blog_tag_related')
+	tag_pages = models.IntegerField(help_text="Please enter a number between 0 and 9999.")
 	entry_template = models.ForeignKey(Template, related_name='blog_entry_related')
 	
 	entry_permalink_style = models.CharField(max_length=1, choices=PERMALINK_STYLE_CHOICES)
@@ -104,7 +108,23 @@ class BlogNode(MultiNode):
 	
 	def index_view(self, request):
 		entries = self.blog.entries.order_by('-date')
-		return HttpResponse(self.index_template.django_template.render(RequestContext(request, {'blog': self.blog, 'entries': entries})), mimetype=self.index_template.mimetype)
+		if self.index_pages != 0:
+			paginator = Paginator(entries, self.index_pages)
+			try:
+				page = int(request.GET.get('page', '1'))
+				entries = paginator.page(page).object_list
+				page_number = paginator.page(page)
+			except ValueError:
+				page = 1
+				entries = paginator.page(page).object_list
+				page_number = paginator.page(page)
+			try:
+				entries = paginator.page(page).object_list
+				page_number = paginator.page(page)
+			except (EmptyPage, InvalidPage):
+				entries = paginator.page(paginator.num_pages).object_list
+				page_number = paginator.page(page)
+		return HttpResponse(self.index_template.django_template.render(RequestContext(request, {'blog': self.blog, 'entries': entries, 'page_number': page_number})), mimetype=self.index_template.mimetype)
 	
 	def archive_view(self, request, year=None, month=None, day=None):
 		entries = self.blog.entries.all()

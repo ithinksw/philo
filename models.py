@@ -19,7 +19,7 @@ from django.template.loader import get_template
 from django.http import Http404, HttpResponse, HttpResponseServerError, HttpResponseRedirect
 from django.core.servers.basehttp import FileWrapper
 from django.conf import settings
-from philo.validators import URLRedirectValidator
+from philo.validators import RedirectValidator
 
 
 def register_value_model(model):
@@ -276,7 +276,7 @@ class Redirect(Node):
 		(302, 'Temporary'),
 		(301, 'Permanent'),
 	)
-	target = models.CharField(max_length=200,validators=[URLRedirectValidator()])
+	target = models.CharField(max_length=200,validators=[RedirectValidator()])
 	status_code = models.IntegerField(choices=STATUS_CODES, default=302, verbose_name='redirect type')
 	
 	def render_to_response(self, request, path=None, subpath=None):

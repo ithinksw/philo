@@ -253,7 +253,7 @@ class PageAdmin(NodeAdmin):
 					contentreference = page.contentreferences.get(name=container_name)
 				except ContentReference.DoesNotExist:
 					contentreference = ContentReference(name=container_name, page=page, content_type=container_content_type)
-					
+				
 				if content == None:
 					contentreference.content_id = None
 				else:

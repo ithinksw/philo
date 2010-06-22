@@ -44,8 +44,8 @@ class TreeParentValidator(object):
 	def get_message(self):
 		return self.static_message or _(u"A %s can't be its own parent." % self.instance.__class__.__name__)
 	message = property(get_message)
-	
-	
+
+
 class TreePositionValidator(object):
 	code = 'invalid'
 	
@@ -54,7 +54,7 @@ class TreePositionValidator(object):
 		self.slug = slug
 		self.obj_class = obj_class
 		self.static_message = message
-			
+		
 		if code is not None:
 			self.code = code
 	
@@ -71,7 +71,7 @@ class TreePositionValidator(object):
 			
 			if obj.id != value.id:
 				raise ValidationError(self.message)
-				
+		
 		except self.obj_class.DoesNotExist:
 			pass
 	

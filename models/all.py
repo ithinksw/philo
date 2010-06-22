@@ -50,6 +50,9 @@ class Attribute(models.Model):
 	
 	def __unicode__(self):
 		return u'"%s": %s' % (self.key, self.value)
+	
+	class Meta:
+		app_label = 'philo'
 
 
 class Relationship(models.Model):
@@ -63,6 +66,9 @@ class Relationship(models.Model):
 	
 	def __unicode__(self):
 		return u'"%s": %s' % (self.key, self.value)
+	
+	class Meta:
+		app_label = 'philo'
 
 
 class QuerySetMapper(object, DictMixin):
@@ -97,6 +103,7 @@ class Entity(models.Model):
 	
 	class Meta:
 		abstract = True
+		app_label = 'philo'
 
 
 class Collection(models.Model):
@@ -109,6 +116,9 @@ class Collection(models.Model):
 	
 	def __unicode__(self):
 		return self.name
+	
+	class Meta:
+		app_label = 'philo'
 
 
 class CollectionMemberManager(models.Manager):
@@ -128,6 +138,9 @@ class CollectionMember(models.Model):
 	
 	def __unicode__(self):
 		return u'%s - %s' % (self.collection, self.member)
+	
+	class Meta:
+		app_label = 'philo'
 
 
 class TreeManager(models.Manager):
@@ -185,6 +198,7 @@ class TreeModel(models.Model):
 	
 	class Meta:
 		abstract = True
+		app_label = 'philo'
 
 
 class TreeEntity(TreeModel, Entity):
@@ -202,6 +216,7 @@ class TreeEntity(TreeModel, Entity):
 	
 	class Meta:
 		abstract = True
+		app_label = 'philo'
 
 
 class InheritableTreeEntity(TreeEntity):
@@ -242,6 +257,7 @@ class InheritableTreeEntity(TreeEntity):
 	
 	class Meta:
 		abstract = True
+		app_label = 'philo'
 
 
 class Node(InheritableTreeEntity):
@@ -252,6 +268,7 @@ class Node(InheritableTreeEntity):
 		
 	class Meta:
 		unique_together = (('parent', 'slug'),)
+		app_label = 'philo'
 
 
 class MultiNode(Node):
@@ -269,6 +286,7 @@ class MultiNode(Node):
 	
 	class Meta:
 		abstract = True
+		app_label = 'philo'
 
 
 class Redirect(Node):
@@ -283,6 +301,9 @@ class Redirect(Node):
 		response = HttpResponseRedirect(self.target)
 		response.status_code = self.status_code
 		return response
+	
+	class Meta:
+		app_label = 'philo'
 
 
 class File(Node):
@@ -295,6 +316,9 @@ class File(Node):
 		response = HttpResponse(wrapper, content_type=self.mimetype)
 		response['Content-Length'] = self.file.size
 		return response
+	
+	class Meta:
+		app_label = 'philo'
 
 
 class Template(TreeModel):
@@ -366,6 +390,9 @@ class Template(TreeModel):
 		except Template.DoesNotExist:
 			raise TemplateDoesNotExist(template_name)
 		return (template.code, template.origin)
+	
+	class Meta:
+		app_label = 'philo'
 
 
 class Page(Node):
@@ -380,6 +407,9 @@ class Page(Node):
 	
 	def __unicode__(self):
 		return self.get_path(u' › ', 'title')
+	
+	class Meta:
+		app_label = 'philo'
 
 
 # the following line enables the selection of a node as the root for a given django.contrib.sites Site object
@@ -394,6 +424,9 @@ class Contentlet(models.Model):
 	
 	def __unicode__(self):
 		return self.name
+	
+	class Meta:
+		app_label = 'philo'
 
 
 class ContentReference(models.Model):
@@ -405,6 +438,9 @@ class ContentReference(models.Model):
 	
 	def __unicode__(self):
 		return self.name
+	
+	class Meta:
+		app_label = 'philo'
 
 
 register_templatetags('philo.templatetags.containers')

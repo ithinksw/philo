@@ -1,5 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
+from django.core.validators import RegexValidator
+import re
 
 
 class TreeParentValidator(object):
@@ -42,7 +44,8 @@ class TreeParentValidator(object):
 	def get_message(self):
 		return self.static_message or _(u"A %s can't be its own parent." % self.instance.__class__.__name__)
 	message = property(get_message)
-	
+
+
 class TreePositionValidator(object):
 	code = 'invalid'
 	
@@ -51,7 +54,7 @@ class TreePositionValidator(object):
 		self.slug = slug
 		self.obj_class = obj_class
 		self.static_message = message
-			
+		
 		if code is not None:
 			self.code = code
 	
@@ -68,10 +71,37 @@ class TreePositionValidator(object):
 			
 			if obj.id != value.id:
 				raise ValidationError(self.message)
-				
+		
 		except self.obj_class.DoesNotExist:
 			pass
 	
 	def get_message(self):
 		return self.static_message or _(u"A %s with that path (parent and slug) already exists." % self.obj_class.__name__)
 	message = property(get_message)
+
+
+class RedirectValidator(RegexValidator):
+	"""Based loosely on the URLValidator, but no option to verify_exists"""
+	regex = re.compile(
+		r'^(?:https?://' # http:// or https://
+		r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|' #domain...
+		r'localhost|' #localhost...
+		r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+		r'(?::\d+)?' # optional port
+		r'(?:/?|[/?#]?\S+)|'
+		r'[^?#\s]\S*)$',
+		re.IGNORECASE)
+	message = _(u'Enter a valid absolute or relative redirect target')
+
+
+class URLLinkValidator(RegexValidator):
+	"""Based loosely on the URLValidator, but no option to verify_exists"""
+	regex = re.compile(
+		r'^(?:https?://' # http:// or https://
+		r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|' #domain...
+		r'localhost|' #localhost...
+		r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+		r'(?::\d+)?' # optional port
+		r'|)' # also allow internal links
+		r'(?:/?|[/?#]?\S+)$', re.IGNORECASE)
+	message = _(u'Enter a valid absolute or relative redirect target')

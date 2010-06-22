@@ -19,6 +19,7 @@ from django.template.loader import get_template
 from django.http import Http404, HttpResponse, HttpResponseServerError, HttpResponseRedirect
 from django.core.servers.basehttp import FileWrapper
 from django.conf import settings
+from philo.validators import RedirectValidator
 
 
 def register_value_model(model):
@@ -213,13 +214,16 @@ class InheritableTreeEntity(TreeEntity):
 	
 	@property
 	def instance(self):
-		return self.instance_type.get_object_for_this_type(id=self.id)
+		try:
+			return self.instance_type.get_object_for_this_type(id=self.id)
+		except:
+			return None
 	
 	def get_path(self, pathsep='/', field='slug'):
-		path = getattr(self.instance, field, '?')
+		path = getattr(self.instance, field, getattr(self.instance, 'slug', '?'))
 		parent = self.parent
 		while parent:
-			path = getattr(parent.instance, field, '?') + pathsep + path
+			path = getattr(parent.instance, field, getattr(parent.instance, 'slug', '?')) + pathsep + path
 			parent = parent.parent
 		return path
 	path = property(get_path)
@@ -272,7 +276,7 @@ class Redirect(Node):
 		(302, 'Temporary'),
 		(301, 'Permanent'),
 	)
-	target = models.URLField(help_text='Must be a valid, absolute URL (i.e. http://)')
+	target = models.CharField(max_length=200,validators=[RedirectValidator()])
 	status_code = models.IntegerField(choices=STATUS_CODES, default=302, verbose_name='redirect type')
 	
 	def render_to_response(self, request, path=None, subpath=None):
@@ -396,7 +400,7 @@ class ContentReference(models.Model):
 	page = models.ForeignKey(Page, related_name='contentreferences')
 	name = models.CharField(max_length=255)
 	content_type = models.ForeignKey(ContentType, verbose_name='Content type')
-	content_id = models.PositiveIntegerField(verbose_name='Content ID')
+	content_id = models.PositiveIntegerField(verbose_name='Content ID', blank=True, null=True)
 	content = generic.GenericForeignKey('content_type', 'content_id')
 	
 	def __unicode__(self):

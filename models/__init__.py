@@ -1,1 +1,1 @@
-from philo.models.all import *
+from philo.models.base import *

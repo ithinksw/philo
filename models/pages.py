@@ -10,7 +10,6 @@ from django.template import Context, RequestContext
 from django.template.loader import get_template
 from django.template.loader_tags import ExtendsNode, ConstantIncludeNode, IncludeNode
 from django.http import HttpResponse
-from django.contrib.sites.models import Site
 from philo.models.base import TreeModel, register_value_model
 from philo.models.nodes import Node
 from philo.utils import fattr
@@ -106,10 +105,6 @@ class Page(Node):
 	
 	class Meta:
 		app_label = 'philo'
-
-
-# the following line enables the selection of a node as the root for a given django.contrib.sites Site object
-models.ForeignKey(Node, related_name='sites', null=True, blank=True).contribute_to_class(Site, 'root_node')
 
 
 class Contentlet(models.Model):

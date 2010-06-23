@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.sites.models import Site
 from django.http import HttpResponse, HttpResponseServerError, HttpResponseRedirect
 from django.core.servers.basehttp import FileWrapper
 from philo.models.base import InheritableTreeEntity
@@ -14,6 +15,10 @@ class Node(InheritableTreeEntity):
 	class Meta:
 		unique_together = (('parent', 'slug'),)
 		app_label = 'philo'
+
+
+# the following line enables the selection of a node as the root for a given django.contrib.sites Site object
+models.ForeignKey(Node, related_name='sites', null=True, blank=True).contribute_to_class(Site, 'root_node')
 
 
 class MultiNode(Node):

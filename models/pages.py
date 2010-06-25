@@ -11,7 +11,7 @@ from django.template.loader import get_template
 from django.template.loader_tags import ExtendsNode, ConstantIncludeNode, IncludeNode
 from django.http import HttpResponse
 from philo.models.base import TreeModel, register_value_model
-from philo.models.nodes import Node
+from philo.models.nodes import View
 from philo.utils import fattr
 from philo.templatetags.containers import ContainerNode
 
@@ -90,18 +90,18 @@ class Template(TreeModel):
 		app_label = 'philo'
 
 
-class Page(Node):
+class Page(View):
 	"""
 	Represents a page - something which is rendered according to a template. The page will have a number of related Contentlets depending on the template selected - but these will appear only after the page has been saved with that template.
 	"""
 	template = models.ForeignKey(Template, related_name='pages')
 	title = models.CharField(max_length=255)
 	
-	def render_to_response(self, request, path=None, subpath=None):
+	def render_to_response(self, node, request, path=None, subpath=None):
 		return HttpResponse(self.template.django_template.render(RequestContext(request, {'page': self})), mimetype=self.template.mimetype)
 	
 	def __unicode__(self):
-		return self.get_path(u' › ', 'title')
+		return self.title
 	
 	class Meta:
 		app_label = 'philo'

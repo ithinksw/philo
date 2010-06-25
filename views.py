@@ -17,6 +17,6 @@ def node_view(request, path=None, **kwargs):
 		raise Http404
 	if not node:
 		raise Http404
-	if subpath and not node.instance.accepts_subpath:
+	if subpath and not node.accepts_subpath:
 		raise Http404
-	return node.instance.render_to_response(request, path=path, subpath=subpath)
+	return node.render_to_response(request, path=path, subpath=subpath)

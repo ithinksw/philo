@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
-from philo.models.base import register_value_model
+from philo.models.base import value_content_type_limiter, register_value_model
 from philo.utils import fattr
 
 
@@ -31,7 +31,7 @@ class CollectionMember(models.Model):
 	objects = CollectionMemberManager()
 	collection = models.ForeignKey(Collection, related_name='members')
 	index = models.PositiveIntegerField(verbose_name='Index', help_text='This will determine the ordering of the item within the collection. (Optional)', null=True, blank=True)
-	member_content_type = models.ForeignKey(ContentType, verbose_name='Member type')
+	member_content_type = models.ForeignKey(ContentType, limit_choices_to=value_content_type_limiter, verbose_name='Member type')
 	member_object_id = models.PositiveIntegerField(verbose_name='Member ID')
 	member = generic.GenericForeignKey('member_content_type', 'member_object_id')
 	

@@ -1,5 +1,5 @@
 from django.db import models
-from philo.models import Entity, MultiNode, Template, register_value_model
+from philo.models import Entity, MultiView, Template, register_value_model
 from django.contrib.auth.models import User
 from django.conf.urls.defaults import url, patterns
 from django.http import Http404, HttpResponse
@@ -46,7 +46,7 @@ class BlogEntry(Entity, Titled):
 register_value_model(BlogEntry)
 
 
-class BlogNode(MultiNode):
+class BlogView(MultiView):
 	PERMALINK_STYLE_CHOICES = (
 		('D', 'Year, month, and day'),
 		('M', 'Year and month'),

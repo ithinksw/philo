@@ -19,8 +19,8 @@ class MembersofNode(template.Node):
 		except:
 			pass
 		return settings.TEMPLATE_STRING_IF_INVALID
-	
-	
+
+
 def do_membersof(parser, token):
 	"""
 	{% membersof <collection> with <model> as <var> %}

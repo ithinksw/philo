@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import url, include, patterns, handler404, handler500
+from django.conf.urls.defaults import patterns, url
 from philo.views import node_view
 
 

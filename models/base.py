@@ -3,15 +3,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.utils import simplejson as json
 from django.core.exceptions import ObjectDoesNotExist
+from philo.utils import ContentTypeRegistryLimiter
 from UserDict import DictMixin
-
-
-def register_value_model(model):
-	pass
-
-
-def unregister_value_model(model):
-	pass
 
 
 class Attribute(models.Model):
@@ -39,12 +32,24 @@ class Attribute(models.Model):
 		app_label = 'philo'
 
 
+value_content_type_limiter = ContentTypeRegistryLimiter()
+
+
+def register_value_model(model):
+	value_content_type_limiter.register_class(model)
+
+
+def unregister_value_model(model):
+	value_content_type_limiter.unregister_class(model)
+
+
+
 class Relationship(models.Model):
 	entity_content_type = models.ForeignKey(ContentType, related_name='relationship_entity_set', verbose_name='Entity type')
 	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID')
 	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
 	key = models.CharField(max_length=255)
-	value_content_type = models.ForeignKey(ContentType, related_name='relationship_value_set', verbose_name='Value type')
+	value_content_type = models.ForeignKey(ContentType, related_name='relationship_value_set', limit_choices_to=value_content_type_limiter, verbose_name='Value type')
 	value_object_id = models.PositiveIntegerField(verbose_name='Value ID')
 	value = generic.GenericForeignKey('value_content_type', 'value_object_id')
 	
@@ -144,6 +149,7 @@ class TreeModel(models.Model):
 		return self.path
 	
 	class Meta:
+		unique_together = (('parent', 'slug'),)
 		abstract = True
 		app_label = 'philo'
 
@@ -160,47 +166,6 @@ class TreeEntity(TreeModel, Entity):
 		if self.parent:
 			return QuerySetMapper(self.relationship_set, passthrough=self.parent.relationships)
 		return super(TreeEntity, self).relationships
-	
-	class Meta:
-		abstract = True
-		app_label = 'philo'
-
-
-class InheritableTreeEntity(TreeEntity):
-	instance_type = models.ForeignKey(ContentType, editable=False)
-	
-	def save(self, force_insert=False, force_update=False):
-		if not hasattr(self, 'instance_type_ptr'):
-			self.instance_type = ContentType.objects.get_for_model(self.__class__)
-		super(InheritableTreeEntity, self).save(force_insert, force_update)
-	
-	@property
-	def instance(self):
-		try:
-			return self.instance_type.get_object_for_this_type(id=self.id)
-		except:
-			return None
-	
-	def get_path(self, pathsep='/', field='slug'):
-		path = getattr(self.instance, field, getattr(self.instance, 'slug', '?'))
-		parent = self.parent
-		while parent:
-			path = getattr(parent.instance, field, getattr(parent.instance, 'slug', '?')) + pathsep + path
-			parent = parent.parent
-		return path
-	path = property(get_path)
-	
-	@property
-	def attributes(self):
-		if self.parent:
-			return QuerySetMapper(self.instance.attribute_set, passthrough=self.parent.instance.attributes)
-		return QuerySetMapper(self.instance.attribute_set)
-
-	@property
-	def relationships(self):
-		if self.parent:
-			return QuerySetMapper(self.instance.relationship_set, passthrough=self.parent.instance.relationships)
-		return QuerySetMapper(self.instance.relationship_set)
 	
 	class Meta:
 		abstract = True

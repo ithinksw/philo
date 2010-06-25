@@ -1,4 +1,4 @@
-from models import BlogEntry, Blog, BlogNode
+from models import BlogEntry, Blog, BlogView
 from django.contrib import admin
 from philo.admin import EntityAdmin
 
@@ -16,10 +16,10 @@ class BlogEntryAdmin(TitledAdmin):
 	pass
 
 
-class BlogNodeAdmin(EntityAdmin):
+class BlogViewAdmin(EntityAdmin):
 	pass
 
 
 admin.site.register(Blog, BlogAdmin)
 admin.site.register(BlogEntry, BlogEntryAdmin)
-admin.site.register(BlogNode, BlogNodeAdmin)
+admin.site.register(BlogView, BlogViewAdmin)

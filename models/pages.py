@@ -97,8 +97,11 @@ class Page(View):
 	template = models.ForeignKey(Template, related_name='pages')
 	title = models.CharField(max_length=255)
 	
-	def render_to_response(self, node, request, path=None, subpath=None):
-		return HttpResponse(self.template.django_template.render(RequestContext(request, {'page': self})), mimetype=self.template.mimetype)
+	def render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
+		context = {}
+		context.update(extra_context or {})
+		context.update({'page': self, 'attributes': self.attributes_with_node(node), 'relationships': self.relationships_with_node(node)})
+		return HttpResponse(self.template.django_template.render(RequestContext(request, context)), mimetype=self.template.mimetype)
 	
 	def __unicode__(self):
 		return self.title

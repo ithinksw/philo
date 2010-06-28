@@ -1,16 +1,6 @@
 from django.contrib import admin
-#from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
-#from django import forms
-#from django.conf import settings
-#from django.utils.translation import ugettext as _
-#from django.utils.safestring import mark_safe
-#from django.utils.html import escape
-#from django.utils.text import truncate_words
-from philo.models import *
-#from philo.admin import widgets
-#from django.core.exceptions import ValidationError, ObjectDoesNotExist
-#from validators import TreeParentValidator, TreePositionValidator
+from philo.models import Attribute, Relationship
 
 
 COLLAPSE_CLASSES = ('collapse', 'collapse-closed', 'closed',)

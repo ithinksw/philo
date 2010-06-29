@@ -4,6 +4,8 @@ from django.contrib.contenttypes import generic
 from django.contrib.sites.models import Site
 from django.http import HttpResponse, HttpResponseServerError, HttpResponseRedirect
 from django.core.servers.basehttp import FileWrapper
+from django.core.urlresolvers import resolve
+from inspect import getargspec
 from philo.models.base import TreeEntity, Entity, QuerySetMapper
 from philo.utils import ContentTypeSubclassLimiter
 from philo.validators import RedirectValidator
@@ -62,8 +64,14 @@ class MultiView(View):
 		if not subpath:
 			subpath = ""
 		subpath = "/" + subpath
-		from django.core.urlresolvers import resolve
 		view, args, kwargs = resolve(subpath, urlconf=self)
+		view_args = getargspec(view)[0]
+		if extra_context is not None and 'extra_context' in view_args:
+			if 'extra_context' in kwargs:
+				extra_context.update(kwargs['extra_context'])
+			kwargs['extra_context'] = extra_context
+		if 'node' in view_args:
+			kwargs['node'] = node
 		return view(request, *args, **kwargs)
 	
 	class Meta:

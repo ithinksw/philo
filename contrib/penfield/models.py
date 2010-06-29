@@ -8,7 +8,10 @@ from datetime import datetime
 
 
 class Blog(Entity, Titled):
-	pass
+	@property
+	def entry_tags(self):
+		""" Returns a QuerySet of Tags that are used on any entries in this blog. """
+		return Tag.objects.filter(blogentries__blog=self)
 
 
 class BlogEntry(Entity, Titled):
@@ -17,11 +20,11 @@ class BlogEntry(Entity, Titled):
 	date = models.DateTimeField(default=datetime.now)
 	content = models.TextField()
 	excerpt = models.TextField()
-	tags = models.ManyToManyField(Tag)
+	tags = models.ManyToManyField(Tag, related_name='blogentries')
 	
 	class Meta:
 		ordering = ['-date']
-		verbose_name_plural = "Blog Entries"
+		verbose_name_plural = "blog entries"
 
 
 register_value_model(BlogEntry)
@@ -84,8 +87,7 @@ class BlogView(MultiView):
 		return base_patterns + entry_patterns
 	
 	def index_view(self, request):
-		entries = self.blog.entries.order_by('-date')
-		return HttpResponse(self.index_template.django_template.render(RequestContext(request, {'blog': self.blog, 'entries': entries})), mimetype=self.index_template.mimetype)
+		return HttpResponse(self.index_template.django_template.render(RequestContext(request, {'blog': self.blog})), mimetype=self.index_template.mimetype)
 	
 	def archive_view(self, request, year=None, month=None, day=None):
 		entries = self.blog.entries.all()
@@ -98,8 +100,8 @@ class BlogView(MultiView):
 		return HttpResponse(self.archive_template.django_template.render(RequestContext(request, {'blog': self.blog, 'year': year, 'month': month, 'day': day, 'entries': entries})), mimetype=self.archive_template.mimetype)
 	
 	def tag_view(self, request, tag=None):
-		# return HttpResponse(self.tag_template.django_template.render(RequestContext(request, {'blog': self.blog, 'tag': tag, 'entries': None})), mimetype=self.tag_template.mimetype)
-		raise Http404
+		entries = self.blog.entries.filter(tags__slug=tag)
+		return HttpResponse(self.tag_template.django_template.render(RequestContext(request, {'blog': self.blog, 'tag': tag, 'entries': entries})), mimetype=self.tag_template.mimetype)
 	
 	def entry_view(self, request, slug, year=None, month=None, day=None):
 		entries = self.blog.entries.all()

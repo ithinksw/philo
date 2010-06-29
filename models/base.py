@@ -7,6 +7,25 @@ from philo.utils import ContentTypeRegistryLimiter
 from UserDict import DictMixin
 
 
+class Tag(models.Model):
+	name = models.CharField(max_length=250)
+	slug = models.SlugField()
+	
+	def __unicode__(self):
+		return self.name
+
+
+class Titled(models.Model):
+	title = models.CharField(max_length=255)
+	slug = models.SlugField()
+	
+	def __unicode__(self):
+		return self.title
+	
+	class Meta:
+		abstract = True
+
+
 class Attribute(models.Model):
 	entity_content_type = models.ForeignKey(ContentType, verbose_name='Entity type')
 	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID')

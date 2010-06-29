@@ -36,7 +36,7 @@ class BlogView(MultiView):
 		('N', 'No base')
 	)
 	
-	blog = models.ForeignKey(Blog, related_name='nodes')
+	blog = models.ForeignKey(Blog, related_name='blogviews')
 	
 	index_template = models.ForeignKey(Template, related_name='blog_index_related')
 	archive_template = models.ForeignKey(Template, related_name='blog_archive_related')
@@ -121,11 +121,58 @@ class Newsletter(Entity, Titled):
 
 
 class NewsletterArticle(Entity, Titled):
-	newsletter = models.ForeignKey(Newsletter, related_name='stories')
-	authors = models.ManyToManyField(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='newsstories')
+	newsletter = models.ForeignKey(Newsletter, related_name='articles')
+	authors = models.ManyToManyField(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='newsletterarticles')
 	date = models.DateTimeField(default=datetime.now)
 	lede = models.TextField(null=True, blank=True)
 	full_text = models.TextField()
 
 
 register_value_model(NewsletterArticle)
+
+
+class NewsletterIssue(Entity, Titled):
+	newsletter = models.ForeignKey(Newsletter, related_name='issues')
+	number = models.PositiveIntegerField()
+	articles = models.ManyToManyField(NewsletterArticle)
+
+
+class NewsletterView(MultiView):
+	newsletter = models.ForeignKey(Newsletter, related_name='newsletterviews')
+	
+	index_template = models.ForeignKey(Template, related_name='newsletter_index_related')
+	article_template = models.ForeignKey(Template, related_name='newsletter_article_related')
+	issue_template = models.ForeignKey(Template, related_name='newsletter_issue_related')
+	
+	@property
+	def urlpatterns(self):
+		base_patterns = patterns('',
+			url(r'^$', self.index_view),
+			url(r'^articles/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d+)/(?P<slug>[-\w]+)/?', self.article_view),
+			url(r'^issues/(?P<number>\d+)/?', self.issue_view),
+		)
+		return base_patterns
+	
+	def index_view(self, request):
+		return HttpResponse(self.index_template.django_template.render(RequestContext(request, {'newsletter': self.newsletter})), mimetype=self.index_template.mimetype)
+	
+	def article_view(self, request, slug, year=None, month=None, day=None):
+		articles = self.newsletter.articles.all()
+		if year:
+			articles = articles.filter(date__year=year)
+		if month:
+			articles = articles.filter(date__month=month)
+		if day:
+			articles = articles.filter(date__day=day)
+		try:
+			article = articles.get(slug=slug)
+		except:
+			raise Http404
+		return HttpResponse(self.article_template.django_template.render(RequestContext(request, {'newsletter': self.newsletter, 'article': article})), mimetype=self.article_template.mimetype)
+	
+	def issue_view(self, request, number):
+		try:
+			issue = self.newsletter.issues.get(number=number)
+		except:
+			raise Http404
+		return HttpResponse(self.issue_template.django_template.render(RequestContext(request, {'newsletter': self.newsletter, 'issue': issue})), mimetype=self.issue_template.mimetype)

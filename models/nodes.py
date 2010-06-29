@@ -48,7 +48,6 @@ class View(Entity):
 	
 	class Meta:
 		abstract = True
-		app_label = 'philo'
 
 
 _view_content_type_limiter.cls = View
@@ -69,7 +68,6 @@ class MultiView(View):
 	
 	class Meta:
 		abstract = True
-		app_label = 'philo'
 
 
 class Redirect(View):

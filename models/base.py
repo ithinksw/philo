@@ -13,6 +13,9 @@ class Tag(models.Model):
 	
 	def __unicode__(self):
 		return self.name
+	
+	class Meta:
+		app_label = 'philo'
 
 
 class Titled(models.Model):
@@ -113,7 +116,6 @@ class Entity(models.Model):
 	
 	class Meta:
 		abstract = True
-		app_label = 'philo'
 
 
 class TreeManager(models.Manager):
@@ -172,7 +174,6 @@ class TreeModel(models.Model):
 	class Meta:
 		unique_together = (('parent', 'slug'),)
 		abstract = True
-		app_label = 'philo'
 
 
 class TreeEntity(TreeModel, Entity):
@@ -190,4 +191,3 @@ class TreeEntity(TreeModel, Entity):
 	
 	class Meta:
 		abstract = True
-		app_label = 'philo'

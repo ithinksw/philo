@@ -1,29 +1,10 @@
 from django.db import models
-from philo.models import Entity, MultiView, Template, register_value_model
-from django.contrib.auth.models import User
+from django.conf import settings
+from philo.models import Tag, Titled, Entity, MultiView, Template, register_value_model
 from django.conf.urls.defaults import url, patterns
 from django.http import Http404, HttpResponse
 from django.template import RequestContext
 from datetime import datetime
-
-
-class Tag(models.Model):
-	name = models.CharField(max_length=250)
-	slug = models.SlugField()
-	
-	def __unicode__(self):
-		return self.name
-
-
-class Titled(models.Model):
-	title = models.CharField(max_length=255)
-	slug = models.SlugField()
-	
-	def __unicode__(self):
-		return self.title
-	
-	class Meta:
-		abstract = True
 
 
 class Blog(Entity, Titled):
@@ -32,7 +13,7 @@ class Blog(Entity, Titled):
 
 class BlogEntry(Entity, Titled):
 	blog = models.ForeignKey(Blog, related_name='entries')
-	author = models.ForeignKey(User, related_name='blogentries')
+	author = models.ForeignKey(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='blogentries')
 	date = models.DateTimeField(default=datetime.now)
 	content = models.TextField()
 	excerpt = models.TextField()
@@ -139,12 +120,12 @@ class Newsletter(Entity, Titled):
 	pass
 
 
-class NewsStory(Entity, Titled):
+class NewsletterArticle(Entity, Titled):
 	newsletter = models.ForeignKey(Newsletter, related_name='stories')
-	authors = models.ManyToManyField(User, related_name='newsstories')
+	authors = models.ManyToManyField(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='newsstories')
 	date = models.DateTimeField(default=datetime.now)
 	lede = models.TextField(null=True, blank=True)
 	full_text = models.TextField()
 
 
-register_value_model(NewsStory)
+register_value_model(NewsletterArticle)

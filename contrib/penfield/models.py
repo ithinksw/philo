@@ -154,6 +154,10 @@ class NewsletterArticle(Entity, Titled):
 	date = models.DateTimeField(default=datetime.now)
 	lede = models.TextField(null=True, blank=True)
 	full_text = models.TextField()
+	
+	class Meta:
+		ordering = ['-date']
+		unique_together = (('newsletter', 'slug'),)
 
 
 register_value_model(NewsletterArticle)
@@ -163,6 +167,10 @@ class NewsletterIssue(Entity, Titled):
 	newsletter = models.ForeignKey(Newsletter, related_name='issues')
 	number = models.PositiveIntegerField()
 	articles = models.ManyToManyField(NewsletterArticle)
+	
+	class Meta:
+		ordering = ['-number']
+		unique_together = (('newsletter', 'number'),)
 
 
 class NewsletterView(MultiView):

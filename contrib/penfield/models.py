@@ -1,9 +1,8 @@
 from django.db import models
 from django.conf import settings
-from philo.models import Tag, Titled, Entity, MultiView, Template, register_value_model
+from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model
 from django.conf.urls.defaults import url, patterns
 from django.http import Http404, HttpResponse
-from django.template import RequestContext
 from datetime import datetime
 
 
@@ -41,10 +40,10 @@ class BlogView(MultiView):
 	
 	blog = models.ForeignKey(Blog, related_name='blogviews')
 	
-	index_template = models.ForeignKey(Template, related_name='blog_index_related')
-	archive_template = models.ForeignKey(Template, related_name='blog_archive_related')
-	tag_template = models.ForeignKey(Template, related_name='blog_tag_related')
-	entry_template = models.ForeignKey(Template, related_name='blog_entry_related')
+	index_page = models.ForeignKey(Page, related_name='blog_index_related')
+	archive_page = models.ForeignKey(Page, related_name='blog_archive_related')
+	tag_page = models.ForeignKey(Page, related_name='blog_tag_related')
+	entry_page = models.ForeignKey(Page, related_name='blog_entry_related')
 	
 	entry_permalink_style = models.CharField(max_length=1, choices=PERMALINK_STYLE_CHOICES)
 	entry_permalink_base = models.CharField(max_length=255, blank=False, default='entries')
@@ -86,10 +85,13 @@ class BlogView(MultiView):
 			)
 		return base_patterns + entry_patterns
 	
-	def index_view(self, request):
-		return HttpResponse(self.index_template.django_template.render(RequestContext(request, {'blog': self.blog})), mimetype=self.index_template.mimetype)
+	def index_view(self, request, node=None, extra_context=None):
+		context = {}
+		context.update(extra_context or {})
+		context.update({'blog': self.blog})
+		return self.index_page.render_to_response(node, request, extra_context=context)
 	
-	def archive_view(self, request, year=None, month=None, day=None):
+	def archive_view(self, request, year=None, month=None, day=None, node=None, extra_context=None):
 		entries = self.blog.entries.all()
 		if year:
 			entries = entries.filter(date__year=year)
@@ -97,13 +99,19 @@ class BlogView(MultiView):
 			entries = entries.filter(date__month=month)
 		if day:
 			entries = entries.filter(date__day=day)
-		return HttpResponse(self.archive_template.django_template.render(RequestContext(request, {'blog': self.blog, 'year': year, 'month': month, 'day': day, 'entries': entries})), mimetype=self.archive_template.mimetype)
+		context = {}
+		context.update(extra_context or {})
+		context.update({'blog': self.blog, 'year': year, 'month': month, 'day': day, 'entries': entries})
+		return self.archive_page.render_to_response(node, request, extra_context=context)
 	
-	def tag_view(self, request, tag=None):
+	def tag_view(self, request, tag=None, node=None, extra_context=None):
 		entries = self.blog.entries.filter(tags__slug=tag)
-		return HttpResponse(self.tag_template.django_template.render(RequestContext(request, {'blog': self.blog, 'tag': tag, 'entries': entries})), mimetype=self.tag_template.mimetype)
+		context = {}
+		context.update(extra_context or {})
+		context.update({'blog': self.blog, 'tag': tag, 'entries': entries})
+		return self.tag_page.render_to_response(node, request, extra_context=context)
 	
-	def entry_view(self, request, slug, year=None, month=None, day=None):
+	def entry_view(self, request, slug, year=None, month=None, day=None, node=None, extra_context=None):
 		entries = self.blog.entries.all()
 		if year:
 			entries = entries.filter(date__year=year)
@@ -115,7 +123,10 @@ class BlogView(MultiView):
 			entry = entries.get(slug=slug)
 		except:
 			raise Http404
-		return HttpResponse(self.entry_template.django_template.render(RequestContext(request, {'blog': self.blog, 'entry': entry})), mimetype=self.entry_template.mimetype)
+		context = {}
+		context.update(extra_context or {})
+		context.update({'blog': self.blog, 'entry': entry})
+		return self.entry_page.render_to_response(node, request, extra_context=context)
 
 
 class Newsletter(Entity, Titled):
@@ -142,9 +153,9 @@ class NewsletterIssue(Entity, Titled):
 class NewsletterView(MultiView):
 	newsletter = models.ForeignKey(Newsletter, related_name='newsletterviews')
 	
-	index_template = models.ForeignKey(Template, related_name='newsletter_index_related')
-	article_template = models.ForeignKey(Template, related_name='newsletter_article_related')
-	issue_template = models.ForeignKey(Template, related_name='newsletter_issue_related')
+	index_page = models.ForeignKey(Page, related_name='newsletter_index_related')
+	article_page = models.ForeignKey(Page, related_name='newsletter_article_related')
+	issue_page = models.ForeignKey(Page, related_name='newsletter_issue_related')
 	
 	@property
 	def urlpatterns(self):
@@ -155,10 +166,13 @@ class NewsletterView(MultiView):
 		)
 		return base_patterns
 	
-	def index_view(self, request):
-		return HttpResponse(self.index_template.django_template.render(RequestContext(request, {'newsletter': self.newsletter})), mimetype=self.index_template.mimetype)
+	def index_view(self, request, node=None, extra_context=None):
+		context = {}
+		context.update(extra_context or {})
+		context.update({'newsletter': self.newsletter})
+		return self.index_page.render_to_response(node, request, extra_context=context)
 	
-	def article_view(self, request, slug, year=None, month=None, day=None):
+	def article_view(self, request, slug, year=None, month=None, day=None, node=None, extra_context=None):
 		articles = self.newsletter.articles.all()
 		if year:
 			articles = articles.filter(date__year=year)
@@ -170,11 +184,17 @@ class NewsletterView(MultiView):
 			article = articles.get(slug=slug)
 		except:
 			raise Http404
-		return HttpResponse(self.article_template.django_template.render(RequestContext(request, {'newsletter': self.newsletter, 'article': article})), mimetype=self.article_template.mimetype)
+		context = {}
+		context.update(extra_context or {})
+		context.update({'newsletter': self.newsletter, 'article': article})
+		return self.article_page.render_to_response(node, request, extra_context=context)
 	
-	def issue_view(self, request, number):
+	def issue_view(self, request, number, node=None, extra_context=None):
 		try:
 			issue = self.newsletter.issues.get(number=number)
 		except:
 			raise Http404
-		return HttpResponse(self.issue_template.django_template.render(RequestContext(request, {'newsletter': self.newsletter, 'issue': issue})), mimetype=self.issue_template.mimetype)
+		context = {}
+		context.update(extra_context or {})
+		context.update({'newsletter': self.newsletter, 'issue': issue})
+		return self.issue_page.render_to_response(node, request, extra_context=context)

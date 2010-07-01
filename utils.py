@@ -40,16 +40,19 @@ class ContentTypeSubclassLimiter(ContentTypeLimiter):
 	
 	def q_object(self):
 		contenttype_pks = []
-		for subclass in self.cls.__subclasses__():
-			try:
-				if issubclass(subclass, models.Model):
-					if not subclass._meta.abstract:
-						if not self.inclusive and subclass is self.cls:
-							continue
-						contenttype = ContentType.objects.get_for_model(subclass)
-						contenttype_pks.append(contenttype.pk)
-			except:
-				pass
+		def handle_subclasses(cls):
+			for subclass in cls.__subclasses__():
+				try:
+					if issubclass(subclass, models.Model):
+						if not subclass._meta.abstract:
+							if not self.inclusive and subclass is self.cls:
+								continue
+							contenttype = ContentType.objects.get_for_model(subclass)
+							contenttype_pks.append(contenttype.pk)
+					handle_subclasses(subclass)
+				except:
+					pass
+		handle_subclasses(self.cls)
 		return models.Q(pk__in=contenttype_pks)
 
 

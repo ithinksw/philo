@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.contenttypes import generic
-from philo.models import Attribute, Relationship
+from philo.models import Tag, Attribute, Relationship
 
 
 COLLAPSE_CLASSES = ('collapse', 'collapse-closed', 'closed',)
@@ -27,3 +27,6 @@ class RelationshipInline(generic.GenericTabularInline):
 class EntityAdmin(admin.ModelAdmin):
 	inlines = [AttributeInline, RelationshipInline]
 	save_on_top = True
+
+
+admin.site.register(Tag)

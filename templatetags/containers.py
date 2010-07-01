@@ -32,9 +32,13 @@ class ContainerNode(template.Node):
 			container_content = self.get_container_content(context)
 		
 		if not self.nodelist_main:
-			if container_content and self.as_var:
+			if self.as_var:
 				context[self.as_var] = container_content
 				return ''
+			
+			if not container_content:
+				return ''
+			
 			return container_content
 		
 		if container_content:

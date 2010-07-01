@@ -20,7 +20,7 @@ class Tag(models.Model):
 
 class Titled(models.Model):
 	title = models.CharField(max_length=255)
-	slug = models.SlugField()
+	slug = models.SlugField(max_length=255)
 	
 	def __unicode__(self):
 		return self.title

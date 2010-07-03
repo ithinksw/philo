@@ -53,6 +53,9 @@ class BlogView(MultiView):
 	entry_permalink_base = models.CharField(max_length=255, blank=False, default='entries')
 	tag_permalink_base = models.CharField(max_length=255, blank=False, default='tags')
 	
+	def __unicode__(self):
+		return u'BlogView for %s' % self.blog.title
+	
 	@property
 	def urlpatterns(self):
 		base_patterns = patterns('',

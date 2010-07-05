@@ -50,7 +50,7 @@ class BlogView(MultiView):
 	entry_archive_page = models.ForeignKey(Page, related_name='blog_entry_archive_related', null=True, blank=True)
 	tag_page = models.ForeignKey(Page, related_name='blog_tag_related')
 	tag_archive_page = models.ForeignKey(Page, related_name='blog_tag_archive_related', null=True, blank=True)
-	entries_per_page = models.IntegerField(blank=True, validators=[validate_pagination_count])
+	entries_per_page = models.IntegerField(blank=True, validators=[validate_pagination_count], null=True)
 	
 	entry_permalink_style = models.CharField(max_length=1, choices=ENTRY_PERMALINK_STYLE_CHOICES)
 	entry_permalink_base = models.CharField(max_length=255, blank=False, default='entries')

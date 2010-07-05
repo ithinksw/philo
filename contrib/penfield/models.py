@@ -12,7 +12,7 @@ class Blog(Entity, Titled):
 	@property
 	def entry_tags(self):
 		""" Returns a QuerySet of Tags that are used on any entries in this blog. """
-		return Tag.objects.filter(blogentries__blog=self)
+		return Tag.objects.filter(blogentries__blog=self).distinct()
 
 
 register_value_model(Blog)
@@ -146,7 +146,7 @@ class BlogView(MultiView):
 	
 	def tag_view(self, request, tag, node=None, extra_context=None):
 		try:
-			tag = self.blog.entry_tags.filter(slug=tag)
+			tag = self.blog.entry_tags.get(slug=tag)
 		except:
 			raise Http404
 		entries = self.blog.entries.filter(tags=tag)

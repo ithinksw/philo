@@ -15,13 +15,16 @@ class Blog(Entity, Titled):
 		return Tag.objects.filter(blogentries__blog=self)
 
 
+register_value_model(Blog)
+
+
 class BlogEntry(Entity, Titled):
 	blog = models.ForeignKey(Blog, related_name='entries')
 	author = models.ForeignKey(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='blogentries')
 	date = models.DateTimeField(default=datetime.now)
 	content = models.TextField()
-	excerpt = models.TextField()
-	tags = models.ManyToManyField(Tag, related_name='blogentries')
+	excerpt = models.TextField(blank=True, null=True)
+	tags = models.ManyToManyField(Tag, related_name='blogentries', blank=True, null=True)
 	
 	class Meta:
 		ordering = ['-date']

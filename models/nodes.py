@@ -109,3 +109,6 @@ class File(View):
 	
 	class Meta:
 		app_label = 'philo'
+	
+	def __unicode__(self):
+		return self.file.name

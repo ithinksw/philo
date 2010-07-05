@@ -15,13 +15,16 @@ class Blog(Entity, Titled):
 		return Tag.objects.filter(blogentries__blog=self)
 
 
+register_value_model(Blog)
+
+
 class BlogEntry(Entity, Titled):
 	blog = models.ForeignKey(Blog, related_name='entries')
 	author = models.ForeignKey(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='blogentries')
 	date = models.DateTimeField(default=datetime.now)
 	content = models.TextField()
-	excerpt = models.TextField()
-	tags = models.ManyToManyField(Tag, related_name='blogentries')
+	excerpt = models.TextField(blank=True, null=True)
+	tags = models.ManyToManyField(Tag, related_name='blogentries', blank=True, null=True)
 	
 	class Meta:
 		ordering = ['-date']
@@ -47,7 +50,7 @@ class BlogView(MultiView):
 	entry_archive_page = models.ForeignKey(Page, related_name='blog_entry_archive_related', null=True, blank=True)
 	tag_page = models.ForeignKey(Page, related_name='blog_tag_related')
 	tag_archive_page = models.ForeignKey(Page, related_name='blog_tag_archive_related', null=True, blank=True)
-	entries_per_page = models.IntegerField(blank=True, validators=[validate_pagination_count])
+	entries_per_page = models.IntegerField(blank=True, validators=[validate_pagination_count], null=True)
 	
 	entry_permalink_style = models.CharField(max_length=1, choices=ENTRY_PERMALINK_STYLE_CHOICES)
 	entry_permalink_base = models.CharField(max_length=255, blank=False, default='entries')

@@ -29,4 +29,7 @@ class EntityAdmin(admin.ModelAdmin):
 	save_on_top = True
 
 
-admin.site.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+	prepopulated_fields = {"slug": ("name",)}
+
+admin.site.register(Tag, TagAdmin)

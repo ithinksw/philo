@@ -64,7 +64,7 @@ class BlogView(MultiView):
 		base_patterns = patterns('',
 			url(r'^$', self.index_view),
 			url((r'^(?:%s)/?$' % self.tag_permalink_base), self.tag_archive_view),
-			url((r'^(?:%s)/(?P<tag>[-\w]+)/?$' % self.tag_permalink_base), self.tag_view)
+			url((r'^(?:%s)/(?P<tag_slugs>[-\w]+[-+/\w]*)/?$' % self.tag_permalink_base), self.tag_view)
 		)
 		if self.entry_permalink_style == 'D':
 			entry_patterns = patterns('',
@@ -144,12 +144,24 @@ class BlogView(MultiView):
 		context.update({'blog': self.blog, 'year': year, 'month': month, 'day': day, 'entries': entries, 'paginated_page': paginated_page})
 		return self.entry_archive_page.render_to_response(node, request, extra_context=context)
 	
-	def tag_view(self, request, tag, node=None, extra_context=None):
-		try:
-			tag = self.blog.entry_tags.get(slug=tag)
-		except:
+	def tag_view(self, request, tag_slugs, node=None, extra_context=None):
+		tags = []
+		for tag_slug in tag_slugs.replace('+', '/').split('/'):
+			if tag_slug: # ignore blank slugs, handles for multiple consecutive separators (+ or /)
+				try:
+					tag = self.blog.entry_tags.get(slug=tag_slug)
+				except:
+					raise Http404
+				tags.append(tag)
+		if len(tags) <= 0:
 			raise Http404
-		entries = self.blog.entries.filter(tags=tag)
+		
+		entries = self.blog.entries.all()
+		for tag in tags:
+			entries = entries.filter(tags=tag)
+		if entries.count() <= 0:
+			raise Http404
+		
 		if self.entries_per_page:
 			paginated_page = paginate(request, entries, self.entries_per_page)
 			entries = paginated_page.object_list
@@ -157,7 +169,7 @@ class BlogView(MultiView):
 			paginated_page = None
 		context = {}
 		context.update(extra_context or {})
-		context.update({'blog': self.blog, 'tag': tag, 'entries': entries, 'paginated_page': paginated_page})
+		context.update({'blog': self.blog, 'tags': tags, 'entries': entries, 'paginated_page': paginated_page})
 		return self.tag_page.render_to_response(node, request, extra_context=context)
 	
 	def tag_archive_view(self, request, node=None, extra_context=None):

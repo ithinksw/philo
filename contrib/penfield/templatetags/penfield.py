@@ -12,12 +12,11 @@ def monthname(value):
 
 register.filter('monthname', monthname)
 
-def ap_monthname(value):
+def apmonthname(value):
 	monthnum = int(value)
 	if 1 <= monthnum <= 12:
 		return MONTHS_AP[monthnum]
 	else:
 		return value
 
-register.filter('monthname', monthname)
-register.filter('ap_monthname', ap_monthname)
+register.filter('apmonthname', apmonthname)

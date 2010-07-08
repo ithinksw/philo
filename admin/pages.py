@@ -82,13 +82,13 @@ class PageAdmin(ViewAdmin):
 					contentreference = page.contentreferences.get(name=container_name)
 				except ContentReference.DoesNotExist:
 					contentreference = ContentReference(name=container_name, page=page, content_type=container_content_type)
-				
-				if content == None:
-					contentreference.content_id = None
 				else:
-					contentreference.content_id = content.id
+					if content == None:
+						contentreference.delete()
 				
-				contentreference.save()
+				if content is not None:
+					contentreference.content_id = content.id
+					contentreference.save()
 
 
 class TemplateAdmin(admin.ModelAdmin):

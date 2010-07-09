@@ -28,7 +28,8 @@ class PageAdmin(ViewAdmin):
 			contentlet_containers, contentreference_containers = template.containers
 			for container_name in contentlet_containers:
 				fieldsets.append((('Container: %s' % container_name), {
-					'fields': (('contentlet_container_content_%s' % container_name), ('contentlet_container_dynamic_%s' % container_name))
+					'fields': (('contentlet_container_content_%s' % container_name), ('contentlet_container_dynamic_%s' % container_name)),
+					'classes': ['monospace']
 				}))
 			for container_name, container_content_type in contentreference_containers:
 				fieldsets.append((('Container: %s' % container_name), {

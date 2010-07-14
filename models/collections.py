@@ -3,6 +3,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from philo.models.base import value_content_type_limiter, register_value_model
 from philo.utils import fattr
+from django.template import add_to_builtins as register_templatetags
 
 
 class Collection(models.Model):
@@ -42,4 +43,5 @@ class CollectionMember(models.Model):
 		app_label = 'philo'
 
 
+register_templatetags('philo.templatetags.collections')
 register_value_model(Collection)

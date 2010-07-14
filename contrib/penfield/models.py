@@ -203,6 +203,9 @@ class Newsletter(Entity, Titled):
 	pass
 
 
+register_value_model(Newsletter)
+
+
 class NewsletterArticle(Entity, Titled):
 	newsletter = models.ForeignKey(Newsletter, related_name='articles')
 	authors = models.ManyToManyField(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='newsletterarticles')
@@ -226,6 +229,9 @@ class NewsletterIssue(Entity, Titled):
 	class Meta:
 		ordering = ['-number']
 		unique_together = (('newsletter', 'number'),)
+
+
+register_value_model(NewsletterIssue)
 
 
 class NewsletterView(MultiView):

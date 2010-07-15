@@ -28,10 +28,13 @@ class NodeURLNode(template.Node):
 				node = context['node']
 			current_site = Site.objects.get_current()
 			if node.has_ancestor(current_site.root_node):
-				url = node.get_path(root=current_site.root_node)
+				url = '/' + node.get_path(root=current_site.root_node)
 				if self.with_obj:
 					with_obj = self.with_obj.resolve(context)
-					url += node.view.get_subpath(with_obj)
+					subpath = node.view.get_subpath(with_obj)
+					if subpath[0] is '/':
+						subpath = subpath[1:]
+					url += subpath
 			else:
 				return settings.TEMPLATE_STRING_IF_INVALID
 			

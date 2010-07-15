@@ -159,13 +159,29 @@ class TreeModel(models.Model):
 	parent = models.ForeignKey('self', related_name='children', null=True, blank=True)
 	slug = models.SlugField()
 	
-	def get_path(self, pathsep='/', field='slug'):
-		path = getattr(self, field, '?')
-		parent = self.parent
+	def has_ancestor(self, ancestor):
+		parent = self
 		while parent:
-			path = getattr(parent, field, '?') + pathsep + path
+			if parent == ancestor:
+				return True
 			parent = parent.parent
-		return path
+		return False
+	
+	def get_path(self, root=None, pathsep='/', field='slug'):
+		if root is not None and self.has_ancestor(root):
+			path = ''
+			parent = self
+			while parent and parent != root:
+				path = getattr(parent, field, '?') + pathsep + path
+				parent = parent.parent
+			return path
+		else:
+			path = getattr(self, field, '?')
+			parent = self.parent
+			while parent and parent != root:
+				path = getattr(parent, field, '?') + pathsep + path
+				parent = parent.parent
+			return path
 	path = property(get_path)
 	
 	def __unicode__(self):

@@ -1,7 +1,9 @@
 from django.db import models
 from django.conf import settings
 from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model
+from philo.exceptions import ViewCanNotProvideSubpath
 from django.conf.urls.defaults import url, patterns
+from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponse
 from datetime import datetime
 from philo.contrib.penfield.utils import paginate
@@ -58,6 +60,22 @@ class BlogView(MultiView):
 	
 	def __unicode__(self):
 		return u'BlogView for %s' % self.blog.title
+	
+	def get_subpath(self, obj):
+		if isinstance(obj, BlogEntry):
+			if obj.blog == self.blog:
+				entry_view_args = {'slug': obj.slug}
+				if self.entry_permalink_style in 'DMY':
+					entry_view_args.update({'year': str(obj.date.year).zfill(4)})
+					if self.entry_permalink_style in 'DM':
+						entry_view_args.update({'month': str(obj.date.month).zfill(2)})
+						if self.entry_permalink_style == 'D':
+							entry_view_args.update({'day': str(obj.date.day).zfill(2)})
+				return reverse(self.entry_view, urlconf=self, kwargs=entry_view_args)
+		elif isinstance(obj, Tag):
+			if obj in self.blog.entry_tags:
+				return reverse(self.tag_view, urlconf=self, kwargs={'tag_slugs': obj.slug})
+		raise ViewCanNotProvideSubpath
 	
 	@property
 	def urlpatterns(self):

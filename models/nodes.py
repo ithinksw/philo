@@ -5,10 +5,12 @@ from django.contrib.sites.models import Site
 from django.http import HttpResponse, HttpResponseServerError, HttpResponseRedirect
 from django.core.servers.basehttp import FileWrapper
 from django.core.urlresolvers import resolve
+from django.template import add_to_builtins as register_templatetags
 from inspect import getargspec
 from philo.models.base import TreeEntity, Entity, QuerySetMapper
 from philo.utils import ContentTypeSubclassLimiter
 from philo.validators import RedirectValidator
+from philo.exceptions import ViewDoesNotProvideSubpaths
 
 
 _view_content_type_limiter = ContentTypeSubclassLimiter(None)
@@ -21,7 +23,9 @@ class Node(TreeEntity):
 	
 	@property
 	def accepts_subpath(self):
-		return self.view.accepts_subpath
+		if self.view:
+			return self.view.accepts_subpath
+		return False
 	
 	def render_to_response(self, request, path=None, subpath=None, extra_context=None):
 		return self.view.render_to_response(self, request, path, subpath, extra_context)
@@ -38,6 +42,9 @@ class View(Entity):
 	nodes = generic.GenericRelation(Node, content_type_field='view_content_type', object_id_field='view_object_id')
 	
 	accepts_subpath = False
+	
+	def get_subpath(self, obj):
+		raise ViewDoesNotProvideSubpaths
 	
 	def attributes_with_node(self, node):
 		return QuerySetMapper(self.attribute_set, passthrough=node.attributes)
@@ -112,3 +119,6 @@ class File(View):
 	
 	def __unicode__(self):
 		return self.file.name
+
+
+register_templatetags('philo.templatetags.nodes')

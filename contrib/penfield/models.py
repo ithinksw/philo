@@ -248,6 +248,22 @@ class NewsletterView(MultiView):
 	article_permalink_base = models.CharField(max_length=255, blank=False, default='articles')
 	issue_permalink_base = models.CharField(max_length=255, blank=False, default='issues')
 	
+	def get_subpath(self, obj):
+		if isinstance(obj, NewsletterArticle):
+			if obj.newsletter == self.newsletter:
+				article_view_args = {'slug': obj.slug}
+				if self.article_permalink_style in 'DMY':
+					article_view_args.update({'year': str(obj.date.year).zfill(4)})
+					if self.article_permalink_style in 'DM':
+						article_view_args.update({'month': str(obj.date.month).zfill(2)})
+						if self.article_permalink_style == 'D':
+							article_view_args.update({'day': str(obj.date.day).zfill(2)})
+				return reverse(self.article_view, urlconf=self, kwargs=article_view_args)
+		elif isinstance(obj, NewsletterIssue):
+			if obj.newsletter == self.newsletter:
+				return reverse(self.issue_view, urlconf=self, kwargs={'number': str(obj.number)})
+		raise ViewCanNotProvideSubpath
+	
 	@property
 	def urlpatterns(self):
 		base_patterns = patterns('',

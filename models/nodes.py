@@ -4,7 +4,7 @@ from django.contrib.contenttypes import generic
 from django.contrib.sites.models import Site
 from django.http import HttpResponse, HttpResponseServerError, HttpResponseRedirect
 from django.core.servers.basehttp import FileWrapper
-from django.core.urlresolvers import resolve
+from django.core.urlresolvers import resolve, clear_url_caches
 from django.template import add_to_builtins as register_templatetags
 from inspect import getargspec
 from philo.models.base import TreeEntity, Entity, QuerySetMapper
@@ -68,6 +68,7 @@ class MultiView(View):
 	urlpatterns = []
 	
 	def render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
+		clear_url_caches()
 		if not subpath:
 			subpath = ""
 		subpath = "/" + subpath

@@ -9,55 +9,24 @@ register = template.Library()
 
 
 class ContainerNode(template.Node):
-	child_nodelists = ('nodelist_main', 'nodelist_empty',)
-	
-	def __init__(self, name, references=None, as_var=None, nodelist_main=None, nodelist_empty=None):
+	def __init__(self, name, references=None, as_var=None):
 		self.name = name
 		self.as_var = as_var
 		self.references = references
-		
-		if nodelist_main is None:
-			self.nodelist_main = template.NodeList()
-		else:
-			self.nodelist_main = nodelist_main
-		
-		if nodelist_empty is None:
-			self.nodelist_empty = template.NodeList()
-		else:
-			self.nodelist_empty = nodelist_empty
 	
 	def render(self, context):
 		content = settings.TEMPLATE_STRING_IF_INVALID
 		if 'page' in context:
 			container_content = self.get_container_content(context)
 		
-		if not self.nodelist_main:
-			if self.as_var:
-				context[self.as_var] = container_content
-				return ''
-			
-			if not container_content:
-				return ''
-			
-			return container_content
-		
-		if container_content:
-			if self.as_var is None:
-				self.as_var = self.name
-			
-			#make a new context 
-			context.push()
+		if self.as_var:
 			context[self.as_var] = container_content
-			nodelist = template.NodeList()
-			for node in self.nodelist_main:
-				nodelist.append(node.render(context))
-			context.pop()
-			return nodelist.render(context)
+			return ''
 		
-		if self.nodelist_empty is not None:
-			return self.nodelist_empty.render(context)
+		if not container_content:
+			return ''
 		
-		return ''
+		return container_content
 	
 	def get_container_content(self, context):
 		page = context['page']
@@ -85,8 +54,7 @@ class ContainerNode(template.Node):
 
 def do_container(parser, token):
 	"""
-	{% container <name> [[references <type>] as <variable>] %} 
-	{% blockcontainer <name> [[references <type>] as <variable>] %} [ {% empty %} ] {% endblockcontainer %}
+	{% container <name> [[references <type>] as <variable>] %}
 	"""
 	params = token.split_contents()
 	if len(params) >= 2:
@@ -115,22 +83,10 @@ def do_container(parser, token):
 						raise template.TemplateSyntaxError('"%s" template tag option "as" requires an argument specifying a variable name' % tag)
 			if references and not as_var:
 				raise template.TemplateSyntaxError('"%s" template tags using "references" option require additional use of the "as" option specifying a variable name' % tag)
-		if tag == 'container':
-			return ContainerNode(name, references, as_var)
-		
-		nodelist_main = parser.parse(('empty','endblockcontainer',))
-		token = parser.next_token()
-		
-		if token.contents == 'empty':
-			nodelist_empty = parser.parse(('endblockcontainer',))
-			parser.delete_first_token()
-		else:
-			nodelist_empty = None
-		return ContainerNode(name, references, as_var, nodelist_main, nodelist_empty)
+		return ContainerNode(name, references, as_var)
 		
 	else: # error
 		raise template.TemplateSyntaxError('"%s" template tag provided without arguments (at least one required)' % tag)
 
 
 register.tag('container', do_container)
-register.tag('blockcontainer', do_container)

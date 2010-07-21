@@ -29,7 +29,7 @@ class NewsletterArticleAdmin(TitledAdmin):
 
 
 class NewsletterIssueAdmin(TitledAdmin):
-	pass
+	filter_horizontal = TitledAdmin.filter_horizontal + ('articles',)
 
 
 class NewsletterViewAdmin(EntityAdmin):

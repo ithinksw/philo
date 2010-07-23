@@ -15,6 +15,11 @@ class Blog(Entity, Titled):
 	def entry_tags(self):
 		""" Returns a QuerySet of Tags that are used on any entries in this blog. """
 		return Tag.objects.filter(blogentries__blog=self).distinct()
+	
+	@property
+	def entry_dates(self):
+		dates = {'year': self.entries.dates('date', 'year', order='DESC'), 'month': self.entries.dates('date', 'month', order='DESC'), 'day': self.entries.dates('date', 'day', order='DESC')}
+		return dates
 
 
 register_value_model(Blog)

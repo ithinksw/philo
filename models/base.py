@@ -114,6 +114,63 @@ class Entity(models.Model):
 	def relationships(self):
 		return QuerySetMapper(self.relationship_set)
 	
+	@property
+	def _added_attribute_registry(self):
+		if not hasattr(self, '_real_added_attribute_registry'):
+			self._real_added_attribute_registry = {}
+		return self._real_added_attribute_registry
+	
+	@property
+	def _removed_attribute_registry(self):
+		if not hasattr(self, '_real_removed_attribute_registry'):
+			self._real_removed_attribute_registry = []
+		return self._real_removed_attribute_registry
+	
+	@property
+	def _added_relationship_registry(self):
+		if not hasattr(self, '_real_added_relationship_registry'):
+			self._real_added_relationship_registry = {}
+		return self._real_added_relationship_registry
+	
+	@property
+	def _removed_relationship_registry(self):
+		if not hasattr(self, '_real_removed_relationship_registry'):
+			self._real_removed_relationship_registry = []
+		return self._real_removed_relationship_registry
+	
+	def save(self, *args, **kwargs):
+		super(Entity, self).save(*args, **kwargs)
+		
+		for key in self._removed_attribute_registry:
+			self.attribute_set.filter(key__exact=key).delete()
+		del self._removed_attribute_registry[:]
+		
+		for key, value in self._added_attribute_registry.items():
+			try:
+				attribute = self.attribute_set.get(key__exact=key)
+			except Attribute.DoesNotExist:
+				attribute = Attribute()
+				attribute.entity = self
+				attribute.key = key
+			attribute.value = value
+			attribute.save()
+		self._added_attribute_registry.clear()
+		
+		for key in self._removed_relationship_registry:
+			self.relationship_set.filter(key__exact=key).delete()
+		del self._removed_relationship_registry[:]
+		
+		for key, value in self._added_relationship_registry.items():
+			try:
+				relationship = self.relationship_set.get(key__exact=key)
+			except Relationship.DoesNotExist:
+				relationship = Relationship()
+				relationship.entity = self
+				relationship.key = key
+			relationship.value = value
+			relationship.save()
+		self._added_relationship_registry.clear()
+	
 	class Meta:
 		abstract = True
 

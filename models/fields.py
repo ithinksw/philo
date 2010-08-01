@@ -1,9 +1,7 @@
 from django.db import models
 from django.db.models import signals
-from django.core.exceptions import ObjectDoesNotExist, FieldError
-from django.contrib.contenttypes.models import ContentType
-from functools import partial
-from philo.models.base import Attribute, Relationship, Entity
+from django.core.exceptions import FieldError
+from philo.models.base import Entity
 
 
 __all__ = ('AttributeField', 'RelationshipField')
@@ -15,25 +13,26 @@ class AttributeFieldDescriptor(object):
 	
 	def __get__(self, instance, owner):
 		if instance:
+			if self.field.key in instance._added_attribute_registry:
+				return instance._added_attribute_registry[self.field.key]
+			if self.field.key in instance._removed_attribute_registry:
+				return None
 			try:
-				return instance.attribute_set.get(key__exact=self.field.key).value
-			except ObjectDoesNotExist:
+				return instance.attributes[self.field.key]
+			except KeyError:
 				return None
 		else:
 			raise AttributeError('The \'%s\' attribute can only be accessed from %s instances.' % (self.field.name, owner.__name__))
 	
 	def __set__(self, instance, value):
-		try:
-			attribute = instance.attribute_set.get(key__exact=self.field.key)
-		except ObjectDoesNotExist:
-			attribute = Attribute()
-			attribute.entity = instance
-			attribute.key = self.field.key
-		attribute.value = value
-		attribute.save()
+		if self.field.key in instance._removed_attribute_registry:
+			instance._removed_attribute_registry.remove(self.field.key)
+		instance._added_attribute_registry[self.field.key] = value
 	
 	def __delete__(self, instance):
-		instance.attribute_set.filter(key__exact=self.field.key).delete()
+		if self.field.key in instance._added_attribute_registry:
+			del instance._added_attribute_registry[self.field.key]
+		instance._removed_attribute_registry.append(self.field.key)
 
 
 class AttributeField(object):
@@ -57,28 +56,29 @@ class RelationshipFieldDescriptor(object):
 	
 	def __get__(self, instance, owner):
 		if instance:
+			if self.field.key in instance._added_relationship_registry:
+				return instance._added_relationship_registry[self.field.key]
+			if self.field.key in instance._removed_relationship_registry:
+				return None
 			try:
-				return instance.relationship_set.get(key__exact=self.field.key).value
-			except ObjectDoesNotExist:
+				return instance.relationships[self.field.key]
+			except KeyError:
 				return None
 		else:
 			raise AttributeError('The \'%s\' attribute can only be accessed from %s instances.' % (self.field.name, owner.__name__))
 	
 	def __set__(self, instance, value):
 		if isinstance(value, (models.Model, type(None))):
-			try:
-				relationship = instance.relationship_set.get(key__exact=self.field.key)
-			except ObjectDoesNotExist:
-				relationship = Relationship()
-				relationship.entity = instance
-				relationship.key = self.field.key
-			relationship.value = value
-			relationship.save()
+			if self.field.key in instance._removed_relationship_registry:
+				instance._removed_relationship_registry.remove(self.field.key)
+			instance._added_relationship_registry[self.field.key] = value
 		else:
-			raise AttributeError('The \'%\' attribute can only be set using existing Model objects.' % self.field.name)
+			raise AttributeError('The \'%s\' attribute can only be set using existing Model objects.' % self.field.name)
 	
 	def __delete__(self, instance):
-		instance.relationship_set.filter(key__exact=self.field.key).delete()
+		if self.field.key in instance._added_relationship_registry:
+			del instance._added_relationship_registry[self.field.key]
+		instance._removed_relationship_registry.append(self.field.key)
 
 
 class RelationshipField(object):

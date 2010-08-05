@@ -130,17 +130,11 @@ class BlogView(MultiView):
 			)
 		return base_patterns + entry_patterns
 	
-	def paginate(self, objects, page_number):
-		try:
-			return paginate(objects, self.entries_per_page, page_number)
-		except EmptyPage:
-			raise Http404
-	
 	def index_view(self, request, node=None, extra_context=None):
-		paginated_page, entries = self.paginate(self.blog.entries.all(), request.GET.get('page', 1))
+		pagination = paginate(self.blog.entries.all(), self.entries_per_page, request.GET.get('page', 1))
 		context = {}
 		context.update(extra_context or {})
-		context.update({'blog': self.blog, 'entries': entries, 'paginated_page': paginated_page})
+		context.update({'blog': self.blog, 'pagination': pagination})
 		return self.index_page.render_to_response(node, request, extra_context=context)
 	
 	def entry_view(self, request, slug, year=None, month=None, day=None, node=None, extra_context=None):
@@ -171,10 +165,10 @@ class BlogView(MultiView):
 		if day:
 			entries = entries.filter(date__day=day)
 		
-		paginated_page, entries = self.paginate(entries, request.GET.get('page', 1))
+		pagination = paginate(entries, self.entries_per_page, request.GET.get('page', 1))
 		context = {}
 		context.update(extra_context or {})
-		context.update({'blog': self.blog, 'year': year, 'month': month, 'day': day, 'entries': entries, 'paginated_page': paginated_page})
+		context.update({'blog': self.blog, 'year': year, 'month': month, 'day': day, 'pagination': pagination})
 		return self.entry_archive_page.render_to_response(node, request, extra_context=context)
 	
 	def tag_view(self, request, tag_slugs, node=None, extra_context=None):
@@ -195,10 +189,10 @@ class BlogView(MultiView):
 		if entries.count() <= 0:
 			raise Http404
 		
-		paginated_page, entries = self.paginate(entries, request.GET.get('page', 1))
+		pagination = paginate(entries, self.entries_per_page, request.GET.get('page', 1))
 		context = {}
 		context.update(extra_context or {})
-		context.update({'blog': self.blog, 'tags': tags, 'entries': entries, 'paginated_page': paginated_page})
+		context.update({'blog': self.blog, 'tags': tags, 'pagination': pagination})
 		return self.tag_page.render_to_response(node, request, extra_context=context)
 	
 	def tag_archive_view(self, request, node=None, extra_context=None):

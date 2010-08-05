@@ -52,6 +52,7 @@ class Attribute(models.Model):
 	
 	class Meta:
 		app_label = 'philo'
+		unique_together = ('key', 'entity_content_type', 'entity_object_id')
 
 
 value_content_type_limiter = ContentTypeRegistryLimiter()
@@ -80,6 +81,7 @@ class Relationship(models.Model):
 	
 	class Meta:
 		app_label = 'philo'
+		unique_together = ('key', 'entity_content_type', 'entity_object_id')
 
 
 class QuerySetMapper(object, DictMixin):

@@ -3,6 +3,7 @@ from django.conf import settings
 from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model
 from philo.exceptions import ViewCanNotProvideSubpath
 from django.conf.urls.defaults import url, patterns
+from django.core.paginator import EmptyPage
 from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponse
 from datetime import datetime
@@ -129,13 +130,14 @@ class BlogView(MultiView):
 			)
 		return base_patterns + entry_patterns
 	
+	def paginate(self, objects, page_number):
+		try:
+			return paginate(objects, self.entries_per_page, page_number)
+		except EmptyPage:
+			raise Http404
+	
 	def index_view(self, request, node=None, extra_context=None):
-		entries = self.blog.entries.all()
-		if self.entries_per_page:
-			paginated_page = paginate(request, entries, self.entries_per_page)
-			entries = paginated_page.object_list
-		else:
-			paginated_page = None
+		paginated_page, entries = self.paginate(self.blog.entries.all(), request.GET.get('page', 1))
 		context = {}
 		context.update(extra_context or {})
 		context.update({'blog': self.blog, 'entries': entries, 'paginated_page': paginated_page})
@@ -168,11 +170,8 @@ class BlogView(MultiView):
 			entries = entries.filter(date__month=month)
 		if day:
 			entries = entries.filter(date__day=day)
-		if self.entries_per_page:
-			paginated_page = paginate(request, entries, self.entries_per_page)
-			entries = paginated_page.object_list
-		else:
-			paginated_page = None
+		
+		paginated_page, entries = self.paginate(entries, request.GET.get('page', 1))
 		context = {}
 		context.update(extra_context or {})
 		context.update({'blog': self.blog, 'year': year, 'month': month, 'day': day, 'entries': entries, 'paginated_page': paginated_page})
@@ -196,11 +195,7 @@ class BlogView(MultiView):
 		if entries.count() <= 0:
 			raise Http404
 		
-		if self.entries_per_page:
-			paginated_page = paginate(request, entries, self.entries_per_page)
-			entries = paginated_page.object_list
-		else:
-			paginated_page = None
+		paginated_page, entries = self.paginate(entries, request.GET.get('page', 1))
 		context = {}
 		context.update(extra_context or {})
 		context.update({'blog': self.blog, 'tags': tags, 'entries': entries, 'paginated_page': paginated_page})

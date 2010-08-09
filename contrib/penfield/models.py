@@ -230,6 +230,7 @@ class NewsletterArticle(Entity, Titled):
 	full_text = models.TextField()
 	
 	class Meta:
+		get_latest_by = 'date'
 		ordering = ['-date']
 		unique_together = (('newsletter', 'slug'),)
 
@@ -240,7 +241,7 @@ register_value_model(NewsletterArticle)
 class NewsletterIssue(Entity, Titled):
 	newsletter = models.ForeignKey(Newsletter, related_name='issues')
 	number = models.PositiveIntegerField()
-	articles = models.ManyToManyField(NewsletterArticle)
+	articles = models.ManyToManyField(NewsletterArticle, related_name='issues')
 	
 	class Meta:
 		ordering = ['-number']

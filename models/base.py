@@ -275,7 +275,7 @@ class TreeModel(models.Model):
 		abstract = True
 
 
-class TreeEntity(TreeModel, Entity):
+class TreeEntity(Entity, TreeModel):
 	@property
 	def attributes(self):
 		if self.parent:

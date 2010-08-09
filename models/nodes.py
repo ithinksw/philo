@@ -73,12 +73,12 @@ class MultiView(View):
 			subpath = ""
 		subpath = "/" + subpath
 		view, args, kwargs = resolve(subpath, urlconf=self)
-		view_args = getargspec(view)[0]
-		if extra_context is not None and 'extra_context' in view_args:
+		view_args = getargspec(view)
+		if extra_context is not None and ('extra_context' in view_args[0] or view_args[2] is not None):
 			if 'extra_context' in kwargs:
 				extra_context.update(kwargs['extra_context'])
 			kwargs['extra_context'] = extra_context
-		if 'node' in view_args:
+		if 'node' in view_args[0] or view_args[2] is not None:
 			kwargs['node'] = node
 		return view(request, *args, **kwargs)
 	

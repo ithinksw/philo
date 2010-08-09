@@ -1,4 +1,4 @@
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage
 
 
 class PaginationProxy(object):
@@ -28,8 +28,9 @@ class PaginationProxy(object):
 		
 		return self.page.number
 	
-	def __bool__(self):
-		return bool(self.paginator)
+	# Why doesn't this work?
+	#def __bool__(self):
+	#	return bool(self.paginator)
 
 
 def paginate(objects, per_page=None, page_number=1):

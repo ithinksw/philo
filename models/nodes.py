@@ -7,7 +7,7 @@ from django.core.servers.basehttp import FileWrapper
 from django.core.urlresolvers import resolve, clear_url_caches
 from django.template import add_to_builtins as register_templatetags
 from inspect import getargspec
-from philo.models.base import TreeEntity, Entity, QuerySetMapper
+from philo.models.base import TreeEntity, Entity, QuerySetMapper, register_value_model
 from philo.utils import ContentTypeSubclassLimiter
 from philo.validators import RedirectValidator
 from philo.exceptions import ViewDoesNotProvideSubpaths
@@ -123,3 +123,4 @@ class File(View):
 
 
 register_templatetags('philo.templatetags.nodes')
+register_value_model(Node)

@@ -15,6 +15,11 @@ class Blog(Entity, Titled):
 	def entry_tags(self):
 		""" Returns a QuerySet of Tags that are used on any entries in this blog. """
 		return Tag.objects.filter(blogentries__blog=self).distinct()
+	
+	@property
+	def entry_dates(self):
+		dates = {'year': self.entries.dates('date', 'year', order='DESC'), 'month': self.entries.dates('date', 'month', order='DESC'), 'day': self.entries.dates('date', 'day', order='DESC')}
+		return dates
 
 
 register_value_model(Blog)
@@ -75,6 +80,17 @@ class BlogView(MultiView):
 		elif isinstance(obj, Tag):
 			if obj in self.blog.entry_tags:
 				return reverse(self.tag_view, urlconf=self, kwargs={'tag_slugs': obj.slug})
+		elif isinstance(obj, (str, unicode)):
+			split_obj = obj.split(':')
+			if len(split_obj) > 1:
+				entry_archive_view_args = {}
+				if split_obj[0].lower() == 'archives':
+					entry_archive_view_args.update({'year': str(int(split_obj[1])).zfill(4)})
+					if len(split_obj) > 2:
+						entry_archive_view_args.update({'month': str(int(split_obj[2])).zfill(2)})
+						if len(split_obj) > 3:
+							entry_archive_view_args.update({'day': str(int(split_obj[3])).zfill(2)})
+					return reverse(self.entry_archive_view, urlconf=self, kwargs=entry_archive_view_args)
 		raise ViewCanNotProvideSubpath
 	
 	@property

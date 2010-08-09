@@ -4,6 +4,7 @@ from django.contrib.contenttypes import generic
 from django.utils import simplejson as json
 from django.core.exceptions import ObjectDoesNotExist
 from philo.utils import ContentTypeRegistryLimiter
+from philo.signals import entity_class_prepared
 from UserDict import DictMixin
 
 
@@ -71,8 +72,8 @@ class Relationship(models.Model):
 	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID')
 	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
 	key = models.CharField(max_length=255)
-	value_content_type = models.ForeignKey(ContentType, related_name='relationship_value_set', limit_choices_to=value_content_type_limiter, verbose_name='Value type')
-	value_object_id = models.PositiveIntegerField(verbose_name='Value ID')
+	value_content_type = models.ForeignKey(ContentType, related_name='relationship_value_set', limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
+	value_object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True)
 	value = generic.GenericForeignKey('value_content_type', 'value_object_id')
 	
 	def __unicode__(self):
@@ -102,7 +103,30 @@ class QuerySetMapper(object, DictMixin):
 		return list(keys)
 
 
+class EntityOptions(object):
+	def __init__(self, options):
+		if options is not None:
+			for key, value in options.__dict__.items():
+				setattr(self, key, value)
+		if not hasattr(self, 'proxy_fields'):
+			self.proxy_fields = []
+	
+	def add_proxy_field(self, proxy_field):
+		self.proxy_fields.append(proxy_field)
+
+
+class EntityBase(models.base.ModelBase):
+	def __new__(cls, name, bases, attrs):
+		new = super(EntityBase, cls).__new__(cls, name, bases, attrs)
+		entity_options = attrs.pop('EntityMeta', None)
+		setattr(new, '_entity_meta', EntityOptions(entity_options))
+		entity_class_prepared.send(sender=new)
+		return new
+
+
 class Entity(models.Model):
+	__metaclass__ = EntityBase
+	
 	attribute_set = generic.GenericRelation(Attribute, content_type_field='entity_content_type', object_id_field='entity_object_id')
 	relationship_set = generic.GenericRelation(Relationship, content_type_field='entity_content_type', object_id_field='entity_object_id')
 	

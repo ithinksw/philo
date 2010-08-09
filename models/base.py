@@ -4,6 +4,7 @@ from django.contrib.contenttypes import generic
 from django.utils import simplejson as json
 from django.core.exceptions import ObjectDoesNotExist
 from philo.utils import ContentTypeRegistryLimiter
+from philo.signals import entity_class_prepared
 from UserDict import DictMixin
 
 
@@ -71,8 +72,8 @@ class Relationship(models.Model):
 	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID')
 	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
 	key = models.CharField(max_length=255)
-	value_content_type = models.ForeignKey(ContentType, related_name='relationship_value_set', limit_choices_to=value_content_type_limiter, verbose_name='Value type')
-	value_object_id = models.PositiveIntegerField(verbose_name='Value ID')
+	value_content_type = models.ForeignKey(ContentType, related_name='relationship_value_set', limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
+	value_object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True)
 	value = generic.GenericForeignKey('value_content_type', 'value_object_id')
 	
 	def __unicode__(self):
@@ -102,7 +103,30 @@ class QuerySetMapper(object, DictMixin):
 		return list(keys)
 
 
+class EntityOptions(object):
+	def __init__(self, options):
+		if options is not None:
+			for key, value in options.__dict__.items():
+				setattr(self, key, value)
+		if not hasattr(self, 'proxy_fields'):
+			self.proxy_fields = []
+	
+	def add_proxy_field(self, proxy_field):
+		self.proxy_fields.append(proxy_field)
+
+
+class EntityBase(models.base.ModelBase):
+	def __new__(cls, name, bases, attrs):
+		new = super(EntityBase, cls).__new__(cls, name, bases, attrs)
+		entity_options = attrs.pop('EntityMeta', None)
+		setattr(new, '_entity_meta', EntityOptions(entity_options))
+		entity_class_prepared.send(sender=new)
+		return new
+
+
 class Entity(models.Model):
+	__metaclass__ = EntityBase
+	
 	attribute_set = generic.GenericRelation(Attribute, content_type_field='entity_content_type', object_id_field='entity_object_id')
 	relationship_set = generic.GenericRelation(Relationship, content_type_field='entity_content_type', object_id_field='entity_object_id')
 	
@@ -113,6 +137,63 @@ class Entity(models.Model):
 	@property
 	def relationships(self):
 		return QuerySetMapper(self.relationship_set)
+	
+	@property
+	def _added_attribute_registry(self):
+		if not hasattr(self, '_real_added_attribute_registry'):
+			self._real_added_attribute_registry = {}
+		return self._real_added_attribute_registry
+	
+	@property
+	def _removed_attribute_registry(self):
+		if not hasattr(self, '_real_removed_attribute_registry'):
+			self._real_removed_attribute_registry = []
+		return self._real_removed_attribute_registry
+	
+	@property
+	def _added_relationship_registry(self):
+		if not hasattr(self, '_real_added_relationship_registry'):
+			self._real_added_relationship_registry = {}
+		return self._real_added_relationship_registry
+	
+	@property
+	def _removed_relationship_registry(self):
+		if not hasattr(self, '_real_removed_relationship_registry'):
+			self._real_removed_relationship_registry = []
+		return self._real_removed_relationship_registry
+	
+	def save(self, *args, **kwargs):
+		super(Entity, self).save(*args, **kwargs)
+		
+		for key in self._removed_attribute_registry:
+			self.attribute_set.filter(key__exact=key).delete()
+		del self._removed_attribute_registry[:]
+		
+		for key, value in self._added_attribute_registry.items():
+			try:
+				attribute = self.attribute_set.get(key__exact=key)
+			except Attribute.DoesNotExist:
+				attribute = Attribute()
+				attribute.entity = self
+				attribute.key = key
+			attribute.value = value
+			attribute.save()
+		self._added_attribute_registry.clear()
+		
+		for key in self._removed_relationship_registry:
+			self.relationship_set.filter(key__exact=key).delete()
+		del self._removed_relationship_registry[:]
+		
+		for key, value in self._added_relationship_registry.items():
+			try:
+				relationship = self.relationship_set.get(key__exact=key)
+			except Relationship.DoesNotExist:
+				relationship = Relationship()
+				relationship.entity = self
+				relationship.key = key
+			relationship.value = value
+			relationship.save()
+		self._added_relationship_registry.clear()
 	
 	class Meta:
 		abstract = True

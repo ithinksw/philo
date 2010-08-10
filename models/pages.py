@@ -76,7 +76,7 @@ class Template(TreeModel):
 		return contentlet_node_names, contentreference_node_specs
 	
 	def __unicode__(self):
-		return self.get_path(u' › ', 'name')
+		return self.get_path(pathsep=u' › ', field='name')
 	
 	@staticmethod
 	@fattr(is_usable=True)

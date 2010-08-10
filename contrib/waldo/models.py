@@ -2,22 +2,24 @@ from django import forms
 from django.conf.urls.defaults import url, patterns, include
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, views as auth_views
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm, PasswordChangeForm
 from django.contrib.auth.models import User
+from django.contrib.sites.models import Site
+from django.core.mail import send_mail
+from django.core.urlresolvers import reverse
 from django.db import models
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render_to_response
+from django.utils.http import int_to_base36
 from django.utils.translation import ugettext_lazy, ugettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from philo.models import MultiView, Page
+from philo.contrib.waldo.forms import LOGIN_FORM_KEY, LoginForm, RegistrationForm
+from philo.contrib.waldo.tokens import default_token_generator
 
 
 ERROR_MESSAGE = ugettext_lazy("Please enter a correct username and password. Note that both fields are case-sensitive.")
-LOGIN_FORM_KEY = 'this_is_the_login_form'
-LoginForm = type('LoginForm', (AuthenticationForm,), {
-	LOGIN_FORM_KEY: forms.BooleanField(widget=forms.HiddenInput, initial=True)
-})
 
 
 def get_field_data(obj, fields):
@@ -28,13 +30,31 @@ def get_field_data(obj, fields):
 
 
 class LoginMultiView(MultiView):
-	login_page = models.ForeignKey(Page, related_name='login_related')
+	"""
+	Handles login, registration, and forgotten passwords. In other words, this
+	multiview provides exclusively view and methods related to usernames and
+	passwords.
+	"""
+	login_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_login_related')
+	password_reset_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_reset_related')
+	register_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_related')
+	register_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_confirmation_email_related')
 	
 	@property
 	def urlpatterns(self):
 		urlpatterns = patterns('',
 			url(r'^login/$', self.login, name='login'),
 			url(r'^logout/$', self.logout, name='logout')
+		)
+		urlpatterns += patterns('',
+			url(r'^password/reset/$', self.password_reset, name='password_reset'),
+			url(r'^password/reset/(?P<uidb36>\w+)/(?P<token>[^/]+)/$',
+				self.password_reset_confirm, name='password_reset_confirm')
+		)
+		urlpatterns += patterns('',
+			url(r'^register/$', self.register, name='register'),
+			url(r'^register/(?P<uidb36>\w+)/(?P<token>[^/]+)/$',
+				self.register_confirm, name='register_confirm')
 		)
 		return urlpatterns
 	
@@ -123,12 +143,42 @@ class LoginMultiView(MultiView):
 	def login_required(self, view):
 		def inner(request, node=None, *args, **kwargs):
 			if not request.user.is_authenticated():
-				root_url = node.get_path(Site.objects.get_current().root_node).strip('/')
 				login_url = reverse('login', urlconf=self).strip('/')
-				return HttpResponseRedirect('/%s/%s/' % (root_url, login_url))
+				return HttpResponseRedirect('%s%s/' % (node.get_absolute_url(), login_url))
 			return view(request, node=node, *args, **kwargs)
 		
 		return inner
+	
+	def send_confirmation_email(self, subject, email, page, extra_context):
+		message = page.render_to_string(extra_context=extra_context)
+		from_email = 'noreply@%s' % Site.objects.get_current().domain
+		send_mail(subject, message, from_email, [email])
+	
+	@csrf_protect
+	def password_reset(self, request, node=None, extra_context=None):
+		pass
+	
+	@csrf_protect
+	def register(self, request, node=None, extra_context=None, token_generator=default_token_generator):
+		if request.method == POST:
+			form = RegistrationForm(request.POST)
+			if form.is_valid():
+				user = form.save()
+				current_site = Site.objects.get_current()
+				token = default_token_generator.make_token(user)
+				link = 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), reverse('register_confirm', urlconf=self, kwargs={'uidb36': int_to_base36(user.id), 'token': token}).strip('/'))
+				context = {
+					'link': link
+				}
+				self.send_confirmation_email('Confirm account creation at %s' % current_site.name, user.email, self.register_confirmation_email, context)
+				messages.add_message(request, messages.SUCCESS, 'An email has been sent to %s with details on activating your account.' % user.email)
+				return HttpResponseRedirect('')
+		else:
+			form = RegistrationForm()
+		
+		context = self.get_context({'form': form})
+		context.update(extra_context or {})
+		return self.register_page.render_to_response(request, node, context)
 	
 	class Meta:
 		abstract = True
@@ -140,7 +190,7 @@ class AccountMultiView(LoginMultiView):
 	to include in the account, and fields from the account profile to use in
 	the account.
 	"""
-	manage_account_page = models.ForeignKey(Page, related_name='classifieds_manage_account_page')
+	manage_account_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_manage_account_page')
 	user_fields = ['first_name', 'last_name', 'email']
 	required_user_fields = user_fields
 	account_profile = None

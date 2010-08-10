@@ -3,11 +3,10 @@ from django.conf import settings
 from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model
 from philo.exceptions import ViewCanNotProvideSubpath
 from django.conf.urls.defaults import url, patterns
-from django.core.paginator import EmptyPage
 from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponse
 from datetime import datetime
-from philo.contrib.penfield.utils import paginate
+from philo.utils import paginate
 from philo.contrib.penfield.validators import validate_pagination_count
 
 
@@ -131,10 +130,10 @@ class BlogView(MultiView):
 		return base_patterns + entry_patterns
 	
 	def index_view(self, request, node=None, extra_context=None):
-		pagination = paginate(self.blog.entries.all(), self.entries_per_page, request.GET.get('page', 1))
+		paginator, page, entries = paginate(self.blog.entries.all(), self.entries_per_page, request.GET.get('page', 1))
 		context = {}
 		context.update(extra_context or {})
-		context.update({'blog': self.blog, 'pagination': pagination})
+		context.update({'blog': self.blog, 'paginator': paginator, 'paginated_page': page, 'entries': entries})
 		return self.index_page.render_to_response(node, request, extra_context=context)
 	
 	def entry_view(self, request, slug, year=None, month=None, day=None, node=None, extra_context=None):
@@ -165,10 +164,10 @@ class BlogView(MultiView):
 		if day:
 			entries = entries.filter(date__day=day)
 		
-		pagination = paginate(entries, self.entries_per_page, request.GET.get('page', 1))
+		paginator, page, entries = paginate(entries, self.entries_per_page, request.GET.get('page', 1))
 		context = {}
 		context.update(extra_context or {})
-		context.update({'blog': self.blog, 'year': year, 'month': month, 'day': day, 'pagination': pagination})
+		context.update({'blog': self.blog, 'year': year, 'month': month, 'day': day, 'paginator': paginator, 'paginated_page': page, 'entries': entries})
 		return self.entry_archive_page.render_to_response(node, request, extra_context=context)
 	
 	def tag_view(self, request, tag_slugs, node=None, extra_context=None):
@@ -189,10 +188,10 @@ class BlogView(MultiView):
 		if entries.count() <= 0:
 			raise Http404
 		
-		pagination = paginate(entries, self.entries_per_page, request.GET.get('page', 1))
+		paginator, page, entries = paginate(entries, self.entries_per_page, request.GET.get('page', 1))
 		context = {}
 		context.update(extra_context or {})
-		context.update({'blog': self.blog, 'tags': tags, 'pagination': pagination})
+		context.update({'blog': self.blog, 'tags': tags, 'paginator': paginator, 'paginated_page': page, 'entries': entries})
 		return self.tag_page.render_to_response(node, request, extra_context=context)
 	
 	def tag_archive_view(self, request, node=None, extra_context=None):

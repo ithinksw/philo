@@ -9,8 +9,8 @@ from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.db import models
 from django.http import Http404, HttpResponseRedirect
-from django.shortcuts import render_to_response
-from django.utils.http import int_to_base36
+from django.shortcuts import render_to_response, get_object_or_404
+from django.utils.http import int_to_base36, base36_to_int
 from django.utils.translation import ugettext_lazy, ugettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
@@ -47,12 +47,12 @@ class LoginMultiView(MultiView):
 			url(r'^logout/$', self.logout, name='logout')
 		)
 		urlpatterns += patterns('',
-			url(r'^password/reset/$', self.password_reset, name='password_reset'),
+			url(r'^password/reset/$', csrf_protect(self.password_reset), name='password_reset'),
 			url(r'^password/reset/(?P<uidb36>\w+)/(?P<token>[^/]+)/$',
 				self.password_reset_confirm, name='password_reset_confirm')
 		)
 		urlpatterns += patterns('',
-			url(r'^register/$', self.register, name='register'),
+			url(r'^register/$', csrf_protect(self.register), name='register'),
 			url(r'^register/(?P<uidb36>\w+)/(?P<token>[^/]+)/$',
 				self.register_confirm, name='register_confirm')
 		)
@@ -154,13 +154,17 @@ class LoginMultiView(MultiView):
 		from_email = 'noreply@%s' % Site.objects.get_current().domain
 		send_mail(subject, message, from_email, [email])
 	
-	@csrf_protect
 	def password_reset(self, request, node=None, extra_context=None):
 		pass
 	
-	@csrf_protect
+	def password_reset_confirm(self, request, node=None, extra_context=None):
+		pass
+	
 	def register(self, request, node=None, extra_context=None, token_generator=default_token_generator):
-		if request.method == POST:
+		if request.user.is_authenticated():
+			return HttpResponseRedirect(node.get_absolute_url())
+		
+		if request.method == 'POST':
 			form = RegistrationForm(request.POST)
 			if form.is_valid():
 				user = form.save()
@@ -178,7 +182,31 @@ class LoginMultiView(MultiView):
 		
 		context = self.get_context({'form': form})
 		context.update(extra_context or {})
-		return self.register_page.render_to_response(request, node, context)
+		return self.register_page.render_to_response(node, request, extra_context=context)
+	
+	def register_confirm(self, request, node=None, extra_context=None, uidb36=None, token=None):
+		"""
+		Checks that a given hash in a registration link is valid and activates
+		the given account. If so, log them in and redirect to
+		self.post_register_confirm_redirect.
+		"""
+		assert uidb36 is not None and token is not None
+		try:
+			uid_int = base36_to_int(uidb36)
+		except:
+			raise Http404
+		
+		user = get_object_or_404(User, id=uid_int)
+		if default_token_generator.check_token(user, token):
+			user.is_active = True
+			user.save()
+			messages.add_message(request, messages.SUCCESS, "Your account's been created! Go ahead and log in.")
+			return self.post_register_confirm_redirect(request, node)
+		
+		raise Http404
+	
+	def post_register_confirm_redirect(self, request, node):
+		return HttpResponseRedirect('/%s/%s/' % (node.get_absolute_url().strip('/'), reverse('login', urlconf=self).strip('/')))
 	
 	class Meta:
 		abstract = True

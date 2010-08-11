@@ -199,14 +199,22 @@ class LoginMultiView(MultiView):
 		user = get_object_or_404(User, id=uid_int)
 		if default_token_generator.check_token(user, token):
 			user.is_active = True
-			user.save()
-			messages.add_message(request, messages.SUCCESS, "Your account's been created! Go ahead and log in.")
+			true_password = user.password
+			try:
+				user.set_password('temp_password')
+				user.save()
+				authenticated_user = authenticate(username=user.username, password='temp_password')
+				login(request, authenticated_user)
+			finally:
+				# if anything goes wrong, ABSOLUTELY make sure that the true password is restored.
+				user.password = true_password
+				user.save()
 			return self.post_register_confirm_redirect(request, node)
 		
 		raise Http404
 	
 	def post_register_confirm_redirect(self, request, node):
-		return HttpResponseRedirect('/%s/%s/' % (node.get_absolute_url().strip('/'), reverse('login', urlconf=self).strip('/')))
+		return HttpResponseRedirect(node.get_absolute_url())
 	
 	class Meta:
 		abstract = True
@@ -303,6 +311,10 @@ class AccountMultiView(LoginMultiView):
 		
 		inner = self.login_required(inner)
 		return inner
+	
+	def post_register_confirm_redirect(self, request, node):
+		messages.add_message(request, messages.INFO, 'Welcome! Please fill in some more information.')
+		return HttpResponseRedirect('/%s/%s/' % (node.get_absolute_url().strip('/'), reverse('account', urlconf=self).strip('/')))
 	
 	class Meta:
 		abstract = True

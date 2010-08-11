@@ -3,6 +3,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.utils import simplejson as json
 from django.core.exceptions import ObjectDoesNotExist
+from philo.exceptions import AncestorDoesNotExist
 from philo.utils import ContentTypeRegistryLimiter
 from philo.signals import entity_class_prepared
 from UserDict import DictMixin
@@ -251,7 +252,9 @@ class TreeModel(models.Model):
 		return False
 	
 	def get_path(self, root=None, pathsep='/', field='slug'):
-		if root is not None and self.has_ancestor(root):
+		if root is not None:
+			if not self.has_ancestor(root):
+				raise AncestorDoesNotExist(root)
 			path = ''
 			parent = self
 			while parent and parent != root:

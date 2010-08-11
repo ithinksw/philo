@@ -10,7 +10,7 @@ from inspect import getargspec
 from philo.models.base import TreeEntity, Entity, QuerySetMapper, register_value_model
 from philo.utils import ContentTypeSubclassLimiter
 from philo.validators import RedirectValidator
-from philo.exceptions import ViewDoesNotProvideSubpaths
+from philo.exceptions import ViewDoesNotProvideSubpaths, AncestorDoesNotExist
 
 
 _view_content_type_limiter = ContentTypeSubclassLimiter(None)
@@ -29,6 +29,13 @@ class Node(TreeEntity):
 	
 	def render_to_response(self, request, path=None, subpath=None, extra_context=None):
 		return self.view.render_to_response(self, request, path, subpath, extra_context)
+	
+	def get_absolute_url(self):
+		root = Site.objects.get_current().root_node
+		try:
+			return '/%s' % self.get_path(root=root)
+		except AncestorDoesNotExist:
+			return None
 	
 	class Meta:
 		app_label = 'philo'

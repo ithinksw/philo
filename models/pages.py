@@ -108,7 +108,7 @@ class Page(View):
 		return self.template.django_template.render(Context(context))
 	
 	def render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
-		return HttpResponse(self.render_to_string(node, request, path, subpath, context), mimetype=self.template.mimetype)
+		return HttpResponse(self.render_to_string(node, request, path, subpath, extra_context), mimetype=self.template.mimetype)
 	
 	def __unicode__(self):
 		return self.title

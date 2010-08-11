@@ -99,5 +99,7 @@ def paginate(objects, per_page=None, page_number=1):
 		page = paginator.page(page_number)
 	except EmptyPage:
 		page = None
+	else:
+		objects = page.object_list
 	
 	return paginator, page, objects

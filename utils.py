@@ -74,15 +74,15 @@ def paginate(objects, per_page=None, page_number=1):
 	except (TypeError, ValueError):
 		# Then either it wasn't set or it was set to an invalid value
 		paginator = page = None
-	
-	# There also shouldn't be pagination if the list is too short. Try count()
-	# first - good chance it's a queryset, where count is more efficient.
-	try:
-		if objects.count() <= per_page:
-			paginator = page = None
-	except AttributeError:
-		if len(objects) <= per_page:
-			paginator = page = None
+	else:
+		# There also shouldn't be pagination if the list is too short. Try count()
+		# first - good chance it's a queryset, where count is more efficient.
+		try:
+			if objects.count() <= per_page:
+				paginator = page = None
+		except AttributeError:
+			if len(objects) <= per_page:
+				paginator = page = None
 	
 	try:
 		return paginator, page, objects

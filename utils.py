@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
+from django.core.paginator import Paginator, EmptyPage
 
 
 class ContentTypeLimiter(object):
@@ -62,3 +63,43 @@ def fattr(*args, **kwargs):
 			setattr(function, key, kwargs[key])
 		return function
 	return wrapper
+
+
+def paginate(objects, per_page=None, page_number=1):
+	"""
+	Given a list of objects, return a (paginator, page, objects) tuple.
+	"""
+	try:
+		per_page = int(per_page)
+	except (TypeError, ValueError):
+		# Then either it wasn't set or it was set to an invalid value
+		paginator = page = None
+	
+	# There also shouldn't be pagination if the list is too short. Try count()
+	# first - good chance it's a queryset, where count is more efficient.
+	try:
+		if objects.count() <= per_page:
+			paginator = page = None
+	except AttributeError:
+		if len(objects) <= per_page:
+			paginator = page = None
+	
+	try:
+		return paginator, page, objects
+	except NameError:
+		pass
+	
+	paginator = Paginator(objects, per_page)
+	try:
+		page_number = int(page_number)
+	except:
+		page_number = 1
+	
+	try:
+		page = paginator.page(page_number)
+	except EmptyPage:
+		page = None
+	else:
+		objects = page.object_list
+	
+	return paginator, page, objects

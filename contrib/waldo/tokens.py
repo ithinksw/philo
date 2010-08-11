@@ -63,4 +63,4 @@ class RegistrationTokenGenerator(PasswordResetTokenGenerator):
 		hash = sha_constructor(settings.SECRET_KEY + unicode(user.id) + unicode(user.is_active) + user.last_login.strftime('%Y-%m-%d %H:%M:%S') + unicode(timestamp)).hexdigest()[::2]
 		return '%s-%s' % (ts_b36, hash)
 
-default_token_generator = RegistrationTokenGenerator()
+registration_token_generator = RegistrationTokenGenerator()

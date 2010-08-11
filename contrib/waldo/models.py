@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, views as auth_views
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm, PasswordChangeForm
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator as password_token_generator
 from django.contrib.sites.models import Site
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
@@ -16,7 +17,8 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from philo.models import MultiView, Page
 from philo.contrib.waldo.forms import LOGIN_FORM_KEY, LoginForm, RegistrationForm
-from philo.contrib.waldo.tokens import default_token_generator
+from philo.contrib.waldo.tokens import registration_token_generator
+import urlparse
 
 
 ERROR_MESSAGE = ugettext_lazy("Please enter a correct username and password. Note that both fields are case-sensitive.")
@@ -37,6 +39,8 @@ class LoginMultiView(MultiView):
 	"""
 	login_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_login_related')
 	password_reset_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_reset_related')
+	password_reset_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_reset_confirmation_email_related')
+	password_set_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_set_related')
 	register_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_related')
 	register_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_confirmation_email_related')
 	
@@ -66,7 +70,19 @@ class LoginMultiView(MultiView):
 	def display_login_page(self, request, message, node=None, extra_context=None):
 		request.session.set_test_cookie()
 		
-		redirect = request.META.get('HTTP_REFERER', None)
+		referrer = request.META.get('HTTP_REFERER', None)
+		
+		if referrer is not None:
+			referrer = urlparse.urlparse(referrer)
+			host = referrer[1]
+			if host != request.get_host():
+				referrer = None
+			else:
+				redirect = ''.join(referrer[2:])
+		
+		if referrer is None:
+			redirect = node.get_absolute_url()
+		
 		path = request.get_full_path()
 		if redirect != path:
 			if redirect is None:
@@ -131,7 +147,10 @@ class LoginMultiView(MultiView):
 		else:
 			if user.is_active:
 				login(request, user)
-				redirect = request.session.pop('redirect')
+				try:
+					redirect = request.session.pop('redirect')
+				except KeyError:
+					redirect = node.get_absolute_url()
 				return HttpResponseRedirect(redirect)
 			else:
 				return self.display_login_page(request, ERROR_MESSAGE, node, context)
@@ -154,13 +173,58 @@ class LoginMultiView(MultiView):
 		from_email = 'noreply@%s' % Site.objects.get_current().domain
 		send_mail(subject, message, from_email, [email])
 	
-	def password_reset(self, request, node=None, extra_context=None):
-		pass
+	def password_reset(self, request, node=None, extra_context=None, token_generator=password_token_generator):
+		if request.method == 'POST':
+			form = PasswordResetForm(request.POST)
+			if form.is_valid():
+				for user in form.users_cache:
+					current_site = Site.objects.get_current()
+					token = token_generator.make_token(user)
+					link = 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), reverse('password_reset_confirm', urlconf=self, kwargs={'uidb36': int_to_base36(user.id), 'token': token}).strip('/'))
+					context = {
+						'link': link,
+						'username': user.username
+					}
+					self.send_confirmation_email('Confirm password reset for account at %s' % current_site.domain, user.email, self.password_reset_confirmation_email, context)
+					messages.add_message(request, messages.SUCCESS, "An email has been sent to the address you provided with details on resetting your password.")
+				return HttpResponseRedirect('')
+		else:
+			form = PasswordResetForm()
+		
+		context = self.get_context({'form': form})
+		context.update(extra_context or {})
+		return self.password_reset_page.render_to_response(node, request, extra_context=context)
 	
-	def password_reset_confirm(self, request, node=None, extra_context=None):
-		pass
+	def password_reset_confirm(self, request, node=None, extra_context=None, uidb36=None, token=None, token_generator=password_token_generator):
+		"""
+		Checks that a given hash in a password reset link is valid. If so,
+		displays the password set form.
+		"""
+		assert uidb36 is not None and token is not None
+		try:
+			uid_int = base36_to_int(uidb36)
+		except:
+			raise Http404
+		
+		user = get_object_or_404(User, id=uid_int)
+		
+		if token_generator.check_token(user, token):
+			if request.method == 'POST':
+				form = SetPasswordForm(user, request.POST)
+				
+				if form.is_valid():
+					form.save()
+					messages.add_message(request, messages.SUCCESS, "Password reset successful.")
+					return HttpResponseRedirect('/%s/%s/' % (node.get_absolute_url().strip('/'), reverse('login', urlconf=self).strip('/')))
+			else:
+				form = SetPasswordForm(user)
+			
+			context = self.get_context({'form': form})
+			return self.password_set_page.render_to_response(node, request, extra_context=context)
+		
+		raise Http404
 	
-	def register(self, request, node=None, extra_context=None, token_generator=default_token_generator):
+	def register(self, request, node=None, extra_context=None, token_generator=registration_token_generator):
 		if request.user.is_authenticated():
 			return HttpResponseRedirect(node.get_absolute_url())
 		
@@ -169,7 +233,7 @@ class LoginMultiView(MultiView):
 			if form.is_valid():
 				user = form.save()
 				current_site = Site.objects.get_current()
-				token = default_token_generator.make_token(user)
+				token = token_generator.make_token(user)
 				link = 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), reverse('register_confirm', urlconf=self, kwargs={'uidb36': int_to_base36(user.id), 'token': token}).strip('/'))
 				context = {
 					'link': link
@@ -184,7 +248,7 @@ class LoginMultiView(MultiView):
 		context.update(extra_context or {})
 		return self.register_page.render_to_response(node, request, extra_context=context)
 	
-	def register_confirm(self, request, node=None, extra_context=None, uidb36=None, token=None):
+	def register_confirm(self, request, node=None, extra_context=None, uidb36=None, token=None, token_generator=registration_token_generator):
 		"""
 		Checks that a given hash in a registration link is valid and activates
 		the given account. If so, log them in and redirect to
@@ -197,7 +261,7 @@ class LoginMultiView(MultiView):
 			raise Http404
 		
 		user = get_object_or_404(User, id=uid_int)
-		if default_token_generator.check_token(user, token):
+		if token_generator.check_token(user, token):
 			user.is_active = True
 			true_password = user.password
 			try:

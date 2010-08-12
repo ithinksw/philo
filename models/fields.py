@@ -1,6 +1,7 @@
 from django.db import models
 from django import forms
 from django.core.exceptions import FieldError
+from django.utils.text import capfirst
 from philo.models.base import Entity
 from philo.signals import entity_class_prepared
 
@@ -14,6 +15,8 @@ class EntityProxyField(object):
 	def __init__(self, *args, **kwargs):
 		if self.descriptor_class is None:
 			raise NotImplementedError('EntityProxyField subclasses must specify a descriptor_class.')
+		self.verbose_name = kwargs.get('verbose_name', None)
+		self.help_text = kwargs.get('help_text', None)
 	
 	def actually_contribute_to_class(self, sender, **kwargs):
 		sender._entity_meta.add_proxy_field(self)
@@ -23,6 +26,8 @@ class EntityProxyField(object):
 		if issubclass(cls, Entity):
 			self.name = name
 			self.attname = name
+			if self.verbose_name is None and name:
+				self.verbose_name = name.replace('_', ' ')
 			entity_class_prepared.connect(self.actually_contribute_to_class, sender=cls)
 		else:
 			raise FieldError('%s instances can only be declared on Entity subclasses.' % self.__class__.__name__)
@@ -66,15 +71,16 @@ class AttributeField(EntityProxyField):
 	descriptor_class = AttributeFieldDescriptor
 	
 	def __init__(self, key, field_template=None):
+		super(AttributeField, self).__init__()
 		self.key = key
 		if field_template is None:
 			field_template = models.CharField(max_length=255)
 		self.field_template = field_template
 	
-	def formfield(self, *args, **kwargs):
-		field = self.field_template.formfield(*args, **kwargs)
-		field.required = False
-		return field
+	def formfield(self, **kwargs):
+		defaults = {'required': False, 'label': capfirst(self.verbose_name), 'help_text': self.help_text}
+		defaults.update(kwargs)
+		return self.field_template.formfield(**defaults)
 
 
 class RelationshipFieldDescriptor(object):
@@ -112,6 +118,7 @@ class RelationshipField(EntityProxyField):
 	descriptor_class = RelationshipFieldDescriptor
 	
 	def __init__(self, key, model, limit_choices_to=None):
+		super(RelationshipField, self).__init__()
 		self.key = key
 		self.model = model
 		if limit_choices_to is None:
@@ -119,9 +126,9 @@ class RelationshipField(EntityProxyField):
 		self.limit_choices_to = limit_choices_to
 	
 	def formfield(self, form_class=forms.ModelChoiceField, **kwargs):
-		field = form_class(self.model._default_manager.complex_filter(self.limit_choices_to), **kwargs)
-		field.required = False
-		return field
+		defaults = {'required': False, 'label': capfirst(self.verbose_name), 'help_text': self.help_text}
+		defaults.update(kwargs)
+		return form_class(self.model._default_manager.complex_filter(self.limit_choices_to), **defaults)
 	
 	def value_from_object(self, obj):
 		relobj = super(RelationshipField, self).value_from_object(obj)

@@ -30,7 +30,7 @@ def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widge
 	if fields:
 		field_dict = SortedDict(
 			[(f, field_dict.get(f)) for f in fields
-				if ((not exclude) or (exclude and f not in exclude)) and (f not in ignored)]
+				if ((not exclude) or (exclude and f not in exclude)) and (f not in ignored) and (f in field_dict)]
 		)
 	return field_dict
 

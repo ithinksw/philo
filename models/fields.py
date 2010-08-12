@@ -70,12 +70,17 @@ class AttributeFieldDescriptor(object):
 class AttributeField(EntityProxyField):
 	descriptor_class = AttributeFieldDescriptor
 	
-	def __init__(self, key, field_template=None):
-		super(AttributeField, self).__init__()
+	def __init__(self, field_template=None, key=None, **kwargs):
+		super(AttributeField, self).__init__(**kwargs)
 		self.key = key
 		if field_template is None:
 			field_template = models.CharField(max_length=255)
 		self.field_template = field_template
+	
+	def contribute_to_class(self, cls, name):
+		super(AttributeField, self).contribute_to_class(cls, name)
+		if self.key is None:
+			self.key = name
 	
 	def formfield(self, **kwargs):
 		defaults = {'required': False, 'label': capfirst(self.verbose_name), 'help_text': self.help_text}
@@ -117,13 +122,18 @@ class RelationshipFieldDescriptor(object):
 class RelationshipField(EntityProxyField):
 	descriptor_class = RelationshipFieldDescriptor
 	
-	def __init__(self, key, model, limit_choices_to=None):
-		super(RelationshipField, self).__init__()
+	def __init__(self, model, limit_choices_to=None, key=None, **kwargs):
+		super(RelationshipField, self).__init__(**kwargs)
 		self.key = key
 		self.model = model
 		if limit_choices_to is None:
 			limit_choices_to = {}
 		self.limit_choices_to = limit_choices_to
+	
+	def contribute_to_class(self, cls, name):
+		super(RelationshipField, self).contribute_to_class(cls, name)
+		if self.key is None:
+			self.key = name
 	
 	def formfield(self, form_class=forms.ModelChoiceField, **kwargs):
 		defaults = {'required': False, 'label': capfirst(self.verbose_name), 'help_text': self.help_text}

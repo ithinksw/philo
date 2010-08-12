@@ -26,7 +26,7 @@ register_value_model(Blog)
 
 
 class BlogEntry(Entity, Titled):
-	blog = models.ForeignKey(Blog, related_name='entries')
+	blog = models.ForeignKey(Blog, related_name='entries', blank=True, null=True)
 	author = models.ForeignKey(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='blogentries')
 	date = models.DateTimeField(default=datetime.now)
 	content = models.TextField()

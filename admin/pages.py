@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django import forms
+from django.core.exceptions import ValidationError
+from django.template import Template as DjangoTemplate, loader, loader_tags, TemplateDoesNotExist, Context
 from philo.admin import widgets
 from philo.admin.base import COLLAPSE_CLASSES
 from philo.admin.nodes import ViewAdmin
@@ -92,6 +94,33 @@ class PageAdmin(ViewAdmin):
 					contentreference.save()
 
 
+class TemplateForm(forms.ModelForm):
+	def clean_code(self):
+		code = self.cleaned_data['code']
+		try:
+			t = DjangoTemplate(code)
+		except Exception, e:
+			raise ValidationError("Template code invalid. Error was: %s: %s" % (e.__class__.__name__, e))
+		
+		# make sure all extended and included templates exist.
+		def validate_template(template):
+			for node in template.nodelist:
+				try:
+					if isinstance(node, loader_tags.ExtendsNode):
+						extended_template = node.get_parent(Context())
+						validate_template(extended_template)
+					elif isinstance(node, loader_tags.IncludeNode):
+						included_template = loader.get_template(node.template_name.resolve(Context()))
+						validate_template(extended_template)
+				except Exception, e:
+					raise ValidationError("Template code invalid. Error was: %s: %s" % (e.__class__.__name__, e))
+		validate_template(t)
+		return code
+	
+	class Meta:
+		model = Template
+
+
 class TemplateAdmin(admin.ModelAdmin):
 	prepopulated_fields = {'slug': ('name',)}
 	fieldsets = (
@@ -113,6 +142,7 @@ class TemplateAdmin(admin.ModelAdmin):
 	save_on_top = True
 	save_as = True
 	list_display = ('__unicode__', 'slug', 'get_path',)
+	form = TemplateForm
 
 
 admin.site.register(Page, PageAdmin)

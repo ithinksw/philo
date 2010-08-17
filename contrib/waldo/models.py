@@ -180,8 +180,8 @@ class LoginMultiView(MultiView):
 		if request.method == 'POST':
 			form = PasswordResetForm(request.POST)
 			if form.is_valid():
+				current_site = Site.objects.get_current()
 				for user in form.users_cache:
-					current_site = Site.objects.get_current()
 					token = token_generator.make_token(user)
 					link = 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), reverse('password_reset_confirm', urlconf=self, kwargs={'uidb36': int_to_base36(user.id), 'token': token}).strip('/'))
 					context = {
@@ -307,7 +307,8 @@ class AccountMultiView(LoginMultiView):
 	to include in the account, and fields from the account profile to use in
 	the account.
 	"""
-	manage_account_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_manage_account_page')
+	manage_account_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_manage_account_related')
+	email_change_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_email_change_confirmation_email_related')
 	user_fields = ['first_name', 'last_name', 'email']
 	required_user_fields = user_fields
 	account_profile = None
@@ -317,7 +318,8 @@ class AccountMultiView(LoginMultiView):
 	def urlpatterns(self):
 		urlpatterns = super(AccountMultiView, self).urlpatterns
 		urlpatterns += patterns('',
-			url(r'^account/$', self.login_required(self.account_view), name='account')
+			url(r'^account/$', self.login_required(self.account_view), name='account'),
+			url(r'^account/email/(?P<uidb36>\w+)/(?P<email>[\w.]+[+][\w.]+)/(?P<token>[^/]+)/$', self.email_change_confirm, name='email_change_confirm')
 		)
 		return urlpatterns
 	
@@ -348,14 +350,33 @@ class AccountMultiView(LoginMultiView):
 		
 		return form_instances
 	
-	def account_view(self, request, node=None, extra_context=None):
+	def account_view(self, request, node=None, extra_context=None, token_generator=email_token_generator):
 		if request.method == 'POST':
 			form_instances = self.get_account_form_instances(request.user, request.POST)
+			current_email = request.user.email
 			
 			for form in form_instances:
 				if not form.is_valid():
 					break
 			else:
+				# When the user_form is validated, it changes the model instance, i.e. request.user, in place.
+				email = request.user.email
+				if current_email != email:
+					
+					request.user.email = current_email
+					
+					for form in form_instances:
+						form.cleaned_data.pop('email', None)
+					
+					current_site = Site.objects.get_current()
+					token = token_generator.make_token(request.user, email)
+					link = 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), reverse('email_change_confirm', urlconf=self, kwargs={'uidb36': int_to_base36(request.user.id), 'email': email.replace('@', '+'), 'token': token}).strip('/'))
+					context = {
+						'link': link
+					}
+					self.send_confirmation_email('Confirm account email change at %s' % current_site.domain, email, self.email_change_confirmation_email, context)
+					messages.add_message(request, messages.SUCCESS, "An email has be sent to %s to confirm the email change." % email)
+					
 				for form in form_instances:
 					form.save()
 				messages.add_message(request, messages.SUCCESS, "Account information saved.", fail_silently=True)
@@ -396,6 +417,33 @@ class AccountMultiView(LoginMultiView):
 	def post_register_confirm_redirect(self, request, node):
 		messages.add_message(request, messages.INFO, 'Welcome! Please fill in some more information.', fail_silently=True)
 		return HttpResponseRedirect('/%s/%s/' % (node.get_absolute_url().strip('/'), reverse('account', urlconf=self).strip('/')))
+	
+	def email_change_confirm(self, request, node=None, extra_context=None, uidb36=None, token=None, email=None, token_generator=email_token_generator):
+		"""
+		Checks that a given hash in an email change link is valid. If so, changes the email and redirects to the account page.
+		"""
+		assert uidb36 is not None and token is not None and email is not None
+		
+		try:
+			uid_int = base36_to_int(uidb36)
+		except:
+			raise Http404
+		
+		user = get_object_or_404(User, id=uid_int)
+		
+		email = email.replace('+', '@')
+		
+		if email == user.email:
+			# Then short-circuit.
+			raise Http404
+		
+		if token_generator.check_token(user, email, token):
+			user.email = email
+			user.save()
+			messages.add_message(request, messages.SUCCESS, 'Email changed successfully.')
+			return HttpResponseRedirect('/%s/%s/' % (node.get_absolute_url().strip('/'), reverse('account', urlconf=self).strip('/')))
+		
+		raise Http404
 	
 	class Meta:
 		abstract = True

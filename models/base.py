@@ -241,7 +241,7 @@ class TreeManager(models.Manager):
 class TreeModel(models.Model):
 	objects = TreeManager()
 	parent = models.ForeignKey('self', related_name='children', null=True, blank=True)
-	slug = models.SlugField()
+	slug = models.SlugField(max_length=255)
 	
 	def has_ancestor(self, ancestor):
 		parent = self

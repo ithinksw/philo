@@ -17,7 +17,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from philo.models import MultiView, Page
 from philo.contrib.waldo.forms import LOGIN_FORM_KEY, LoginForm, RegistrationForm
-from philo.contrib.waldo.tokens import registration_token_generator
+from philo.contrib.waldo.tokens import registration_token_generator, email_token_generator
 import urlparse
 
 
@@ -41,6 +41,7 @@ class LoginMultiView(MultiView):
 	password_reset_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_reset_related')
 	password_reset_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_reset_confirmation_email_related')
 	password_set_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_set_related')
+	password_change_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_change_related', blank=True, null=True)
 	register_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_related')
 	register_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_confirmation_email_related')
 	
@@ -48,18 +49,20 @@ class LoginMultiView(MultiView):
 	def urlpatterns(self):
 		urlpatterns = patterns('',
 			url(r'^login/$', self.login, name='login'),
-			url(r'^logout/$', self.logout, name='logout')
-		)
-		urlpatterns += patterns('',
+			url(r'^logout/$', self.logout, name='logout'),
+			
 			url(r'^password/reset/$', csrf_protect(self.password_reset), name='password_reset'),
-			url(r'^password/reset/(?P<uidb36>\w+)/(?P<token>[^/]+)/$',
-				self.password_reset_confirm, name='password_reset_confirm')
-		)
-		urlpatterns += patterns('',
+			url(r'^password/reset/(?P<uidb36>\w+)/(?P<token>[^/]+)/$', self.password_reset_confirm, name='password_reset_confirm'),
+			
 			url(r'^register/$', csrf_protect(self.register), name='register'),
-			url(r'^register/(?P<uidb36>\w+)/(?P<token>[^/]+)/$',
-				self.register_confirm, name='register_confirm')
+			url(r'^register/(?P<uidb36>\w+)/(?P<token>[^/]+)/$', self.register_confirm, name='register_confirm')
 		)
+		
+		if self.password_change_page:
+			urlpatterns += patterns('',
+				url(r'^password/change/$', csrf_protect(self.login_required(self.password_change)), name='password_change'),
+			)
+		
 		return urlpatterns
 	
 	def get_context(self, extra_dict=None):
@@ -186,7 +189,7 @@ class LoginMultiView(MultiView):
 						'username': user.username
 					}
 					self.send_confirmation_email('Confirm password reset for account at %s' % current_site.domain, user.email, self.password_reset_confirmation_email, context)
-					messages.add_message(request, messages.SUCCESS, "An email has been sent to the address you provided with details on resetting your password.")
+					messages.add_message(request, messages.SUCCESS, "An email has been sent to the address you provided with details on resetting your password.", fail_silently=True)
 				return HttpResponseRedirect('')
 		else:
 			form = PasswordResetForm()
@@ -224,6 +227,20 @@ class LoginMultiView(MultiView):
 		
 		raise Http404
 	
+	def password_change(self, request, node=None, extra_context=None):
+		if request.method == 'POST':
+			form = PasswordChangeForm(request.user, request.POST)
+			if form.is_valid():
+				form.save()
+				messages.add_message(request, messages.SUCCESS, 'Password changed successfully.', fail_silently=True)
+				return HttpResponseRedirect('')
+		else:
+			form = PasswordChangeForm(request.user)
+		
+		context = self.get_context({'form': form})
+		context.update(extra_context or {})
+		return self.password_change_page.render_to_response(node, request, extra_context=context)
+	
 	def register(self, request, node=None, extra_context=None, token_generator=registration_token_generator):
 		if request.user.is_authenticated():
 			return HttpResponseRedirect(node.get_absolute_url())
@@ -239,7 +256,7 @@ class LoginMultiView(MultiView):
 					'link': link
 				}
 				self.send_confirmation_email('Confirm account creation at %s' % current_site.name, user.email, self.register_confirmation_email, context)
-				messages.add_message(request, messages.SUCCESS, 'An email has been sent to %s with details on activating your account.' % user.email)
+				messages.add_message(request, messages.SUCCESS, 'An email has been sent to %s with details on activating your account.' % user.email, fail_silently=True)
 				return HttpResponseRedirect('')
 		else:
 			form = RegistrationForm()
@@ -369,7 +386,7 @@ class AccountMultiView(LoginMultiView):
 	def account_required(self, view):
 		def inner(request, *args, **kwargs):
 			if not self.has_valid_account(request.user):
-				messages.add_message(request, messages.ERROR, "You need to add some account information before you can post listings.")
+				messages.add_message(request, messages.ERROR, "You need to add some account information before you can post listings.", fail_silently=True)
 				return self.account_view(request, *args, **kwargs)
 			return view(request, *args, **kwargs)
 		
@@ -377,7 +394,7 @@ class AccountMultiView(LoginMultiView):
 		return inner
 	
 	def post_register_confirm_redirect(self, request, node):
-		messages.add_message(request, messages.INFO, 'Welcome! Please fill in some more information.')
+		messages.add_message(request, messages.INFO, 'Welcome! Please fill in some more information.', fail_silently=True)
 		return HttpResponseRedirect('/%s/%s/' % (node.get_absolute_url().strip('/'), reverse('account', urlconf=self).strip('/')))
 	
 	class Meta:

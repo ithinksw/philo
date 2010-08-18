@@ -1,8 +1,9 @@
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.forms.models import model_to_dict, fields_for_model, ModelFormMetaclass, ModelForm, BaseInlineFormSet
+from django.forms.formsets import TOTAL_FORM_COUNT
 from django.template import loader, loader_tags, TemplateDoesNotExist, Context, Template as DjangoTemplate
 from django.utils.datastructures import SortedDict
-from philo.models import Entity, Template
+from philo.models import Entity, Template, Contentlet, ContentReference
 from philo.models.fields import RelationshipField
 from philo.utils import fattr
 
@@ -122,6 +123,24 @@ class TemplateForm(ModelForm):
 		model = Template
 
 
+class ContainerForm(ModelForm):
+	def __init__(self, *args, **kwargs):
+		super(ContainerForm, self).__init__(*args, **kwargs)
+		self.verbose_name = self.instance.name.replace('_', ' ')
+
+
+class ContentletForm(ContainerForm):
+	class Meta:
+		model = Contentlet
+		fields = ['name', 'content', 'dynamic']
+
+
+class ContentReferenceForm(ContainerForm):
+	class Meta:
+		model = ContentReference
+		fields = ['name', 'content_id']
+
+
 class ContainerInlineFormSet(BaseInlineFormSet):
 	def __init__(self, containers, data=None, files=None, instance=None, save_as_new=False, prefix=None, queryset=None):
 		# Unfortunately, I need to add some things to BaseInline between its __init__ and its super call, so
@@ -147,14 +166,13 @@ class ContainerInlineFormSet(BaseInlineFormSet):
 			containers.remove(container.name)
 		self.extra_containers = containers
 		self.extra = len(self.extra_containers)
-		
-		super(BaseInlineFormSet, self).__init__(data, files, prefix, qs)
+		super(BaseInlineFormSet, self).__init__(data, files, prefix=prefix, queryset=qs)
 	
-	def _construct_form(self, i, **kwargs):
-		if i > self.initial_form_count(): # and not kwargs.get('instance'):
-			kwargs['instance'] = self.model(name=self.extra_containers[i - self.initial_form_count() - 1])
-		
-		return super(ContainerInlineFormSet, self)._construct_form(i, **kwargs)
+	def total_form_count(self):
+		if self.data or self.files:
+			return self.management_form.cleaned_data[TOTAL_FORM_COUNT]
+		else:
+			return self.initial_form_count() + self.extra
 
 
 class ContentletInlineFormSet(ContainerInlineFormSet):
@@ -166,7 +184,13 @@ class ContentletInlineFormSet(ContainerInlineFormSet):
 			self.instance = instance
 			containers = list(self.instance.containers[0])
 	
-		super(ContentletInlineFormSet, self).__init__(containers, data, files, instance, save_as_new, prefix, queryset)	
+		super(ContentletInlineFormSet, self).__init__(containers, data, files, instance, save_as_new, prefix, queryset)
+	
+	def _construct_form(self, i, **kwargs):
+		if i >= self.initial_form_count(): # and not kwargs.get('instance'):
+			kwargs['instance'] = self.model(name=self.extra_containers[i - self.initial_form_count() - 1])
+		
+		return super(ContentletInlineFormSet, self)._construct_form(i, **kwargs)
 
 
 class ContentReferenceInlineFormSet(ContainerInlineFormSet):
@@ -179,3 +203,10 @@ class ContentReferenceInlineFormSet(ContainerInlineFormSet):
 			containers = list(self.instance.containers[1])
 	
 		super(ContentReferenceInlineFormSet, self).__init__(containers, data, files, instance, save_as_new, prefix, queryset)
+
+	def _construct_form(self, i, **kwargs):
+		if i >= self.initial_form_count(): # and not kwargs.get('instance'):
+			name, content_type = self.extra_containers[i - self.initial_form_count() - 1]
+			kwargs['instance'] = self.model(name=name, content_type=content_type)
+
+		return super(ContentReferenceInlineFormSet, self)._construct_form(i, **kwargs)

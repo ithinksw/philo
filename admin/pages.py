@@ -5,7 +5,7 @@ from philo.admin import widgets
 from philo.admin.base import COLLAPSE_CLASSES
 from philo.admin.nodes import ViewAdmin
 from philo.models.pages import Page, Template, Contentlet, ContentReference
-from philo.forms import TemplateForm, ContentletInlineFormSet, ContentReferenceInlineFormSet
+from philo.forms import TemplateForm, ContentletInlineFormSet, ContentReferenceInlineFormSet, ContentletForm, ContentReferenceForm
 
 
 class ContentletInline(admin.StackedInline):
@@ -13,6 +13,7 @@ class ContentletInline(admin.StackedInline):
 	extra = 0
 	max_num = 0
 	formset = ContentletInlineFormSet
+	form = ContentletForm
 	can_delete = False
 	template = 'admin/philo/edit_inline/tabular_container.html'
 
@@ -22,6 +23,7 @@ class ContentReferenceInline(admin.StackedInline):
 	extra = 0
 	max_num = 0
 	formset = ContentReferenceInlineFormSet
+	form = ContentReferenceForm
 	can_delete = False
 	template = 'admin/philo/edit_inline/tabular_container.html'
 

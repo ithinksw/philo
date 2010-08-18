@@ -1,7 +1,8 @@
 {% load i18n adminmedia %}
+{{ inline_admin_formset.formset.management_form }}
+{% if inline_admin_formset.formset.forms %}
 <div class="inline-group" id="{{ inline_admin_formset.formset.prefix }}-group">
   <div class="tabular inline-related {% if forloop.last %}last-related{% endif %}">
-{{ inline_admin_formset.formset.management_form }}
 <fieldset class="module{% if inline_admin_formset.classes %} {{ inline_admin_formset.classes|join:' ' }}{% endif %}">
    <h2>{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}</h2>
    {{ inline_admin_formset.formset.non_form_errors }}
@@ -27,13 +28,14 @@
 		  {% endfor %}
 		{% endfor %}
 		{% endfor %}
+		{{ inline_admin_form.form.name.as_hidden }}
 		{% endspaceless %}
 		{% if inline_admin_form.form.non_field_errors %}
 		<tr><td colspan="{{ inline_admin_form.field_count }}">{{ inline_admin_form.form.non_field_errors }}</td></tr>
 		{% endif %}
 		<tr class="{% cycle "row1" "row2" %} {% if forloop.last %} empty-form{% endif %}"
 			 id="{{ inline_admin_formset.formset.prefix }}-{% if not forloop.last %}{{ forloop.counter0 }}{% else %}empty{% endif %}">
-		<th>{{ inline_admin_form.form.name.as_hidden }}{{ inline_admin_form.form.initial.name|capfirst }}</th>
+			<th>{{ inline_admin_form.form.verbose_name|capfirst }}</th>
 		{% for fieldset in inline_admin_form %}
 		  {% for line in fieldset %}
 			{% for field in line %}
@@ -120,3 +122,4 @@
 	});
 })(django.jQuery);
 </script>
+{% endif %}

@@ -35,7 +35,7 @@
 		{% endif %}
 		<tr class="{% cycle "row1" "row2" %} {% if forloop.last %} empty-form{% endif %}"
 			 id="{{ inline_admin_formset.formset.prefix }}-{% if not forloop.last %}{{ forloop.counter0 }}{% else %}empty{% endif %}">
-			<th>{{ inline_admin_form.form.verbose_name|capfirst }}</th>
+			<th>{{ inline_admin_form.form.verbose_name|capfirst }}:</th>
 		{% for fieldset in inline_admin_form %}
 		  {% for line in fieldset %}
 			{% for field in line %}

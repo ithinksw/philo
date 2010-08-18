@@ -1,8 +1,11 @@
+from django import forms
+from django.contrib.admin.widgets import AdminTextareaWidget
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.forms.models import model_to_dict, fields_for_model, ModelFormMetaclass, ModelForm, BaseInlineFormSet
 from django.forms.formsets import TOTAL_FORM_COUNT
 from django.template import loader, loader_tags, TemplateDoesNotExist, Context, Template as DjangoTemplate
 from django.utils.datastructures import SortedDict
+from philo.admin.widgets import ModelLookupWidget
 from philo.models import Entity, Template, Contentlet, ContentReference
 from philo.models.fields import RelationshipField
 from philo.utils import fattr
@@ -130,12 +133,28 @@ class ContainerForm(ModelForm):
 
 
 class ContentletForm(ContainerForm):
+	content = forms.CharField(required=False, widget=AdminTextareaWidget)
+	
+	def should_delete(self):
+		return not bool(self.cleaned_data['content'])
+	
 	class Meta:
 		model = Contentlet
 		fields = ['name', 'content', 'dynamic']
 
 
 class ContentReferenceForm(ContainerForm):
+	def __init__(self, *args, **kwargs):
+		super(ContentReferenceForm, self).__init__(*args, **kwargs)
+		try:
+			self.fields['content_id'].widget = ModelLookupWidget(self.instance.content_type)
+		except ObjectDoesNotExist:
+			# This will happen when an empty form (which we will never use) gets instantiated.
+			pass
+	
+	def should_delete(self):
+		return (self.cleaned_data['content_id'] is None)
+	
 	class Meta:
 		model = ContentReference
 		fields = ['name', 'content_id']
@@ -173,16 +192,61 @@ class ContainerInlineFormSet(BaseInlineFormSet):
 			return self.management_form.cleaned_data[TOTAL_FORM_COUNT]
 		else:
 			return self.initial_form_count() + self.extra
+	
+	def save_existing_objects(self, commit=True):
+		self.changed_objects = []
+		self.deleted_objects = []
+		if not self.get_queryset():
+			return []
+
+		saved_instances = []
+		for form in self.initial_forms:
+			pk_name = self._pk_field.name
+			raw_pk_value = form._raw_value(pk_name)
+
+			# clean() for different types of PK fields can sometimes return
+			# the model instance, and sometimes the PK. Handle either.
+			pk_value = form.fields[pk_name].clean(raw_pk_value)
+			pk_value = getattr(pk_value, 'pk', pk_value)
+
+			obj = self._existing_object(pk_value)
+			if form.should_delete():
+				self.deleted_objects.append(obj)
+				obj.delete()
+				continue
+			if form.has_changed():
+				self.changed_objects.append((obj, form.changed_data))
+				saved_instances.append(self.save_existing(form, obj, commit=commit))
+				if not commit:
+					self.saved_forms.append(form)
+		return saved_instances
+
+	def save_new_objects(self, commit=True):
+		self.new_objects = []
+		for form in self.extra_forms:
+			if not form.has_changed():
+				continue
+			# If someone has marked an add form for deletion, don't save the
+			# object.
+			if form.should_delete():
+				continue
+			self.new_objects.append(self.save_new(form, commit=commit))
+			if not commit:
+				self.saved_forms.append(form)
+		return self.new_objects
 
 
 class ContentletInlineFormSet(ContainerInlineFormSet):
 	def __init__(self, data=None, files=None, instance=None, save_as_new=False, prefix=None, queryset=None):
 		if instance is None:
 			self.instance = self.fk.rel.to()
-			containers = []
 		else:
 			self.instance = instance
+		
+		try:
 			containers = list(self.instance.containers[0])
+		except ObjectDoesNotExist:
+			containers = []
 	
 		super(ContentletInlineFormSet, self).__init__(containers, data, files, instance, save_as_new, prefix, queryset)
 	
@@ -205,10 +269,13 @@ class ContentReferenceInlineFormSet(ContainerInlineFormSet):
 	def __init__(self, data=None, files=None, instance=None, save_as_new=False, prefix=None, queryset=None):
 		if instance is None:
 			self.instance = self.fk.rel.to()
-			containers = []
 		else:
 			self.instance = instance
+		
+		try:
 			containers = list(self.instance.containers[1])
+		except ObjectDoesNotExist:
+			containers = []
 	
 		super(ContentReferenceInlineFormSet, self).__init__(containers, data, files, instance, save_as_new, prefix, queryset)
 	

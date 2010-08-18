@@ -1,5 +1,5 @@
-from django.core.exceptions import ValidationError
-from django.forms.models import model_to_dict, fields_for_model, ModelFormMetaclass, ModelForm
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.forms.models import model_to_dict, fields_for_model, ModelFormMetaclass, ModelForm, BaseInlineFormSet
 from django.template import loader, loader_tags, TemplateDoesNotExist, Context, Template as DjangoTemplate
 from django.utils.datastructures import SortedDict
 from philo.models import Entity, Template
@@ -94,7 +94,7 @@ class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it 
 def validate_template(template):
 	"""
 	Makes sure that the template and all included or extended templates are valid.
-	"""	
+	""" 
 	for node in template.nodelist:
 		try:
 			if isinstance(node, loader_tags.ExtendsNode):
@@ -120,3 +120,62 @@ class TemplateForm(ModelForm):
 
 	class Meta:
 		model = Template
+
+
+class ContainerInlineFormSet(BaseInlineFormSet):
+	def __init__(self, containers, data=None, files=None, instance=None, save_as_new=False, prefix=None, queryset=None):
+		# Unfortunately, I need to add some things to BaseInline between its __init__ and its super call, so
+		# a lot of this is repetition.
+		
+		# Start cribbed from BaseInline
+		from django.db.models.fields.related import RelatedObject
+		self.save_as_new = save_as_new
+		# is there a better way to get the object descriptor?
+		self.rel_name = RelatedObject(self.fk.rel.to, self.model, self.fk).get_accessor_name()
+		if self.fk.rel.field_name == self.fk.rel.to._meta.pk.name:
+			backlink_value = self.instance
+		else:
+			backlink_value = getattr(self.instance, self.fk.rel.field_name)
+		if queryset is None:
+			queryset = self.model._default_manager
+		qs = queryset.filter(**{self.fk.name: backlink_value}).filter(name__in=containers)
+		# End cribbed from BaseInline
+		
+		self.container_instances = []
+		for container in qs:
+			self.container_instances.append(container)
+			containers.remove(container.name)
+		self.extra_containers = containers
+		self.extra = len(self.extra_containers)
+		
+		super(BaseInlineFormSet, self).__init__(data, files, prefix, qs)
+	
+	def _construct_form(self, i, **kwargs):
+		if i > self.initial_form_count(): # and not kwargs.get('instance'):
+			kwargs['instance'] = self.model(name=self.extra_containers[i - self.initial_form_count() - 1])
+		
+		return super(ContainerInlineFormSet, self)._construct_form(i, **kwargs)
+
+
+class ContentletInlineFormSet(ContainerInlineFormSet):
+	def __init__(self, data=None, files=None, instance=None, save_as_new=False, prefix=None, queryset=None):
+		if instance is None:
+			self.instance = self.fk.rel.to()
+			containers = []
+		else:
+			self.instance = instance
+			containers = list(self.instance.containers[0])
+	
+		super(ContentletInlineFormSet, self).__init__(containers, data, files, instance, save_as_new, prefix, queryset)	
+
+
+class ContentReferenceInlineFormSet(ContainerInlineFormSet):
+	def __init__(self, data=None, files=None, instance=None, save_as_new=False, prefix=None, queryset=None):
+		if instance is None:
+			self.instance = self.fk.rel.to()
+			containers = []
+		else:
+			self.instance = instance
+			containers = list(self.instance.containers[1])
+	
+		super(ContentReferenceInlineFormSet, self).__init__(containers, data, files, instance, save_as_new, prefix, queryset)

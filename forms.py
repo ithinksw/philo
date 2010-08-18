@@ -157,16 +157,16 @@ class ContainerInlineFormSet(BaseInlineFormSet):
 			backlink_value = getattr(self.instance, self.fk.rel.field_name)
 		if queryset is None:
 			queryset = self.model._default_manager
-		qs = queryset.filter(**{self.fk.name: backlink_value}).filter(name__in=containers)
+		qs = queryset.filter(**{self.fk.name: backlink_value})
 		# End cribbed from BaseInline
 		
-		self.container_instances = []
-		for container in qs:
-			self.container_instances.append(container)
-			containers.remove(container.name)
+		self.container_instances, qs = self.get_container_instances(containers, qs)
 		self.extra_containers = containers
 		self.extra = len(self.extra_containers)
 		super(BaseInlineFormSet, self).__init__(data, files, prefix=prefix, queryset=qs)
+	
+	def get_container_instances(self, containers, qs):
+		raise NotImplementedError
 	
 	def total_form_count(self):
 		if self.data or self.files:
@@ -186,6 +186,14 @@ class ContentletInlineFormSet(ContainerInlineFormSet):
 	
 		super(ContentletInlineFormSet, self).__init__(containers, data, files, instance, save_as_new, prefix, queryset)
 	
+	def get_container_instances(self, containers, qs):
+		qs = qs.filter(name__in=containers)
+		container_instances = []
+		for container in qs:
+			container_instances.append(container)
+			containers.remove(container.name)
+		return container_instances, qs
+	
 	def _construct_form(self, i, **kwargs):
 		if i >= self.initial_form_count(): # and not kwargs.get('instance'):
 			kwargs['instance'] = self.model(name=self.extra_containers[i - self.initial_form_count() - 1])
@@ -203,6 +211,14 @@ class ContentReferenceInlineFormSet(ContainerInlineFormSet):
 			containers = list(self.instance.containers[1])
 	
 		super(ContentReferenceInlineFormSet, self).__init__(containers, data, files, instance, save_as_new, prefix, queryset)
+	
+	def get_container_instances(self, containers, qs):
+		qs = qs.filter(name__in=[c[0] for c in containers])
+		container_instances = []
+		for container in qs:
+			container_instances.append(container)
+			containers.remove((container.name, container.content_type))
+		return container_instances, qs
 
 	def _construct_form(self, i, **kwargs):
 		if i >= self.initial_form_count(): # and not kwargs.get('instance'):

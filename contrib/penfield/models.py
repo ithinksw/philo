@@ -2,12 +2,13 @@ from django.db import models
 from django.conf import settings
 from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model
 from philo.exceptions import ViewCanNotProvideSubpath
-from django.conf.urls.defaults import url, patterns
+from django.conf.urls.defaults import url, patterns, include
 from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponse
 from datetime import datetime
 from philo.utils import paginate
 from philo.contrib.penfield.validators import validate_pagination_count
+from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
 
 
 class Blog(Entity, Titled):
@@ -62,9 +63,19 @@ class BlogView(MultiView):
 	entry_permalink_style = models.CharField(max_length=1, choices=ENTRY_PERMALINK_STYLE_CHOICES)
 	entry_permalink_base = models.CharField(max_length=255, blank=False, default='entries')
 	tag_permalink_base = models.CharField(max_length=255, blank=False, default='tags')
+	feed_suffix = models.CharField(max_length=255, blank=False, default='feed')
+	feeds_enabled = models.BooleanField() 
 	
 	def __unicode__(self):
 		return u'BlogView for %s' % self.blog.title
+	
+	@property
+	def _feeds_enabled(self):
+		return self.feeds_enabled
+	
+	@property
+	def per_page(self):
+		return self.entries_per_page
 	
 	def get_subpath(self, obj):
 		if isinstance(obj, BlogEntry):
@@ -92,35 +103,95 @@ class BlogView(MultiView):
 							entry_archive_view_args.update({'day': str(int(split_obj[3])).zfill(2)})
 					return reverse(self.entry_archive_view, urlconf=self, kwargs=entry_archive_view_args)
 		raise ViewCanNotProvideSubpath
+
+	def page_view(self, func, page, list_var='entries'):
+		"""
+		Wraps an object-fetching function and renders the results as a page.
+		"""
+		def inner(request, node=None, extra_context=None, **kwargs):
+			objects, extra_context = func(request, node, extra_context, **kwargs)
+
+			context = self.get_context()
+			context.update(extra_context or {})
+
+			if 'page' in kwargs or 'page' in request.GET:
+				page_num = kwargs.get('page', request.GET.get('page', 1))
+				paginator, paginated_page, objects = paginate(objects, self.per_page, page_num)
+				context.update({'paginator': paginator, 'paginated_page': paginated_page, list_var: objects})
+			else:
+				context.update({list_var: objects})
+
+			return page.render_to_response(node, request, extra_context=context)
+
+		return inner
+
+	def get_atom_feed(self):
+		return Atom1Feed(self.blog.title, '/%s/%s/' % (node.get_absolute_url().strip('/'), reverse(reverse_name, urlconf=self, kwargs=kwargs).strip('/')), '', subtitle='')
+	
+	def get_rss_feed(self):
+		return Rss201rev2Feed(self.blog.title, '/%s/%s/' % (node.get_absolute_url().strip('/'), reverse(reverse_name, urlconf=self, kwargs=kwargs).strip('/')), '')
+
+	def feed_view(self, func, reverse_name):
+		"""
+		Wraps an object-fetching function and renders the results as a rss or atom feed.
+		"""
+		def inner(request, node=None, extra_context=None, **kwargs):
+			objects, extra_context = func(request, node, extra_context, **kwargs)
+			
+			if 'HTTP_ACCEPT' in request.META and 'rss' in request.META['HTTP_ACCEPT'] and 'atom' not in request.META['HTTP_ACCEPT']:
+				feed = self.get_rss_feed()
+			else:
+				feed = self.get_atom_feed()
+			
+			for obj in objects:
+				feed.add_item(obj.title, '/%s/%s/' % (node.get_absolute_url().strip('/'), self.get_subpath(obj).strip('/')), description=obj.excerpt)
+			
+			response = HttpResponse(mimetype=feed.mime_type)
+			feed.write(response, 'utf-8')
+			return response
+		
+		return inner
+	
+	def get_context(self):
+		return {'blog': self.blog}
+	
+	def feed_patterns(self, object_fetcher, page, base_name):
+		feed_name = '%s_feed' % base_name
+		urlpatterns = patterns('',
+			url(r'^%s/$' % self.feed_suffix, self.feed_view(object_fetcher, feed_name), name=feed_name),
+			url(r'^$', self.page_view(object_fetcher, page), name=base_name)
+		)
+		return urlpatterns
 	
 	@property
 	def urlpatterns(self):
 		base_patterns = patterns('',
-			url(r'^$', self.index_view),
+			url(r'^', include(self.feed_patterns(self.get_all_entries, self.index_page, 'index'))),
 			url((r'^(?:%s)/?$' % self.tag_permalink_base), self.tag_archive_view),
-			url((r'^(?:%s)/(?P<tag_slugs>[-\w]+[-+/\w]*)/?$' % self.tag_permalink_base), self.tag_view)
+			url((r'^(?:%s)/(?P<tag_slugs>[-\w]+[-+/\w]*)/' % self.tag_permalink_base), include(self.feed_patterns(self.get_entries_by_tag, self.tag_page, 'entries_by_tag')))
 		)
 		if self.entry_permalink_style == 'D':
 			entry_patterns = patterns('',
-				url(r'^(?P<year>\d{4})/?$', self.entry_archive_view),
-				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/?$', self.entry_archive_view),
-				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/?$', self.entry_archive_view),
+				url(r'^(?P<year>\d{4})/', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_year'))),
+				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/?$', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_month'))),
+				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/?$', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_day'))),
 				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/(?P<slug>[-\w]+)/?$', self.entry_view)
 			)
 		elif self.entry_permalink_style == 'M':
 			entry_patterns = patterns('',
-				url(r'^(?P<year>\d{4})/?$', self.entry_archive_view),
-				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/?$', self.entry_archive_view),
+				url(r'^(?P<year>\d{4})/', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_year'))),
+				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/?$', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_month'))),
 				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<slug>[-\w]+)/?$', self.entry_view)
 			)
 		elif self.entry_permalink_style == 'Y':
 			entry_patterns = patterns('',
-				url(r'^(?P<year>\d{4})/?$', self.entry_archive_view),
+				url(r'^(?P<year>\d{4})/', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_year'))),
 				url(r'^(?P<year>\d{4})/(?P<slug>[-\w]+)/?$', self.entry_view)
 			)
 		elif self.entry_permalink_style == 'B':
 			entry_patterns = patterns('',
-				url((r'^(?:%s)/?$' % self.entry_permalink_base), self.entry_archive_view),
+				url((r'^(?:%s)/?$' % self.entry_permalink_base), 
+					url(r'^(?P<year>\d{4})/', include(self.feed_patterns(self.get_all_entries, self.entry_archive_page, 'entries_by_year'))),),
 				url((r'^(?:%s)/(?P<slug>[-\w]+)/?$' % self.entry_permalink_base), self.entry_view)
 			)
 		else:
@@ -129,12 +200,43 @@ class BlogView(MultiView):
 			)
 		return base_patterns + entry_patterns
 	
-	def index_view(self, request, node=None, extra_context=None):
-		paginator, page, entries = paginate(self.blog.entries.all(), self.entries_per_page, request.GET.get('page', 1))
-		context = {}
-		context.update(extra_context or {})
-		context.update({'blog': self.blog, 'paginator': paginator, 'paginated_page': page, 'entries': entries})
-		return self.index_page.render_to_response(node, request, extra_context=context)
+	def get_all_entries(self, request, node=None, extra_context=None):
+		return self.blog.entries.all(), extra_context
+	
+	def get_entries_by_ymd(self, request, year=None, month=None, day=None, node=None, extra_context=None):
+		if not self.entry_archive_page:
+			raise Http404
+		entries = self.blog.entries.all()
+		if year:
+			entries = entries.filter(date__year=year)
+		if month:
+			entries = entries.filter(date__month=month)
+		if day:
+			entries = entries.filter(date__day=day)
+		
+		context = extra_context or {}
+		context.update({'year': year, 'month': month, 'day': day})
+		return entries, context
+	
+	def get_entries_by_tag(self, request, node=None, extra_context=None):
+		tags = []
+		for tag_slug in tag_slugs.replace('+', '/').split('/'):
+			if tag_slug: # ignore blank slugs, handles for multiple consecutive separators (+ or /)
+				try:
+					tag = self.blog.entry_tags.get(slug=tag_slug)
+				except:
+					raise Http404
+				tags.append(tag)
+		if len(tags) <= 0:
+			raise Http404
+
+		entries = self.blog.entries.all()
+		for tag in tags:
+			entries = entries.filter(tags=tag)
+		if entries.count() <= 0:
+			raise Http404
+		
+		return entries, extra_context
 	
 	def entry_view(self, request, slug, year=None, month=None, day=None, node=None, extra_context=None):
 		entries = self.blog.entries.all()
@@ -148,51 +250,10 @@ class BlogView(MultiView):
 			entry = entries.get(slug=slug)
 		except:
 			raise Http404
-		context = {}
+		context = self.get_context()
 		context.update(extra_context or {})
-		context.update({'blog': self.blog, 'entry': entry})
+		context.update({'entry': entry})
 		return self.entry_page.render_to_response(node, request, extra_context=context)
-	
-	def entry_archive_view(self, request, year=None, month=None, day=None, node=None, extra_context=None):
-		if not self.entry_archive_page:
-			raise Http404
-		entries = self.blog.entries.all()
-		if year:
-			entries = entries.filter(date__year=year)
-		if month:
-			entries = entries.filter(date__month=month)
-		if day:
-			entries = entries.filter(date__day=day)
-		
-		paginator, page, entries = paginate(entries, self.entries_per_page, request.GET.get('page', 1))
-		context = {}
-		context.update(extra_context or {})
-		context.update({'blog': self.blog, 'year': year, 'month': month, 'day': day, 'paginator': paginator, 'paginated_page': page, 'entries': entries})
-		return self.entry_archive_page.render_to_response(node, request, extra_context=context)
-	
-	def tag_view(self, request, tag_slugs, node=None, extra_context=None):
-		tags = []
-		for tag_slug in tag_slugs.replace('+', '/').split('/'):
-			if tag_slug: # ignore blank slugs, handles for multiple consecutive separators (+ or /)
-				try:
-					tag = self.blog.entry_tags.get(slug=tag_slug)
-				except:
-					raise Http404
-				tags.append(tag)
-		if len(tags) <= 0:
-			raise Http404
-		
-		entries = self.blog.entries.all()
-		for tag in tags:
-			entries = entries.filter(tags=tag)
-		if entries.count() <= 0:
-			raise Http404
-		
-		paginator, page, entries = paginate(entries, self.entries_per_page, request.GET.get('page', 1))
-		context = {}
-		context.update(extra_context or {})
-		context.update({'blog': self.blog, 'tags': tags, 'paginator': paginator, 'paginated_page': page, 'entries': entries})
-		return self.tag_page.render_to_response(node, request, extra_context=context)
 	
 	def tag_archive_view(self, request, node=None, extra_context=None):
 		if not self.tag_archive_page:

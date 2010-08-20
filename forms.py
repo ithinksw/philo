@@ -1,6 +1,8 @@
+from django.core.exceptions import ValidationError
 from django.forms.models import model_to_dict, fields_for_model, ModelFormMetaclass, ModelForm
+from django.template import loader, loader_tags, TemplateDoesNotExist, Context, Template as DjangoTemplate
 from django.utils.datastructures import SortedDict
-from philo.models import Entity
+from philo.models import Entity, Template
 from philo.models.fields import RelationshipField
 from philo.utils import fattr
 
@@ -87,3 +89,34 @@ class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it 
 			self.save_m2m()
 		
 		return instance
+
+
+def validate_template(template):
+	"""
+	Makes sure that the template and all included or extended templates are valid.
+	"""	
+	for node in template.nodelist:
+		try:
+			if isinstance(node, loader_tags.ExtendsNode):
+				extended_template = node.get_parent(Context())
+				validate_template(extended_template)
+			elif isinstance(node, loader_tags.IncludeNode):
+				included_template = loader.get_template(node.template_name.resolve(Context()))
+				validate_template(extended_template)
+		except Exception, e:
+			raise ValidationError("Template code invalid. Error was: %s: %s" % (e.__class__.__name__, e))
+
+
+class TemplateForm(ModelForm):
+	def clean_code(self):
+		code = self.cleaned_data['code']
+		try:
+			t = DjangoTemplate(code)
+		except Exception, e:
+			raise ValidationError("Template code invalid. Error was: %s: %s" % (e.__class__.__name__, e))
+
+		validate_template(t)
+		return code
+
+	class Meta:
+		model = Template

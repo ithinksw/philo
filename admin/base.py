@@ -13,6 +13,7 @@ class AttributeInline(generic.GenericTabularInline):
 	extra = 1
 	template = 'admin/philo/edit_inline/tabular_collapse.html'
 	allow_add = True
+	classes = COLLAPSE_CLASSES
 
 
 class RelationshipInline(generic.GenericTabularInline):
@@ -22,6 +23,7 @@ class RelationshipInline(generic.GenericTabularInline):
 	extra = 1
 	template = 'admin/philo/edit_inline/tabular_collapse.html'
 	allow_add = True
+	classes = COLLAPSE_CLASSES
 
 
 class EntityAdmin(admin.ModelAdmin):

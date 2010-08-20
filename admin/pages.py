@@ -1,9 +1,11 @@
 from django.contrib import admin
 from django import forms
+from django.template import Template as DjangoTemplate
 from philo.admin import widgets
 from philo.admin.base import COLLAPSE_CLASSES
 from philo.admin.nodes import ViewAdmin
 from philo.models.pages import Page, Template, Contentlet, ContentReference
+from philo.forms import TemplateForm
 
 
 class PageAdmin(ViewAdmin):
@@ -113,6 +115,7 @@ class TemplateAdmin(admin.ModelAdmin):
 	save_on_top = True
 	save_as = True
 	list_display = ('__unicode__', 'slug', 'get_path',)
+	form = TemplateForm
 
 
 admin.site.register(Page, PageAdmin)

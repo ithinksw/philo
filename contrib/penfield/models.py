@@ -4,11 +4,12 @@ from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_mo
 from philo.exceptions import ViewCanNotProvideSubpath
 from django.conf.urls.defaults import url, patterns, include
 from django.core.urlresolvers import reverse
-from django.http import Http404, HttpResponse
+from django.http import Http404
 from datetime import datetime
 from philo.utils import paginate
 from philo.contrib.penfield.validators import validate_pagination_count
 from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
+from philo.contrib.penfield.utils import FeedMultiViewMixin
 
 
 class Blog(Entity, Titled):
@@ -42,7 +43,7 @@ class BlogEntry(Entity, Titled):
 register_value_model(BlogEntry)
 
 
-class BlogView(MultiView):
+class BlogView(MultiView, FeedMultiViewMixin):
 	ENTRY_PERMALINK_STYLE_CHOICES = (
 		('D', 'Year, month, and day'),
 		('M', 'Year and month'),
@@ -63,19 +64,19 @@ class BlogView(MultiView):
 	entry_permalink_style = models.CharField(max_length=1, choices=ENTRY_PERMALINK_STYLE_CHOICES)
 	entry_permalink_base = models.CharField(max_length=255, blank=False, default='entries')
 	tag_permalink_base = models.CharField(max_length=255, blank=False, default='tags')
-	feed_suffix = models.CharField(max_length=255, blank=False, default='feed')
+	feed_suffix = models.CharField(max_length=255, blank=False, default=FeedMultiViewMixin.feed_suffix)
 	feeds_enabled = models.BooleanField() 
 	
 	def __unicode__(self):
 		return u'BlogView for %s' % self.blog.title
 	
 	@property
-	def _feeds_enabled(self):
-		return self.feeds_enabled
-	
-	@property
 	def per_page(self):
 		return self.entries_per_page
+	
+	@property
+	def feed_title(self):
+		return self.blog.title
 	
 	def get_subpath(self, obj):
 		if isinstance(obj, BlogEntry):
@@ -103,65 +104,9 @@ class BlogView(MultiView):
 							entry_archive_view_args.update({'day': str(int(split_obj[3])).zfill(2)})
 					return reverse(self.entry_archive_view, urlconf=self, kwargs=entry_archive_view_args)
 		raise ViewCanNotProvideSubpath
-
-	def page_view(self, func, page, list_var='entries'):
-		"""
-		Wraps an object-fetching function and renders the results as a page.
-		"""
-		def inner(request, node=None, extra_context=None, **kwargs):
-			objects, extra_context = func(request, node, extra_context, **kwargs)
-
-			context = self.get_context()
-			context.update(extra_context or {})
-
-			if 'page' in kwargs or 'page' in request.GET:
-				page_num = kwargs.get('page', request.GET.get('page', 1))
-				paginator, paginated_page, objects = paginate(objects, self.per_page, page_num)
-				context.update({'paginator': paginator, 'paginated_page': paginated_page, list_var: objects})
-			else:
-				context.update({list_var: objects})
-
-			return page.render_to_response(node, request, extra_context=context)
-
-		return inner
-
-	def get_atom_feed(self):
-		return Atom1Feed(self.blog.title, '/%s/%s/' % (node.get_absolute_url().strip('/'), reverse(reverse_name, urlconf=self, kwargs=kwargs).strip('/')), '', subtitle='')
-	
-	def get_rss_feed(self):
-		return Rss201rev2Feed(self.blog.title, '/%s/%s/' % (node.get_absolute_url().strip('/'), reverse(reverse_name, urlconf=self, kwargs=kwargs).strip('/')), '')
-
-	def feed_view(self, func, reverse_name):
-		"""
-		Wraps an object-fetching function and renders the results as a rss or atom feed.
-		"""
-		def inner(request, node=None, extra_context=None, **kwargs):
-			objects, extra_context = func(request, node, extra_context, **kwargs)
-			
-			if 'HTTP_ACCEPT' in request.META and 'rss' in request.META['HTTP_ACCEPT'] and 'atom' not in request.META['HTTP_ACCEPT']:
-				feed = self.get_rss_feed()
-			else:
-				feed = self.get_atom_feed()
-			
-			for obj in objects:
-				feed.add_item(obj.title, '/%s/%s/' % (node.get_absolute_url().strip('/'), self.get_subpath(obj).strip('/')), description=obj.excerpt)
-			
-			response = HttpResponse(mimetype=feed.mime_type)
-			feed.write(response, 'utf-8')
-			return response
-		
-		return inner
 	
 	def get_context(self):
 		return {'blog': self.blog}
-	
-	def feed_patterns(self, object_fetcher, page, base_name):
-		feed_name = '%s_feed' % base_name
-		urlpatterns = patterns('',
-			url(r'^%s/$' % self.feed_suffix, self.feed_view(object_fetcher, feed_name), name=feed_name),
-			url(r'^$', self.page_view(object_fetcher, page), name=base_name)
-		)
-		return urlpatterns
 	
 	@property
 	def urlpatterns(self):

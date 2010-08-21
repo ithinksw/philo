@@ -1,0 +1,21 @@
+{% load staticmedia %}<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>{% block head %}
+	<title>{% block title %}{{ gilbert.title }}{% endblock %}</title>
+	
+	{% block css %}
+	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/extjs/resources/css/ext-all.css' %}" />
+	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/extjs/resources/css/xtheme-gray.css' %}" />
+	<link rel="stylesheet" type="text/css" href="{% url gilbert:css %}" />
+	{% endblock %}
+	
+	{% block js %}
+	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/adapter/ext/ext-base.js' %}"></script>
+	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/ext-all.js' %}"></script>
+	<script type="text/javascript" src="{% url gilbert:api %}" id="api.js"></script>
+	{% endblock %}
+	
+{% endblock %}</head>
+<body style="background-image: url({% mediaurl 'gilbert/wallpaper.jpg' %});">{% block body %}{% endblock %}</body>
+</html>

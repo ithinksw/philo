@@ -1,0 +1,3 @@
+[submodule "contrib/gilbert/media/gilbert/extjs"]
+	path = contrib/gilbert/media/gilbert/extjs
+	url = git://github.com/probonogeek/extjs.git

@@ -110,40 +110,50 @@ class BlogView(MultiView, FeedMultiViewMixin):
 	
 	@property
 	def urlpatterns(self):
-		base_patterns = patterns('',
+		urlpatterns = patterns('',
 			url(r'^', include(self.feed_patterns(self.get_all_entries, self.index_page, 'index'))),
-			url((r'^(?:%s)/?$' % self.tag_permalink_base), self.tag_archive_view),
 			url((r'^(?:%s)/(?P<tag_slugs>[-\w]+[-+/\w]*)/' % self.tag_permalink_base), include(self.feed_patterns(self.get_entries_by_tag, self.tag_page, 'entries_by_tag')))
 		)
+		if self.tag_archive_page:
+			urlpatterns += patterns('',
+				url((r'^(?:%s)/?$' % self.tag_permalink_base), self.tag_archive_view)
+			)
+		
+		if self.entry_archive_page:
+			if self.entry_permalink_style in 'DMY':
+				urlpatterns += patterns('',
+					url(r'^(?P<year>\d{4})/', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_year')))
+				)
+				if self.entry_permalink_style in 'DM':
+					urlpatterns += patterns('',
+						url(r'^(?P<year>\d{4})/(?P<month>\d{2})/?$', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_month'))),
+					)
+					if self.entry_permalink_style == 'D':
+						urlpatterns += patterns('',
+							url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/?$', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_day')))
+						)
+		
 		if self.entry_permalink_style == 'D':
-			entry_patterns = patterns('',
-				url(r'^(?P<year>\d{4})/', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_year'))),
-				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/?$', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_month'))),
-				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/?$', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_day'))),
+			urlpatterns += patterns('',
 				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/(?P<slug>[-\w]+)/?$', self.entry_view)
 			)
 		elif self.entry_permalink_style == 'M':
-			entry_patterns = patterns('',
-				url(r'^(?P<year>\d{4})/', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_year'))),
-				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/?$', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_month'))),
+			urlpatterns += patterns('',
 				url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<slug>[-\w]+)/?$', self.entry_view)
 			)
 		elif self.entry_permalink_style == 'Y':
-			entry_patterns = patterns('',
-				url(r'^(?P<year>\d{4})/', include(self.feed_patterns(self.get_entries_by_ymd, self.entry_archive_page, 'entries_by_year'))),
+			urlpatterns += patterns('',
 				url(r'^(?P<year>\d{4})/(?P<slug>[-\w]+)/?$', self.entry_view)
 			)
 		elif self.entry_permalink_style == 'B':
-			entry_patterns = patterns('',
-				url((r'^(?:%s)/?$' % self.entry_permalink_base), 
-					url(r'^(?P<year>\d{4})/', include(self.feed_patterns(self.get_all_entries, self.entry_archive_page, 'entries_by_year'))),),
+			urlpatterns += patterns('',
 				url((r'^(?:%s)/(?P<slug>[-\w]+)/?$' % self.entry_permalink_base), self.entry_view)
 			)
 		else:
-			entry_patterns = patterns('',
+			urlpatterns = patterns('',
 				url(r'^(?P<slug>[-\w]+)/?$', self.entry_view)
 			)
-		return base_patterns + entry_patterns
+		return urlpatterns
 	
 	def get_all_entries(self, request, node=None, extra_context=None):
 		return self.blog.entries.all(), extra_context
@@ -182,6 +192,9 @@ class BlogView(MultiView, FeedMultiViewMixin):
 			raise Http404
 		
 		return entries, extra_context
+	
+	def get_obj_description(self, obj):
+		return obj.excerpt
 	
 	def entry_view(self, request, slug, year=None, month=None, day=None, node=None, extra_context=None):
 		entries = self.blog.entries.all()
@@ -245,7 +258,7 @@ class NewsletterIssue(Entity, Titled):
 register_value_model(NewsletterIssue)
 
 
-class NewsletterView(MultiView):
+class NewsletterView(MultiView, FeedMultiViewMixin):
 	ARTICLE_PERMALINK_STYLE_CHOICES = (
 		('D', 'Year, month, and day'),
 		('M', 'Year and month'),
@@ -265,6 +278,13 @@ class NewsletterView(MultiView):
 	article_permalink_base = models.CharField(max_length=255, blank=False, default='articles')
 	issue_permalink_base = models.CharField(max_length=255, blank=False, default='issues')
 	
+	feed_suffix = models.CharField(max_length=255, blank=False, default=FeedMultiViewMixin.feed_suffix)
+	feeds_enabled = models.BooleanField()
+	
+	@property
+	def feed_title(self):
+		return self.newsletter.title
+	
 	def get_subpath(self, obj):
 		if isinstance(obj, NewsletterArticle):
 			if obj.newsletter == self.newsletter:
@@ -283,46 +303,72 @@ class NewsletterView(MultiView):
 	
 	@property
 	def urlpatterns(self):
-		base_patterns = patterns('',
-			url(r'^$', self.index_view),
-			url((r'^(?:%s)/?$' % self.issue_permalink_base), self.issue_archive_view),
-			url((r'^(?:%s)/(?P<number>\d+)/?$' % self.issue_permalink_base), self.issue_view)
+		urlpatterns = patterns('',
+			url(r'^', include(self.feed_patterns(self.get_all_articles, self.index_page, 'index'))),
+			url(r'^(?:%s)/(?P<number>\d+)/' % self.issue_permalink_base, include(self.feed_patterns(self.get_articles_by_issue, self.issue_page, 'articles_by_issue')))
 		)
-		article_patterns = patterns('',
-			url((r'^(?:%s)/?$' % self.article_permalink_base), self.article_archive_view)
-		)
-		if self.article_permalink_style in 'DMY':
-			article_patterns += patterns('',
-				url((r'^(?:%s)/(?P<year>\d{4})/?$' % self.article_permalink_base), self.article_archive_view)
+		if self.issue_archive_page:
+			urlpatterns += patterns('',
+				url(r'^(?:%s)/$' % self.issue_permalink_base, self.issue_archive_view)
 			)
-			if self.article_permalink_style in 'DM':
-				article_patterns += patterns('',
-					url((r'^(?:%s)/(?P<year>\d{4})/(?P<month>\d{2})/?$' % self.article_permalink_base), self.article_archive_view)
-				)
-				if self.article_permalink_style == 'D':
-					article_patterns += patterns('',
-						url((r'^(?:%s)/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/?$' % self.article_permalink_base), self.article_archive_view),
-						url((r'^(?:%s)/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/(?P<slug>[-\w]+)/?$' % self.article_permalink_base), self.article_view)
-					)
-				else:
-					article_patterns += patterns('',
-						url((r'^(?:%s)/(?P<year>\d{4})/(?P<month>\d{2})/(?P<slug>[-\w]+)/?$' % self.article_permalink_base), self.article_view)
-					)
-			else:
-				article_patterns += patterns('',
-					url((r'^(?:%s)/(?P<year>\d{4})/(?P<slug>[-\w]+)/?$' % self.article_permalink_base), self.article_view)
-				)
-		else:
-			article_patterns += patterns('',
-				url((r'^(?:%s)/(?P<slug>[-\w]+)/?$' % self.article_permalink_base), self.article_view)
+		if self.article_archive_page:
+			urlpatterns += patterns('',
+				url(r'^(?:%s)/' % self.article_permalink_base, include(self.feed_patterns(self.get_all_articles, self.article_archive_page, 'articles')))
 			)
-		return base_patterns + article_patterns
+			if self.article_permalink_style in 'DMY':
+				urlpatterns += patterns('',
+					url(r'^(?:%s)/(?P<year>\d{4})/' % self.article_permalink_base, include(self.feed_patterns(self.get_articles_by_ymd, self.article_archive_page, 'articles_by_year')))
+				)
+				if self.article_permalink_style in 'DM':
+					urlpatterns += patterns('',
+						url(r'^(?:%s)/(?P<year>\d{4})/(?P<month>\d{2})/' % self.article_permalink_base, include(self.feed_patterns(self.get_articles_by_ymd, self.article_archive_page, 'articles_by_month')))
+					)
+					if self.article_permalink_style == 'D':
+						urlpatterns += patterns('',
+							url(r'^(?:%s)/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/' % self.article_permalink_base, include(self.feed_patterns(self.get_articles_by_ymd, self.article_archive_page, 'articles_by_day')))
+						)
+		
+		if self.article_permalink_style == 'Y':
+			urlpatterns += patterns('',
+				url(r'^(?:%s)/(?P<year>\d{4})/(?P<slug>[\w-]+)/$' % self.article_permalink_base, self.article_view)
+			)
+		elif self.article_permalink_style == 'M':
+			urlpatterns += patterns('',
+				url(r'^(?:%s)/(?P<year>\d{4})/(?P<month>\d{2})/(?P<slug>[\w-]+)/$' % self.article_permalink_base, self.article_view)
+			)
+		elif self.article_permalink_style == 'D':
+			urlpatterns += patterns('',
+				url(r'^(?:%s)/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/(?P<slug>[\w-]+)/$' % self.article_permalink_base, self.article_view)
+			)
+		else:	
+			urlpatterns += patterns('',
+				url(r'^(?:%s)/(?P<slug>[-\w]+)/?$' % self.article_permalink_base, self.article_view)
+			)
+		
+		return urlpatterns
 	
-	def index_view(self, request, node=None, extra_context=None):
-		context = {}
-		context.update(extra_context or {})
-		context.update({'newsletter': self.newsletter})
-		return self.index_page.render_to_response(node, request, extra_context=context)
+	def get_context(self):
+		return {'newsletter': self.newsletter}
+	
+	def get_all_articles(self, request, node, extra_context=None):
+		return self.newsletter.articles.all(), extra_context
+	
+	def get_articles_by_ymd(self, request, year, month=None, day=None, node=None, extra_context=None):
+		articles = self.newsletter.articles.filter(dat__year=year)
+		if month:
+			articles = articles.filter(date__month=month)
+		if day:
+			articles = articles.filter(date__day=day)
+		return articles
+	
+	def get_articles_by_issue(self, request, number, node=None, extra_context=None):
+		try:
+			issue = self.newsletter.issues.get(number=number)
+		except:
+			raise Http404
+		context = extra_context or {}
+		context.update({'issue': issue})
+		return issue.articles.all(), context
 	
 	def article_view(self, request, slug, year=None, month=None, day=None, node=None, extra_context=None):
 		articles = self.newsletter.articles.all()
@@ -356,16 +402,6 @@ class NewsletterView(MultiView):
 		context.update({'newsletter': self.newsletter, 'year': year, 'month': month, 'day': day, 'articles': articles})
 		return self.article_archive_page.render_to_response(node, request, extra_context=context)
 	
-	def issue_view(self, request, number, node=None, extra_context=None):
-		try:
-			issue = self.newsletter.issues.get(number=number)
-		except:
-			raise Http404
-		context = {}
-		context.update(extra_context or {})
-		context.update({'newsletter': self.newsletter, 'issue': issue})
-		return self.issue_page.render_to_response(node, request, extra_context=context)
-	
 	def issue_archive_view(self, request, node=None, extra_context=None):
 		if not self.issue_archive_page:
 			raise Http404
@@ -373,3 +409,6 @@ class NewsletterView(MultiView):
 		context.update(extra_context or {})
 		context.update({'newsletter': self.newsletter})
 		return self.issue_archive_page.render_to_response(node, request, extra_context=context)
+	
+	def get_obj_description(self, obj):
+		return obj.lede or obj.full_text

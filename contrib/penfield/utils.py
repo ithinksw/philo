@@ -21,7 +21,7 @@ class FeedMultiViewMixin(object):
 		Wraps an object-fetching function and renders the results as a page.
 		"""
 		def inner(request, node=None, extra_context=None, **kwargs):
-			objects, extra_context = func(request, node, extra_context, **kwargs)
+			objects, extra_context = func(request=request, node=node, extra_context=extra_context, **kwargs)
 
 			context = self.get_context()
 			context.update(extra_context or {})
@@ -42,7 +42,7 @@ class FeedMultiViewMixin(object):
 		Wraps an object-fetching function and renders the results as a rss or atom feed.
 		"""
 		def inner(request, node=None, extra_context=None, **kwargs):
-			objects, extra_context = func(request, node, extra_context, **kwargs)
+			objects, extra_context = func(request=request, node=node, extra_context=extra_context, **kwargs)
 	
 			if 'HTTP_ACCEPT' in request.META and 'rss' in request.META['HTTP_ACCEPT'] and 'atom' not in request.META['HTTP_ACCEPT']:
 				feed_type = 'rss'
@@ -52,7 +52,7 @@ class FeedMultiViewMixin(object):
 			feed = self.get_feed(feed_type, request, node, kwargs, reverse_name)
 			
 			for obj in objects:
-				feed.add_item(obj.title, '/%s/%s/' % (node.get_absolute_url().strip('/'), self.get_subpath(obj).strip('/')), description=obj.excerpt)
+				feed.add_item(obj.title, '/%s/%s/' % (node.get_absolute_url().strip('/'), self.get_subpath(obj).strip('/')), description=self.get_obj_description(obj))
 	
 			response = HttpResponse(mimetype=feed.mime_type)
 			feed.write(response, 'utf-8')
@@ -76,3 +76,6 @@ class FeedMultiViewMixin(object):
 			url(r'^$', self.page_view(object_fetcher, page), name=base_name)
 		)
 		return urlpatterns
+	
+	def get_obj_description(self, obj):
+		raise NotImplementedError

@@ -1,3 +1,6 @@
 [submodule "contrib/gilbert/media/gilbert/extjs"]
 	path = contrib/gilbert/media/gilbert/extjs
 	url = git://github.com/probonogeek/extjs.git
+[submodule "contrib/gilbert/media/gilbert/fugue-icons"]
+	path = contrib/gilbert/media/gilbert/fugue-icons
+	url = git://git.ithinksw.org/fugue-icons.git

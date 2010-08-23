@@ -1,3 +1,6 @@
+__version__ = 'alpha'
+
+
 from philo.contrib.gilbert.sites import GilbertSite, site
 
 

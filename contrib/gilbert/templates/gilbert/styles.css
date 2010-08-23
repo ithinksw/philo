@@ -1,0 +1,1 @@
+{% for icon, url in icons.items %}.{{icon}}{background:url({{ url }}) no-repeat !important;}{% endfor %}

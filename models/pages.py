@@ -98,6 +98,12 @@ class Page(View):
 	template = models.ForeignKey(Template, related_name='pages')
 	title = models.CharField(max_length=255)
 	
+	def get_containers(self):
+		if not hasattr(self, '_containers'):
+			self._containers = self.template.containers
+		return self._containers
+	containers = property(get_containers)
+	
 	def render_to_string(self, node=None, request=None, path=None, subpath=None, extra_context=None):
 		context = {}
 		context.update(extra_context or {})

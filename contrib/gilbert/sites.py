@@ -201,10 +201,25 @@ class GilbertSite(object):
 				'upload': request.POST.get('extUpload', False),
 				'data': None,
 			}
+			response = self.handle_ext_request(request, ext_request, app_label)
 		else:
-			ext_request = json.loads(request.raw_post_data)
-			ext_request['upload'] = False
+			ext_requests = json.loads(request.raw_post_data)
+			if type(ext_requests) is dict:
+				ext_requests['upload'] = False
+				response = self.handle_ext_request(request, ext_requests, app_label)
+			else:
+				responses = []
+				for ext_request in ext_requests:
+					ext_request['upload'] = False
+					responses.append(self.handle_ext_request(request, ext_request, app_label))
+				response = responses
 		
+		if submitted_form:
+			if ext_request['upload'] is True:
+				return HttpResponse(('<html><body><textarea>%s</textarea></body></html>' % json.dumps(response)))
+		return HttpResponse(json.dumps(response), content_type=('application/json; charset=%s' % settings.DEFAULT_CHARSET))
+	
+	def handle_ext_request(self, request, ext_request, app_label=None):
 		try:
 			plugin = None
 			
@@ -224,14 +239,10 @@ class GilbertSite(object):
 			if method is None or (method.restricted and not self.has_permission(request)):
 				raise NotImplementedError('The method named \'%s\' is not available' % method.name)
 			
-			response = {'type': 'rpc', 'tid': ext_request['tid'], 'action': ext_request['action'], 'method': ext_request['method'], 'result': method(request, *(ext_request['data'] or []))}
+			return {'type': 'rpc', 'tid': ext_request['tid'], 'action': ext_request['action'], 'method': ext_request['method'], 'result': method(request, *(ext_request['data'] or []))}
 		except:
 			exc_type, exc_value, exc_traceback = sys.exc_info()
-			response = {'type': 'exception', 'tid': ext_request['tid'], 'message': ('%s: %s' % (exc_type, exc_value)), 'where': format_tb(exc_traceback)[0]}
-		
-		if submitted_form and ext_request['upload'] is True:
-			return HttpResponse(('<html><body><textarea>%s</textarea></body></html>' % json.dumps(response)))
-		return HttpResponse(json.dumps(response), content_type=('application/json; charset=%s' % settings.DEFAULT_CHARSET))
+			return {'type': 'exception', 'tid': ext_request['tid'], 'message': ('%s: %s' % (exc_type, exc_value)), 'where': format_tb(exc_traceback)[0]}
 
 
 site = GilbertSite()

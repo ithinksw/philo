@@ -49,13 +49,19 @@ class GilbertAuthPlugin(GilbertPlugin):
 		return True
 	
 	@gilbert_method
-	def passwd(self, request, current_password, new_password, new_password_confirm):
-		user = request.user
-		if user.check_password(current_password) and (new_password == new_password_confirm):
-			user.set_password(new_password)
-			user.save()
-			return True
-		return False
+	def get_passwd_form(self, request):
+		from django.contrib.auth.forms import PasswordChangeForm
+		return PasswordChangeForm(request.user).as_ext()
+	
+	@gilbert_method(form_handler=True)
+	def submit_passwd_form(self, request):
+		from django.contrib.auth.forms import PasswordChangeForm
+		form = PasswordChangeForm(request.user, data=request.POST)
+		if form.is_valid():
+			form.save()
+			return {'success': True}
+		else:
+			return {'success': False, 'errors': form.errors}
 	
 	@gilbert_method
 	def whoami(self, request):
@@ -149,6 +155,7 @@ class GilbertSite(object):
 					model_methods.append({
 						'name': method.name,
 						'len': method.argc,
+						'formHandler': method.form_handler,
 					})
 				if model_methods:
 					model_actions[model_name] = model_methods
@@ -170,6 +177,7 @@ class GilbertSite(object):
 				plugin_methods.append({
 					'name': method.name,
 					'len': method.argc,
+					'formHandler': method.form_handler,
 				})
 			if plugin_methods:
 				plugin_actions[plugin_name] = plugin_methods
@@ -185,20 +193,17 @@ class GilbertSite(object):
 			submitted_form = True
 		
 		if submitted_form:
-			post_dict = dict(request.POST)
 			ext_request = {
-				'action': post_dict.pop('extAction'),
-				'method': post_dict.pop('extMethod'),
-				'type': post_dict.pop('extType'),
-				'tid': post_dict.pop('extTID'),
-				'upload': post_dict.pop('extUpload', False),
+				'action': request.POST.get('extAction'),
+				'method': request.POST.get('extMethod'),
+				'type': request.POST.get('extType'),
+				'tid': request.POST.get('extTID'),
+				'upload': request.POST.get('extUpload', False),
 				'data': None,
-				'kwdata': post_dict
 			}
 		else:
 			ext_request = json.loads(request.raw_post_data)
 			ext_request['upload'] = False
-			ext_request['kwdata'] = None
 		
 		try:
 			plugin = None
@@ -219,12 +224,12 @@ class GilbertSite(object):
 			if method is None or (method.restricted and not self.has_permission(request)):
 				raise NotImplementedError('The method named \'%s\' is not available' % method.name)
 			
-			response = {'type': 'rpc', 'tid': ext_request['tid'], 'action': ext_request['action'], 'method': ext_request['method'], 'result': method(request, *(ext_request['data'] or []), **(ext_request['kwdata'] or {}))}
+			response = {'type': 'rpc', 'tid': ext_request['tid'], 'action': ext_request['action'], 'method': ext_request['method'], 'result': method(request, *(ext_request['data'] or []))}
 		except:
 			exc_type, exc_value, exc_traceback = sys.exc_info()
 			response = {'type': 'exception', 'tid': ext_request['tid'], 'message': ('%s: %s' % (exc_type, exc_value)), 'where': format_tb(exc_traceback)[0]}
 		
-		if submitted_form:
+		if submitted_form and ext_request['upload'] is True:
 			return HttpResponse(('<html><body><textarea>%s</textarea></body></html>' % json.dumps(response)))
 		return HttpResponse(json.dumps(response), content_type=('application/json; charset=%s' % settings.DEFAULT_CHARSET))
 

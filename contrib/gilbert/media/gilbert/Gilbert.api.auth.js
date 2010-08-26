@@ -25,54 +25,36 @@ GILBERT_PLUGINS.push(new (function() {
 						text: 'Change password',
 						iconCls: 'key--pencil',
 						handler: function(button, event) {
-							var change_password_window = application.createWindow({
-								layout: 'fit',
-								resizable: false,
-								title: 'Change password',
-								iconCls: 'key--pencil',
-								width: 266,
-								height: 170,
-								items: change_password_form = new Ext.FormPanel({
-									frame: true,
-									bodyStyle: 'padding: 5px 5px 0',
-									items: [{
-										fieldLabel: 'Current password',
-										name: 'current_password',
-										xtype: 'textfield',
-										inputType: 'password',
-									},{
-										fieldLabel: 'New password',
-										name: 'new_password',
-										xtype: 'textfield',
-										inputType: 'password',
-									},{
-										fieldLabel: 'New password (confirm)',
-										name: 'new_password_confirm',
-										xtype: 'textfield',
-										inputType: 'password',
-									}],
-									buttons: [{
-										text: 'Change password',
-										iconCls: 'key--pencil',
-										handler: function(button, event) {
-											var the_form = change_password_form.getForm().el.dom;
-											var current_password = the_form[0].value;
-											var new_password = the_form[1].value;
-											var new_password_confirm = the_form[2].value;
-											Gilbert.api.auth.passwd(current_password, new_password, new_password_confirm, function(result) {
-												if (result) {
-													Ext.MessageBox.alert('Password changed', 'Your password has been changed.');
-												} else {
-													Ext.MessageBox.alert('Password unchanged', 'Unable to change your password.', function() {
-														change_password_form.getForm().reset();
-													});
-												}
-											});
+							Gilbert.api.auth.get_passwd_form(function(formspec) {
+								var change_password_window = application.createWindow({
+									layout: 'fit',
+									resizable: false,
+									title: 'Change password',
+									iconCls: 'key--pencil',
+									width: 266,
+									height: 170,
+									items: change_password_form = new Ext.FormPanel(Ext.applyIf({
+										frame: true,
+										bodyStyle: 'padding: 5px 5px 0',
+										buttons: [{
+											text: 'Change password',
+											iconCls: 'key--pencil',
+											handler: function(button, event) {
+												change_password_form.getForm().submit({
+													success: function(form, action) {
+														Ext.MessageBox.alert('Password changed', 'Your password has been changed.');
+													},
+												});
+											},
+										}],
+										api: {
+											submit: Gilbert.api.auth.submit_passwd_form,
 										},
-									}],
-								})
+									}, formspec))
+								});
+								change_password_window.show();
 							});
-							change_password_window.show();
+							
 						},
 					},{
 						text: 'Log out',

@@ -350,7 +350,7 @@ class AccountMultiView(LoginMultiView):
 		
 		return form_instances
 	
-	def account_view(self, request, node=None, extra_context=None, token_generator=email_token_generator):
+	def account_view(self, request, node=None, extra_context=None, token_generator=email_token_generator, *args, **kwargs):
 		if request.method == 'POST':
 			form_instances = self.get_account_form_instances(request.user, request.POST)
 			current_email = request.user.email
@@ -407,7 +407,8 @@ class AccountMultiView(LoginMultiView):
 	def account_required(self, view):
 		def inner(request, *args, **kwargs):
 			if not self.has_valid_account(request.user):
-				messages.add_message(request, messages.ERROR, "You need to add some account information before you can post listings.", fail_silently=True)
+				if not request.method == "POST":
+					messages.add_message(request, messages.ERROR, "You need to add some account information before you can access this page.", fail_silently=True)
 				return self.account_view(request, *args, **kwargs)
 			return view(request, *args, **kwargs)
 		

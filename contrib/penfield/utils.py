@@ -15,8 +15,9 @@ class FeedMultiViewMixin(object):
 	atom_feed = Atom1Feed
 	rss_feed = Rss201rev2Feed
 	feed_description = ''
+	list_var = 'objects'
 	
-	def page_view(self, func, page, list_var='entries'):
+	def page_view(self, func, page):
 		"""
 		Wraps an object-fetching function and renders the results as a page.
 		"""
@@ -29,9 +30,9 @@ class FeedMultiViewMixin(object):
 			if 'page' in kwargs or 'page' in request.GET:
 				page_num = kwargs.get('page', request.GET.get('page', 1))
 				paginator, paginated_page, objects = paginate(objects, self.per_page, page_num)
-				context.update({'paginator': paginator, 'paginated_page': paginated_page, list_var: objects})
+				context.update({'paginator': paginator, 'paginated_page': paginated_page, self.list_var: objects})
 			else:
-				context.update({list_var: objects})
+				context.update({self.list_var: objects})
 
 			return page.render_to_response(node, request, extra_context=context)
 

@@ -65,7 +65,8 @@ class BlogView(MultiView, FeedMultiViewMixin):
 	entry_permalink_base = models.CharField(max_length=255, blank=False, default='entries')
 	tag_permalink_base = models.CharField(max_length=255, blank=False, default='tags')
 	feed_suffix = models.CharField(max_length=255, blank=False, default=FeedMultiViewMixin.feed_suffix)
-	feeds_enabled = models.BooleanField() 
+	feeds_enabled = models.BooleanField()
+	list_var = 'entries'
 	
 	def __unicode__(self):
 		return u'BlogView for %s' % self.blog.title
@@ -284,6 +285,7 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 	
 	feed_suffix = models.CharField(max_length=255, blank=False, default=FeedMultiViewMixin.feed_suffix)
 	feeds_enabled = models.BooleanField()
+	list_var = 'articles'
 	
 	@property
 	def feed_title(self):

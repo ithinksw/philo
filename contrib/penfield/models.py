@@ -388,9 +388,9 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 			article = articles.get(slug=slug)
 		except:
 			raise Http404
-		context = {}
+		context = self.get_context()
 		context.update(extra_context or {})
-		context.update({'newsletter': self.newsletter, 'article': article})
+		context.update({'article': article})
 		return self.article_page.render_to_response(node, request, extra_context=context)
 	
 	def issue_archive_view(self, request, node=None, extra_context=None):

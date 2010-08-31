@@ -11,6 +11,7 @@ from philo.models.base import TreeEntity, Entity, QuerySetMapper, register_value
 from philo.utils import ContentTypeSubclassLimiter
 from philo.validators import RedirectValidator
 from philo.exceptions import ViewDoesNotProvideSubpaths, AncestorDoesNotExist
+from philo.signals import view_about_to_render, view_finished_rendering
 
 
 _view_content_type_limiter = ContentTypeSubclassLimiter(None)
@@ -28,7 +29,7 @@ class Node(TreeEntity):
 		return False
 	
 	def render_to_response(self, request, path=None, subpath=None, extra_context=None):
-		return self.view.render_to_response(self, request, path, subpath, extra_context)
+		return self.view._render_to_response(self, request, path, subpath, extra_context)
 	
 	def get_absolute_url(self):
 		root = Site.objects.get_current().root_node
@@ -58,6 +59,13 @@ class View(Entity):
 	
 	def relationships_with_node(self, node):
 		return QuerySetMapper(self.relationship_set, passthrough=node.relationships)
+	
+	def _render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
+		extra_context = extra_context or {}
+		view_about_to_render.send(sender=self, node=node, request=request, path=path, subpath=subpath, extra_context=extra_context)
+		response = self.render_to_response(node, request, path, subpath, extra_context)
+		view_finished_rendering.send(sender=self, response=response)
+		return response
 	
 	def render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
 		raise NotImplementedError('View subclasses must implement render_to_response.')

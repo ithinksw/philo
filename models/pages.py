@@ -14,6 +14,7 @@ from philo.models.base import TreeModel, register_value_model
 from philo.models.nodes import View
 from philo.utils import fattr
 from philo.templatetags.containers import ContainerNode
+from philo.signals import page_about_to_render_to_string, page_finished_rendering_to_string
 
 
 class Template(TreeModel):
@@ -110,10 +111,15 @@ class Page(View):
 		context.update({'page': self, 'attributes': self.attributes, 'relationships': self.relationships})
 		if node and request:
 			context.update({'node': node, 'attributes': self.attributes_with_node(node), 'relationships': self.relationships_with_node(node)})
-			return self.template.django_template.render(RequestContext(request, context))
-		return self.template.django_template.render(Context(context))
+			page_about_to_render_to_string.send(sender=self, node=node, request=request, extra_context=context)
+			string = self.template.django_template.render(RequestContext(request, context))
+		else:
+			page_about_to_render_to_string.send(sender=self, node=node, request=request, extra_context=context)
+		 	string = self.template.django_template.render(Context(context))
+		page_finished_rendering_to_string.send(sender=self, string=string)
+		return string
 	
-	def render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
+	def actually_render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
 		return HttpResponse(self.render_to_string(node, request, path, subpath, extra_context), mimetype=self.template.mimetype)
 	
 	def __unicode__(self):

@@ -2,6 +2,7 @@ from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
 from django.conf.urls.defaults import url, patterns
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
+from philo.utils import paginate
 
 
 class FeedMultiViewMixin(object):
@@ -27,7 +28,7 @@ class FeedMultiViewMixin(object):
 			context = self.get_context()
 			context.update(extra_context or {})
 
-			if 'page' in kwargs or 'page' in request.GET:
+			if 'page' in kwargs or 'page' in request.GET or (hasattr(self, 'per_page') and self.per_page):
 				page_num = kwargs.get('page', request.GET.get('page', 1))
 				paginator, paginated_page, objects = paginate(objects, self.per_page, page_num)
 				context.update({'paginator': paginator, 'paginated_page': paginated_page, self.list_var: objects})

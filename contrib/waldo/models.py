@@ -432,7 +432,7 @@ class AccountMultiView(LoginMultiView):
 		
 		user = get_object_or_404(User, id=uid_int)
 		
-		email = email.replace('+', '@')
+		email = '@'.join(email.rsplit('+', 1))
 		
 		if email == user.email:
 			# Then short-circuit.

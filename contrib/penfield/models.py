@@ -240,6 +240,7 @@ class NewsletterArticle(Entity, Titled):
 	date = models.DateTimeField(default=datetime.now)
 	lede = models.TextField(null=True, blank=True)
 	full_text = models.TextField()
+	tags = models.ManyToManyField(Tag, related_name='newsletterarticles', blank=True, null=True)
 	
 	class Meta:
 		get_latest_by = 'date'

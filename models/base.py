@@ -6,6 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from philo.exceptions import AncestorDoesNotExist
 from philo.utils import ContentTypeRegistryLimiter
 from philo.signals import entity_class_prepared
+from philo.validators import json_validator
 from UserDict import DictMixin
 
 
@@ -36,7 +37,7 @@ class Attribute(models.Model):
 	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID')
 	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
 	key = models.CharField(max_length=255)
-	json_value = models.TextField(verbose_name='Value (JSON)', help_text='This value must be valid JSON.')
+	json_value = models.TextField(verbose_name='Value (JSON)', help_text='This value must be valid JSON.', validators=[json_validator])
 	
 	def get_value(self):
 		return json.loads(self.json_value)

@@ -1,5 +1,7 @@
 from django.utils.translation import ugettext_lazy as _
 from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
+from django.utils import simplejson as json
 import re
 
 
@@ -28,3 +30,10 @@ class URLLinkValidator(RegexValidator):
 		r'|)' # also allow internal links
 		r'(?:/?|[/?#]?\S+)$', re.IGNORECASE)
 	message = _(u'Enter a valid absolute or relative redirect target')
+
+
+def json_validator(value):
+	try:
+		json.loads(value)
+	except:
+		raise ValidationError(u'\'%s\' is not valid JSON' % value)

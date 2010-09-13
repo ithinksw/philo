@@ -257,7 +257,7 @@ class LoginMultiView(MultiView):
 				}
 				self.send_confirmation_email('Confirm account creation at %s' % current_site.name, user.email, self.register_confirmation_email, context)
 				messages.add_message(request, messages.SUCCESS, 'An email has been sent to %s with details on activating your account.' % user.email, fail_silently=True)
-				return HttpResponseRedirect('')
+				return HttpResponseRedirect(node.get_absolute_url())
 		else:
 			form = RegistrationForm()
 		

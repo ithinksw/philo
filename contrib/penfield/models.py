@@ -253,12 +253,12 @@ register_value_model(NewsletterArticle)
 
 class NewsletterIssue(Entity, Titled):
 	newsletter = models.ForeignKey(Newsletter, related_name='issues')
-	number = models.PositiveIntegerField()
+	numbering = models.CharField(max_length=50, help_text='For example, 04.02 for volume 4, issue 2.')
 	articles = models.ManyToManyField(NewsletterArticle, related_name='issues')
 	
 	class Meta:
-		ordering = ['-number']
-		unique_together = (('newsletter', 'number'),)
+		ordering = ['-numbering']
+		unique_together = (('newsletter', 'numbering'),)
 
 
 register_value_model(NewsletterIssue)
@@ -288,6 +288,9 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 	feeds_enabled = models.BooleanField()
 	list_var = 'articles'
 	
+	def __unicode__(self):
+		return self.newsletter.__unicode__()
+	
 	@property
 	def feed_title(self):
 		return self.newsletter.title
@@ -305,14 +308,14 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 				return reverse(self.article_view, urlconf=self, kwargs=kwargs)
 		elif isinstance(obj, NewsletterIssue):
 			if obj.newsletter == self.newsletter:
-				return reverse('issue', urlconf=self, kwargs={'number': str(obj.number)})
+				return reverse('issue', urlconf=self, kwargs={'numbering': obj.numbering})
 		raise ViewCanNotProvideSubpath
 	
 	@property
 	def urlpatterns(self):
 		urlpatterns = patterns('',
 			url(r'^', include(self.feed_patterns(self.get_all_articles, self.index_page, 'index'))),
-			url(r'^(?:%s)/(?P<number>\d+)/' % self.issue_permalink_base, include(self.feed_patterns(self.get_articles_by_issue, self.issue_page, 'issue')))
+			url(r'^(?:%s)/(?P<numbering>.+)/' % self.issue_permalink_base, include(self.feed_patterns(self.get_articles_by_issue, self.issue_page, 'issue')))
 		)
 		if self.issue_archive_page:
 			urlpatterns += patterns('',
@@ -368,9 +371,9 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 			articles = articles.filter(date__day=day)
 		return articles
 	
-	def get_articles_by_issue(self, request, number, node=None, extra_context=None):
+	def get_articles_by_issue(self, request, numbering, node=None, extra_context=None):
 		try:
-			issue = self.newsletter.issues.get(number=number)
+			issue = self.newsletter.issues.get(numbering=numbering)
 		except:
 			raise Http404
 		context = extra_context or {}

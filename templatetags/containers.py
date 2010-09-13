@@ -18,6 +18,8 @@ class ContainerNode(template.Node):
 		content = settings.TEMPLATE_STRING_IF_INVALID
 		if 'page' in context:
 			container_content = self.get_container_content(context)
+		else:
+			container_content = None
 		
 		if self.as_var:
 			context[self.as_var] = container_content

@@ -81,7 +81,7 @@ class LoginMultiView(MultiView):
 			if host != request.get_host():
 				referrer = None
 			else:
-				redirect = ''.join(referrer[2:])
+				redirect = '%s?%s' % (referrer[2], referrer[4])
 		
 		if referrer is None:
 			redirect = node.get_absolute_url()
@@ -107,6 +107,9 @@ class LoginMultiView(MultiView):
 		"""
 		Displays the login form for the given HttpRequest.
 		"""
+		if request.user.is_authenticated():
+			return HttpResponseRedirect(node.get_absolute_url())
+		
 		context = self.get_context(extra_context)
 		
 		from django.contrib.auth.models import User
@@ -177,6 +180,9 @@ class LoginMultiView(MultiView):
 		send_mail(subject, message, from_email, [email])
 	
 	def password_reset(self, request, node=None, extra_context=None, token_generator=password_token_generator):
+		if request.user.is_authenticated():
+			return HttpResponseRedirect(node.get_absolute_url())
+		
 		if request.method == 'POST':
 			form = PasswordResetForm(request.POST)
 			if form.is_valid():

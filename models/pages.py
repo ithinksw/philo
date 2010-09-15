@@ -20,7 +20,7 @@ from philo.signals import page_about_to_render_to_string, page_finished_renderin
 class Template(TreeModel):
 	name = models.CharField(max_length=255)
 	documentation = models.TextField(null=True, blank=True)
-	mimetype = models.CharField(max_length=255, null=True, blank=True, help_text='Default: %s' % settings.DEFAULT_CONTENT_TYPE)
+	mimetype = models.CharField(max_length=255, default=getattr(settings, 'DEFAULT_CONTENT_TYPE', 'text/html'))
 	code = models.TextField(verbose_name='django template code')
 	
 	@property

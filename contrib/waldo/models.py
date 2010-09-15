@@ -6,11 +6,12 @@ from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm, Passwo
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator as password_token_generator
 from django.contrib.sites.models import Site
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives, send_mail
 from django.core.urlresolvers import reverse
 from django.db import models
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
+from django.template.defaultfilters import striptags
 from django.utils.http import int_to_base36, base36_to_int
 from django.utils.translation import ugettext_lazy, ugettext as _
 from django.views.decorators.cache import never_cache
@@ -175,9 +176,15 @@ class LoginMultiView(MultiView):
 		return inner
 	
 	def send_confirmation_email(self, subject, email, page, extra_context):
-		message = page.render_to_string(extra_context=extra_context)
+		text_content = page.render_to_string(extra_context=extra_context)
 		from_email = 'noreply@%s' % Site.objects.get_current().domain
-		send_mail(subject, message, from_email, [email])
+		
+		if page.template.mimetype == 'text/html':
+			msg = EmailMultiAlternatives(subject, striptags(text_content), from_email, [email])
+			msg.attach_alternative(text_content, 'text/html')
+			msg.send()
+		else:
+			send_mail(subject, text_content, from_email, [email])
 	
 	def password_reset(self, request, node=None, extra_context=None, token_generator=password_token_generator):
 		if request.user.is_authenticated():

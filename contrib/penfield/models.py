@@ -178,7 +178,7 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		context.update({'year': year, 'month': month, 'day': day})
 		return entries, context
 	
-	def get_entries_by_tag(self, request, node=None, extra_context=None):
+	def get_entries_by_tag(self, request, tag_slugs, node=None, extra_context=None):
 		tags = []
 		for tag_slug in tag_slugs.replace('+', '/').split('/'):
 			if tag_slug: # ignore blank slugs, handles for multiple consecutive separators (+ or /)
@@ -193,10 +193,12 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		entries = self.blog.entries.all()
 		for tag in tags:
 			entries = entries.filter(tags=tag)
-		if entries.count() <= 0:
-			raise Http404
 		
-		return entries, extra_context
+		context = self.get_context()
+		context.update(extra_context or {})
+		context.update({'tags': tags})
+		
+		return entries, context
 	
 	def get_obj_description(self, obj):
 		return obj.excerpt

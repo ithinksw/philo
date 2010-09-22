@@ -13,7 +13,7 @@ class BlogAdmin(TitledAdmin):
 
 
 class BlogEntryAdmin(TitledAdmin):
-	pass
+	filter_horizontal = ['tags']
 
 
 class BlogViewAdmin(EntityAdmin):

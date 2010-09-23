@@ -201,8 +201,15 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		
 		return entries, context
 	
-	def get_obj_description(self, obj):
-		return obj.excerpt
+	def add_item(self, feed, obj, kwargs=None):
+		defaults = {
+			'title': obj.title,
+			'description': obj.excerpt or obj.content,
+			'author_name': obj.author.get_full_name(),
+			'pubdate': obj.date
+		}
+		defaults.update(kwargs or {})
+		super(BlogView, self).add_item(feed, obj, defaults)
 	
 	def entry_view(self, request, slug, year=None, month=None, day=None, node=None, extra_context=None):
 		entries = self.blog.entries.all()
@@ -408,5 +415,13 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 		context.update({'newsletter': self.newsletter})
 		return self.issue_archive_page.render_to_response(node, request, extra_context=context)
 	
-	def get_obj_description(self, obj):
-		return obj.lede or obj.full_text
+	def add_item(self, feed, obj, kwargs=None):
+		defaults = {
+			'title': obj.title,
+			'author_name': ', '.join(obj.authors),
+			'pubdate': obj.date,
+			'description': obj.lede or obj.full_text,
+			'categories': [tag.name for tag in obj.tags.all()]
+		}
+		defaults.update(kwargs or {})
+		super(NewsletterView, self).add_item(feed, obj, defaults)

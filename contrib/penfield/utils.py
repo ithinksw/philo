@@ -1,5 +1,6 @@
 from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
 from django.conf.urls.defaults import url, patterns
+from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from philo.utils import paginate
@@ -52,9 +53,13 @@ class FeedMultiViewMixin(object):
 				feed_type = 'atom'
 			
 			feed = self.get_feed(feed_type, request, node, kwargs, reverse_name)
+			current_site = Site.objects.get_current()
 			
 			for obj in objects:
-				feed.add_item(obj.title, '/%s/%s/' % (node.get_absolute_url().strip('/'), self.get_subpath(obj).strip('/')), description=self.get_obj_description(obj))
+				kwargs = {
+					'link': 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), self.get_subpath(obj).strip('/'))
+				}
+				self.add_item(feed, obj, kwargs=kwargs)
 	
 			response = HttpResponse(mimetype=feed.mime_type)
 			feed.write(response, 'utf-8')
@@ -64,7 +69,8 @@ class FeedMultiViewMixin(object):
 	
 	def get_feed(self, feed_type, request, node, kwargs, reverse_name):
 		title = self.feed_title
-		link = '/%s/%s/' % (node.get_absolute_url().strip('/'), reverse(reverse_name, urlconf=self, kwargs=kwargs).strip('/'))
+		current_site = Site.objects.get_current()
+		link = 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), reverse(reverse_name, urlconf=self, kwargs=kwargs).strip('/'))
 		description = self.feed_description
 		if feed_type == 'rss':
 			return self.rss_feed(title, link, description)
@@ -79,5 +85,6 @@ class FeedMultiViewMixin(object):
 		)
 		return urlpatterns
 	
-	def get_obj_description(self, obj):
-		raise NotImplementedError
+	def add_item(self, feed, obj, kwargs=None):
+		defaults = kwargs or {}
+		feed.add_item(**defaults)

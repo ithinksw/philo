@@ -75,10 +75,6 @@ class BlogView(MultiView, FeedMultiViewMixin):
 	def per_page(self):
 		return self.entries_per_page
 	
-	@property
-	def feed_title(self):
-		return self.blog.title
-	
 	def get_subpath(self, obj):
 		if isinstance(obj, BlogEntry):
 			if obj.blog == self.blog:
@@ -211,6 +207,19 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		defaults.update(kwargs or {})
 		super(BlogView, self).add_item(feed, obj, defaults)
 	
+	def get_feed(self, feed_type, extra_context, kwargs=None):
+		tags = (extra_context or {}).get('tags', None)
+		title = self.blog.title
+		
+		if tags is not None:
+			title += " - %s" % ', '.join([tag.name for tag in tags])
+		
+		defaults = {
+			'title': title
+		}
+		defaults.update(kwargs or {})
+		return super(BlogView, self).get_feed(feed_type, extra_context, defaults)
+	
 	def entry_view(self, request, slug, year=None, month=None, day=None, node=None, extra_context=None):
 		entries = self.blog.entries.all()
 		if year:
@@ -300,10 +309,6 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 	
 	def __unicode__(self):
 		return self.newsletter.__unicode__()
-	
-	@property
-	def feed_title(self):
-		return self.newsletter.title
 	
 	def get_subpath(self, obj):
 		if isinstance(obj, NewsletterArticle):
@@ -425,3 +430,12 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 		}
 		defaults.update(kwargs or {})
 		super(NewsletterView, self).add_item(feed, obj, defaults)
+	
+	def get_feed(self, feed_type, extra_context, kwargs=None):
+		title = self.newsletter.title
+		
+		defaults = {
+			'title': title
+		}
+		defaults.update(kwargs or {})
+		return super(NewsletterView, self).get_feed(feed_type, extra_context, defaults)

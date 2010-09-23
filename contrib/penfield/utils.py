@@ -16,7 +16,8 @@ class FeedMultiViewMixin(object):
 	feeds_enabled = True
 	atom_feed = Atom1Feed
 	rss_feed = Rss201rev2Feed
-	feed_description = ''
+	feed_title = None
+	feed_description = None
 	list_var = 'objects'
 	
 	def page_view(self, func, page):
@@ -52,8 +53,12 @@ class FeedMultiViewMixin(object):
 			else:
 				feed_type = 'atom'
 			
-			feed = self.get_feed(feed_type, request, node, kwargs, reverse_name)
 			current_site = Site.objects.get_current()
+			
+			feed_kwargs = {
+				'link': 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), reverse(reverse_name, urlconf=self, kwargs=kwargs).strip('/'))
+			}
+			feed = self.get_feed(feed_type, extra_context, feed_kwargs)
 			
 			for obj in objects:
 				kwargs = {
@@ -67,15 +72,19 @@ class FeedMultiViewMixin(object):
 
 		return inner
 	
-	def get_feed(self, feed_type, request, node, kwargs, reverse_name):
-		title = self.feed_title
-		current_site = Site.objects.get_current()
-		link = 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), reverse(reverse_name, urlconf=self, kwargs=kwargs).strip('/'))
-		description = self.feed_description
-		if feed_type == 'rss':
-			return self.rss_feed(title, link, description)
+	def get_feed(self, feed_type, extra_context, kwargs=None):
+		defaults = {
+			'description': ''
+		}
+		defaults.update(kwargs or {})
 		
-		return self.atom_feed(title, link, description, subtitle=description)
+		if feed_type == 'rss':
+			return self.rss_feed(**defaults)
+		
+		if 'description' in defaults and defaults['description'] and 'subtitle' not in defaults:
+			defaults['subtitle'] = defaults['description']
+		
+		return self.atom_feed(**defaults)
 	
 	def feed_patterns(self, object_fetcher, page, base_name):
 		feed_name = '%s_feed' % base_name

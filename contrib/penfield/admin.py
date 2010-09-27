@@ -1,6 +1,6 @@
 from django.contrib import admin
 from philo.admin import EntityAdmin
-from philo.contrib.penfield.models import BlogEntry, Blog, BlogView, Newsletter, NewsletterArticle, NewsletterIssue, NewsletterView
+from philo.contrib.penfield.models import BlogEntry, Blog, BlogView, Newsletter, NewsletterArticle, NewsletterIssue, NewsletterView, Test
 
 
 class TitledAdmin(EntityAdmin):
@@ -36,6 +36,11 @@ class NewsletterViewAdmin(EntityAdmin):
 	pass
 
 
+class TestAdmin(admin.ModelAdmin):
+	pass
+
+
+admin.site.register(Test, TestAdmin)
 admin.site.register(Blog, BlogAdmin)
 admin.site.register(BlogEntry, BlogEntryAdmin)
 admin.site.register(BlogView, BlogViewAdmin)

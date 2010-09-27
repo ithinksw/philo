@@ -10,6 +10,7 @@ from philo.utils import paginate
 from philo.contrib.penfield.validators import validate_pagination_count
 from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
 from philo.contrib.penfield.utils import FeedMultiViewMixin
+from philo.contrib.penfield.embed import *
 
 
 class Blog(Entity, Titled):

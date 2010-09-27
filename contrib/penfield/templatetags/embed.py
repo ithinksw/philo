@@ -9,7 +9,6 @@ register = template.Library()
 class EmbedNode(template.Node):
 	def __init__(self, model, varname, object_pk=None, template_name=None):
 		assert template_name is not None or object_pk is not None
-		
 		app_label, model = model.split('.')
 		self.model = ContentType.objects.get(app_label=app_label, model=model).model_class()
 		self.varname = varname

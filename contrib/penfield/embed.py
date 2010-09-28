@@ -42,9 +42,18 @@ class Embed(models.Model):
 	embedded = generic.GenericForeignKey("embedded_content_type", "embedded_object_id")
 	
 	def delete(self):
-		# Unclear whether this would be called by a cascading deletion.
+		# This needs to be called manually.
 		super(Embed, self).delete()
-		# Cycle through all the fields in the embedder and remove all references to the embedded object.
+		
+		# Cycle through all the fields in the embedder and remove all references
+		# to the embedded object.
+		embedder = self.embedder
+		for field in embedder._meta.fields:
+			if isinstance(field, EmbedField):
+				attr = getattr(embedder, field.attname)
+				setattr(embedder, field.attname, attr.replace(self.get_embed_tag(), ''))
+		
+		embedder.save()
 	
 	def get_embed_tag(self):
 		"""Convenience function to construct the embed tag that would create this instance."""
@@ -55,11 +64,11 @@ class Embed(models.Model):
 		app_label = 'penfield'
 
 
-def sync_embedded_objects(model_instance, embedded_instances):
-	# First, fetch all current embeds.
+def sync_embedded_instances(model_instance, embedded_instances):
 	model_instance_ct = ContentType.objects.get_for_model(model_instance)
-	current_embeds = Embed.objects.filter()
 	
+	# Cycle through all the embedded instances and make sure that they are linked to
+	# the model instance. Track their pks.
 	new_embed_pks = []
 	for embedded_instance in embedded_instances:
 		embedded_instance_ct = ContentType.objects.get_for_model(embedded_instance)
@@ -67,7 +76,7 @@ def sync_embedded_objects(model_instance, embedded_instances):
 		new_embed_pks.append(new_embed.pk)
 	
 	# Then, delete all embed objects related to this model instance which do not relate
-	# to one of the embedded instances.
+	# to one of the newly embedded instances.
 	Embed.objects.filter(embedder_content_type=model_instance_ct, embedder_object_id=model_instance.id).exclude(pk__in=new_embed_pks).delete()
 
 
@@ -90,13 +99,30 @@ class EmbedField(TemplateField):
 				elif node.object_pk is not None:
 					self._embedded_instances.add(node.model.objects.get(pk=node.object_pk))
 	
-	#def to_template(self, value):
-	#	return Template("{% load embed %}" + value)
-	
 	def pre_save(self, model_instance, add):
 		if not hasattr(model_instance, '_embedded_instances'):
 			model_instance._embedded_instances = set()
 		model_instance._embedded_instances |= self._embedded_instances
+		return getattr(model_instance, self.attname)
+
+
+# Add a post-save signal function to run the syncer.
+def post_save_embed_sync(sender, instance, **kwargs):
+	if hasattr(instance, '_embedded_instances') and instance._embedded_instances:
+		sync_embedded_instances(instance, instance._embedded_instances)
+models.signals.post_save.connect(post_save_embed_sync)
+
+
+# Deletions can't cascade automatically without a GenericRelation - but there's no good way of
+# knowing what models should have one. Anything can be embedded! Also, cascading would probably
+# bypass the Embed model's delete method.
+def post_delete_cascade(sender, instance, **kwargs):
+	ct = ContentType.objects.get_for_model(sender)
+	embeds = Embed.objects.filter(embedded_content_type=ct, embedded_object_id=instance.id)
+	for embed in embeds:
+		embed.delete()
+	Embed.objects.filter(embedder_content_type=ct, embedder_object_id=instance.id).delete()
+models.signals.post_delete.connect(post_delete_cascade)
 
 
 class Test(models.Model):

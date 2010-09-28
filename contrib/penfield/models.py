@@ -11,6 +11,7 @@ from philo.contrib.penfield.validators import validate_pagination_count
 from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
 from philo.contrib.penfield.utils import FeedMultiViewMixin
 from philo.contrib.penfield.embed import *
+from django.template import add_to_builtins as register_templatetags
 
 
 class Blog(Entity, Titled):
@@ -440,3 +441,6 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 		}
 		defaults.update(kwargs or {})
 		return super(NewsletterView, self).get_feed(feed_type, extra_context, defaults)
+
+
+register_templatetags('philo.contrib.penfield.templatetags.embed')

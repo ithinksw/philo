@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.admin.widgets import AdminTextareaWidget
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.db.models import Q
 from django.forms.models import model_to_dict, fields_for_model, ModelFormMetaclass, ModelForm, BaseInlineFormSet
 from django.forms.formsets import TOTAL_FORM_COUNT
 from django.template import loader, loader_tags, TemplateDoesNotExist, Context, Template as DjangoTemplate
@@ -280,7 +281,12 @@ class ContentReferenceInlineFormSet(ContainerInlineFormSet):
 		super(ContentReferenceInlineFormSet, self).__init__(containers, data, files, instance, save_as_new, prefix, queryset)
 	
 	def get_container_instances(self, containers, qs):
-		qs = qs.filter(name__in=[c[0] for c in containers])
+		filter = Q()
+		
+		for name, ct in containers:
+			filter |= Q(name=name, content_type=ct)
+		
+		qs = qs.filter(filter)
 		container_instances = []
 		for container in qs:
 			container_instances.append(container)

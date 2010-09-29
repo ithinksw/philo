@@ -65,7 +65,8 @@ class BlogView(MultiView, FeedMultiViewMixin):
 	entry_permalink_base = models.CharField(max_length=255, blank=False, default='entries')
 	tag_permalink_base = models.CharField(max_length=255, blank=False, default='tags')
 	feed_suffix = models.CharField(max_length=255, blank=False, default=FeedMultiViewMixin.feed_suffix)
-	feeds_enabled = models.BooleanField() 
+	feeds_enabled = models.BooleanField()
+	list_var = 'entries'
 	
 	def __unicode__(self):
 		return u'BlogView for %s' % self.blog.title
@@ -73,10 +74,6 @@ class BlogView(MultiView, FeedMultiViewMixin):
 	@property
 	def per_page(self):
 		return self.entries_per_page
-	
-	@property
-	def feed_title(self):
-		return self.blog.title
 	
 	def get_subpath(self, obj):
 		if isinstance(obj, BlogEntry):
@@ -116,7 +113,8 @@ class BlogView(MultiView, FeedMultiViewMixin):
 	def urlpatterns(self):
 		urlpatterns = patterns('',
 			url(r'^', include(self.feed_patterns(self.get_all_entries, self.index_page, 'index'))),
-			url((r'^(?:%s)/(?P<tag_slugs>[-\w]+[-+/\w]*)/' % self.tag_permalink_base), include(self.feed_patterns(self.get_entries_by_tag, self.tag_page, 'entries_by_tag')))
+			url(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)/%s/' % (self.tag_permalink_base, self.feed_suffix), self.feed_view(self.get_entries_by_tag, 'entries_by_tag_feed'), name='entries_by_tag_feed'),
+			url(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)/' % self.tag_permalink_base, self.page_view(self.get_entries_by_tag, self.tag_page), name='entries_by_tag')
 		)
 		if self.tag_archive_page:
 			urlpatterns += patterns('',
@@ -177,7 +175,7 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		context.update({'year': year, 'month': month, 'day': day})
 		return entries, context
 	
-	def get_entries_by_tag(self, request, node=None, extra_context=None):
+	def get_entries_by_tag(self, request, tag_slugs, node=None, extra_context=None):
 		tags = []
 		for tag_slug in tag_slugs.replace('+', '/').split('/'):
 			if tag_slug: # ignore blank slugs, handles for multiple consecutive separators (+ or /)
@@ -192,13 +190,35 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		entries = self.blog.entries.all()
 		for tag in tags:
 			entries = entries.filter(tags=tag)
-		if entries.count() <= 0:
-			raise Http404
 		
-		return entries, extra_context
+		context = self.get_context()
+		context.update(extra_context or {})
+		context.update({'tags': tags})
+		
+		return entries, context
 	
-	def get_obj_description(self, obj):
-		return obj.excerpt
+	def add_item(self, feed, obj, kwargs=None):
+		defaults = {
+			'title': obj.title,
+			'description': obj.excerpt or obj.content,
+			'author_name': obj.author.get_full_name(),
+			'pubdate': obj.date
+		}
+		defaults.update(kwargs or {})
+		super(BlogView, self).add_item(feed, obj, defaults)
+	
+	def get_feed(self, feed_type, extra_context, kwargs=None):
+		tags = (extra_context or {}).get('tags', None)
+		title = self.blog.title
+		
+		if tags is not None:
+			title += " - %s" % ', '.join([tag.name for tag in tags])
+		
+		defaults = {
+			'title': title
+		}
+		defaults.update(kwargs or {})
+		return super(BlogView, self).get_feed(feed_type, extra_context, defaults)
 	
 	def entry_view(self, request, slug, year=None, month=None, day=None, node=None, extra_context=None):
 		entries = self.blog.entries.all()
@@ -239,6 +259,7 @@ class NewsletterArticle(Entity, Titled):
 	date = models.DateTimeField(default=datetime.now)
 	lede = models.TextField(null=True, blank=True)
 	full_text = models.TextField()
+	tags = models.ManyToManyField(Tag, related_name='newsletterarticles', blank=True, null=True)
 	
 	class Meta:
 		get_latest_by = 'date'
@@ -251,12 +272,12 @@ register_value_model(NewsletterArticle)
 
 class NewsletterIssue(Entity, Titled):
 	newsletter = models.ForeignKey(Newsletter, related_name='issues')
-	number = models.PositiveIntegerField()
+	numbering = models.CharField(max_length=50, help_text='For example, 04.02 for volume 4, issue 2.')
 	articles = models.ManyToManyField(NewsletterArticle, related_name='issues')
 	
 	class Meta:
-		ordering = ['-number']
-		unique_together = (('newsletter', 'number'),)
+		ordering = ['-numbering']
+		unique_together = (('newsletter', 'numbering'),)
 
 
 register_value_model(NewsletterIssue)
@@ -284,10 +305,10 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 	
 	feed_suffix = models.CharField(max_length=255, blank=False, default=FeedMultiViewMixin.feed_suffix)
 	feeds_enabled = models.BooleanField()
+	list_var = 'articles'
 	
-	@property
-	def feed_title(self):
-		return self.newsletter.title
+	def __unicode__(self):
+		return self.newsletter.__unicode__()
 	
 	def get_subpath(self, obj):
 		if isinstance(obj, NewsletterArticle):
@@ -302,14 +323,14 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 				return reverse(self.article_view, urlconf=self, kwargs=kwargs)
 		elif isinstance(obj, NewsletterIssue):
 			if obj.newsletter == self.newsletter:
-				return reverse('issue', urlconf=self, kwargs={'number': str(obj.number)})
+				return reverse('issue', urlconf=self, kwargs={'numbering': obj.numbering})
 		raise ViewCanNotProvideSubpath
 	
 	@property
 	def urlpatterns(self):
 		urlpatterns = patterns('',
 			url(r'^', include(self.feed_patterns(self.get_all_articles, self.index_page, 'index'))),
-			url(r'^(?:%s)/(?P<number>\d+)/' % self.issue_permalink_base, include(self.feed_patterns(self.get_articles_by_issue, self.issue_page, 'issue')))
+			url(r'^(?:%s)/(?P<numbering>.+)/' % self.issue_permalink_base, include(self.feed_patterns(self.get_articles_by_issue, self.issue_page, 'issue')))
 		)
 		if self.issue_archive_page:
 			urlpatterns += patterns('',
@@ -365,9 +386,9 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 			articles = articles.filter(date__day=day)
 		return articles
 	
-	def get_articles_by_issue(self, request, number, node=None, extra_context=None):
+	def get_articles_by_issue(self, request, numbering, node=None, extra_context=None):
 		try:
-			issue = self.newsletter.issues.get(number=number)
+			issue = self.newsletter.issues.get(numbering=numbering)
 		except:
 			raise Http404
 		context = extra_context or {}
@@ -386,9 +407,9 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 			article = articles.get(slug=slug)
 		except:
 			raise Http404
-		context = {}
+		context = self.get_context()
 		context.update(extra_context or {})
-		context.update({'newsletter': self.newsletter, 'article': article})
+		context.update({'article': article})
 		return self.article_page.render_to_response(node, request, extra_context=context)
 	
 	def issue_archive_view(self, request, node=None, extra_context=None):
@@ -399,5 +420,22 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 		context.update({'newsletter': self.newsletter})
 		return self.issue_archive_page.render_to_response(node, request, extra_context=context)
 	
-	def get_obj_description(self, obj):
-		return obj.lede or obj.full_text
+	def add_item(self, feed, obj, kwargs=None):
+		defaults = {
+			'title': obj.title,
+			'author_name': ', '.join(obj.authors),
+			'pubdate': obj.date,
+			'description': obj.lede or obj.full_text,
+			'categories': [tag.name for tag in obj.tags.all()]
+		}
+		defaults.update(kwargs or {})
+		super(NewsletterView, self).add_item(feed, obj, defaults)
+	
+	def get_feed(self, feed_type, extra_context, kwargs=None):
+		title = self.newsletter.title
+		
+		defaults = {
+			'title': title
+		}
+		defaults.update(kwargs or {})
+		return super(NewsletterView, self).get_feed(feed_type, extra_context, defaults)

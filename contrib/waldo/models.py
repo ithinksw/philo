@@ -6,11 +6,12 @@ from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm, Passwo
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator as password_token_generator
 from django.contrib.sites.models import Site
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives, send_mail
 from django.core.urlresolvers import reverse
 from django.db import models
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
+from django.template.defaultfilters import striptags
 from django.utils.http import int_to_base36, base36_to_int
 from django.utils.translation import ugettext_lazy, ugettext as _
 from django.views.decorators.cache import never_cache
@@ -81,7 +82,7 @@ class LoginMultiView(MultiView):
 			if host != request.get_host():
 				referrer = None
 			else:
-				redirect = ''.join(referrer[2:])
+				redirect = '%s?%s' % (referrer[2], referrer[4])
 		
 		if referrer is None:
 			redirect = node.get_absolute_url()
@@ -107,6 +108,9 @@ class LoginMultiView(MultiView):
 		"""
 		Displays the login form for the given HttpRequest.
 		"""
+		if request.user.is_authenticated():
+			return HttpResponseRedirect(node.get_absolute_url())
+		
 		context = self.get_context(extra_context)
 		
 		from django.contrib.auth.models import User
@@ -172,11 +176,20 @@ class LoginMultiView(MultiView):
 		return inner
 	
 	def send_confirmation_email(self, subject, email, page, extra_context):
-		message = page.render_to_string(extra_context=extra_context)
+		text_content = page.render_to_string(extra_context=extra_context)
 		from_email = 'noreply@%s' % Site.objects.get_current().domain
-		send_mail(subject, message, from_email, [email])
+		
+		if page.template.mimetype == 'text/html':
+			msg = EmailMultiAlternatives(subject, striptags(text_content), from_email, [email])
+			msg.attach_alternative(text_content, 'text/html')
+			msg.send()
+		else:
+			send_mail(subject, text_content, from_email, [email])
 	
 	def password_reset(self, request, node=None, extra_context=None, token_generator=password_token_generator):
+		if request.user.is_authenticated():
+			return HttpResponseRedirect(node.get_absolute_url())
+		
 		if request.method == 'POST':
 			form = PasswordResetForm(request.POST)
 			if form.is_valid():
@@ -257,7 +270,7 @@ class LoginMultiView(MultiView):
 				}
 				self.send_confirmation_email('Confirm account creation at %s' % current_site.name, user.email, self.register_confirmation_email, context)
 				messages.add_message(request, messages.SUCCESS, 'An email has been sent to %s with details on activating your account.' % user.email, fail_silently=True)
-				return HttpResponseRedirect('')
+				return HttpResponseRedirect(node.get_absolute_url())
 		else:
 			form = RegistrationForm()
 		
@@ -350,7 +363,7 @@ class AccountMultiView(LoginMultiView):
 		
 		return form_instances
 	
-	def account_view(self, request, node=None, extra_context=None, token_generator=email_token_generator):
+	def account_view(self, request, node=None, extra_context=None, token_generator=email_token_generator, *args, **kwargs):
 		if request.method == 'POST':
 			form_instances = self.get_account_form_instances(request.user, request.POST)
 			current_email = request.user.email
@@ -407,7 +420,8 @@ class AccountMultiView(LoginMultiView):
 	def account_required(self, view):
 		def inner(request, *args, **kwargs):
 			if not self.has_valid_account(request.user):
-				messages.add_message(request, messages.ERROR, "You need to add some account information before you can post listings.", fail_silently=True)
+				if not request.method == "POST":
+					messages.add_message(request, messages.ERROR, "You need to add some account information before you can access this page.", fail_silently=True)
 				return self.account_view(request, *args, **kwargs)
 			return view(request, *args, **kwargs)
 		
@@ -431,7 +445,7 @@ class AccountMultiView(LoginMultiView):
 		
 		user = get_object_or_404(User, id=uid_int)
 		
-		email = email.replace('+', '@')
+		email = '@'.join(email.rsplit('+', 1))
 		
 		if email == user.email:
 			# Then short-circuit.

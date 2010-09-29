@@ -32,6 +32,7 @@ class EntityAdmin(admin.ModelAdmin):
 
 
 class TagAdmin(admin.ModelAdmin):
+	list_display = ('name', 'slug')
 	prepopulated_fields = {"slug": ("name",)}
 
 admin.site.register(Tag, TagAdmin)

@@ -11,6 +11,7 @@ from philo.models.base import TreeEntity, Entity, QuerySetMapper, register_value
 from philo.utils import ContentTypeSubclassLimiter
 from philo.validators import RedirectValidator
 from philo.exceptions import ViewDoesNotProvideSubpaths, AncestorDoesNotExist
+from philo.signals import view_about_to_render, view_finished_rendering
 
 
 _view_content_type_limiter = ContentTypeSubclassLimiter(None)
@@ -60,6 +61,13 @@ class View(Entity):
 		return QuerySetMapper(self.relationship_set, passthrough=node.relationships)
 	
 	def render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
+		extra_context = extra_context or {}
+		view_about_to_render.send(sender=self, node=node, request=request, path=path, subpath=subpath, extra_context=extra_context)
+		response = self.actually_render_to_response(node, request, path, subpath, extra_context)
+		view_finished_rendering.send(sender=self, response=response)
+		return response
+	
+	def actually_render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
 		raise NotImplementedError('View subclasses must implement render_to_response.')
 	
 	class Meta:
@@ -74,7 +82,7 @@ class MultiView(View):
 	
 	urlpatterns = []
 	
-	def render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
+	def actually_render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
 		clear_url_caches()
 		if not subpath:
 			subpath = ""
@@ -101,7 +109,7 @@ class Redirect(View):
 	target = models.CharField(max_length=200, validators=[RedirectValidator()])
 	status_code = models.IntegerField(choices=STATUS_CODES, default=302, verbose_name='redirect type')
 	
-	def render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
+	def actually_render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
 		response = HttpResponseRedirect(self.target)
 		response.status_code = self.status_code
 		return response
@@ -116,7 +124,7 @@ class File(View):
 	mimetype = models.CharField(max_length=255)
 	file = models.FileField(upload_to='philo/files/%Y/%m/%d')
 	
-	def render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
+	def actually_render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
 		wrapper = FileWrapper(self.file)
 		response = HttpResponse(wrapper, content_type=self.mimetype)
 		response['Content-Length'] = self.file.size

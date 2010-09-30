@@ -27,7 +27,7 @@ def node_view(request, path=None, **kwargs):
 		return node.render_to_response(request, path=path, subpath=subpath)
 	except Http404, e:
 		if settings.DEBUG:
-			raise e
+			raise
 		
 		try:
 			Http404View = node.relationships['Http404']
@@ -42,7 +42,7 @@ def node_view(request, path=None, **kwargs):
 		return Http404View.render_to_response(node, request, path, subpath, extra_context)
 	except Exception, e:
 		if settings.DEBUG:
-			raise e
+			raise
 		
 		try:
 			Http500View = node.relationships['Http500']

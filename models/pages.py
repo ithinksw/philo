@@ -8,13 +8,30 @@ from django.template import Template as DjangoTemplate
 from django.template import TemplateDoesNotExist
 from django.template import Context, RequestContext
 from django.template.loader import get_template
-from django.template.loader_tags import ExtendsNode, ConstantIncludeNode, IncludeNode
+from django.template.loader_tags import ExtendsNode, ConstantIncludeNode
 from django.http import HttpResponse
 from philo.models.base import TreeModel, register_value_model
 from philo.models.nodes import View
 from philo.utils import fattr
 from philo.templatetags.containers import ContainerNode
+from philo.validators import LOADED_TEMPLATE_ATTR
 from philo.signals import page_about_to_render_to_string, page_finished_rendering_to_string
+
+
+BLANK_CONTEXT = Context()
+
+
+def get_extended(self):
+	return self.get_parent(BLANK_CONTEXT)
+
+
+def get_included(self):
+	return self.template
+
+
+# We ignore the IncludeNode because it will never work in a blank context.
+setattr(ExtendsNode, LOADED_TEMPLATE_ATTR, property(get_extended))
+setattr(ConstantIncludeNode, LOADED_TEMPLATE_ATTR, property(get_included))
 
 
 class Template(TreeModel):
@@ -48,20 +65,14 @@ class Template(TreeModel):
 							for nodelist_name in node.child_nodelists:
 								if hasattr(node, nodelist_name):
 									nodes.extend(nodelist_container_nodes(getattr(node, nodelist_name)))
+						
+						# _philo_additional_template is a property philo provides on all nodes that require it
+						# and which it monkeypatches onto the relevant default nodes.
+						if hasattr(node, LOADED_TEMPLATE_ATTR) and getattr(node, LOADED_TEMPLATE_ATTR):
+							nodes.extend(container_nodes(LOADED_TEMPLATE_ATTR))
+						
 						if isinstance(node, ContainerNode):
 							nodes.append(node)
-						elif isinstance(node, ExtendsNode):
-							extended_template = node.get_parent(Context())
-							if extended_template:
-								nodes.extend(container_nodes(extended_template))
-						elif isinstance(node, ConstantIncludeNode):
-							included_template = node.template
-							if included_template:
-								nodes.extend(container_nodes(included_template))
-						elif isinstance(node, IncludeNode):
-							included_template = get_template(node.template_name.resolve(Context()))
-							if included_template:
-								nodes.extend(container_nodes(included_template))
 					except:
 						raise # fail for this node
 				return nodes

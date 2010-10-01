@@ -4,9 +4,9 @@ from django.core.exceptions import ValidationError
 from django.template import Template, Parser, Lexer, TOKEN_BLOCK, TOKEN_VAR
 from django.utils import simplejson as json
 import re
+from philo.utils import LOADED_TEMPLATE_ATTR
 
 
-LOADED_TEMPLATE_ATTR = '_philo_loaded_template'
 INSECURE_TAGS = (
 	'load',
 	'extends',

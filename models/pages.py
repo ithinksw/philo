@@ -1,38 +1,17 @@
 # encoding: utf-8
-from django.db import models
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
-from django.conf import settings
-from django.template import add_to_builtins as register_templatetags
-from django.template import Template as DjangoTemplate
-from django.template import TemplateDoesNotExist
-from django.template import Context, RequestContext
-from django.template.loader import get_template
-from django.template.loader_tags import ExtendsNode, ConstantIncludeNode
+from django.db import models
 from django.http import HttpResponse
+from django.template import TemplateDoesNotExist, Context, RequestContext, Template as DjangoTemplate, add_to_builtins as register_templatetags
 from philo.models.base import TreeModel, register_value_model
 from philo.models.fields import TemplateField
 from philo.models.nodes import View
-from philo.utils import fattr
 from philo.templatetags.containers import ContainerNode
+from philo.utils import fattr, nodelist_crawl
 from philo.validators import LOADED_TEMPLATE_ATTR
 from philo.signals import page_about_to_render_to_string, page_finished_rendering_to_string
-
-
-BLANK_CONTEXT = Context()
-
-
-def get_extended(self):
-	return self.get_parent(BLANK_CONTEXT)
-
-
-def get_included(self):
-	return self.template
-
-
-# We ignore the IncludeNode because it will never work in a blank context.
-setattr(ExtendsNode, LOADED_TEMPLATE_ATTR, property(get_extended))
-setattr(ConstantIncludeNode, LOADED_TEMPLATE_ATTR, property(get_included))
 
 
 class Template(TreeModel):
@@ -57,31 +36,11 @@ class Template(TreeModel):
 		This will break if there is a recursive extends or includes in the template code.
 		Due to the use of an empty Context, any extends or include tags with dynamic arguments probably won't work.
 		"""
-		def container_nodes(template):
-			def nodelist_container_nodes(nodelist):
-				nodes = []
-				for node in nodelist:
-					try:
-						if hasattr(node, 'child_nodelists'):
-							for nodelist_name in node.child_nodelists:
-								if hasattr(node, nodelist_name):
-									nodes.extend(nodelist_container_nodes(getattr(node, nodelist_name)))
-						
-						# LOADED_TEMPLATE_ATTR contains the name of an attribute philo uses to declare a
-						# node as rendering an additional template. Philo monkeypatches the attribute onto
-						# the relevant default nodes.
-						if hasattr(node, LOADED_TEMPLATE_ATTR):
-							loaded_template = getattr(node, LOADED_TEMPLATE_ATTR)
-							if loaded_template:
-								nodes.extend(container_nodes(loaded_template))
-						
-						if isinstance(node, ContainerNode):
-							nodes.append(node)
-					except:
-						raise # fail for this node
-				return nodes
-			return nodelist_container_nodes(template.nodelist)
-		all_nodes = container_nodes(self.django_template)
+		def process_node(node, nodes):
+			if isinstance(node, ContainerNode):
+				nodes.append(node)
+		
+		all_nodes = nodelist_crawl(self.django_template.nodelist, process_node)
 		contentlet_node_names = set([node.name for node in all_nodes if not node.references])
 		contentreference_node_names = []
 		contentreference_node_specs = []

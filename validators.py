@@ -1,6 +1,7 @@
 from django.utils.translation import ugettext_lazy as _
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
+from django.template import Template, Parser, Lexer, TOKEN_BLOCK, TOKEN_VAR
 from django.utils import simplejson as json
 import re
 
@@ -10,6 +11,7 @@ INSECURE_TAGS = (
 	'load',
 	'extends',
 	'include',
+	'debug',
 )
 
 
@@ -47,9 +49,6 @@ def json_validator(value):
 		raise ValidationError(u'\'%s\' is not valid JSON' % value)
 
 
-from django.template import Template, Parser, Lexer, TOKEN_BLOCK
-
-
 class TemplateValidationParser(Parser):
 	def __init__(self, tokens, allow=None, disallow=None, secure=True):
 		super(TemplateValidationParser, self).__init__(tokens)
@@ -59,7 +58,7 @@ class TemplateValidationParser(Parser):
 		if secure:
 			disallow |= set(INSECURE_TAGS)
 		
-		self.allow, self.disallow = allow, disallow
+		self.allow, self.disallow, self.secure = allow, disallow, secure
 	
 	def parse(self, parse_until=None):
 		if parse_until is None:
@@ -112,7 +111,9 @@ class TemplateValidationParser(Parser):
 		return nodelist
 	
 	def disallowed_tag(self, command):
-		raise ValidationError("Tag not allowed: %s" % command)
+		if self.secure and command in INSECURE_TAGS:
+			raise ValidationError('Tag "%s" is not permitted for security reasons.' % command)
+		raise ValidationError('Tag "%s" is not permitted here.' % command)
 
 
 class TemplateValidator(object): 

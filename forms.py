@@ -141,7 +141,7 @@ class ContentletForm(ContainerForm):
 	
 	class Meta:
 		model = Contentlet
-		fields = ['name', 'content', 'dynamic']
+		fields = ['name', 'content']
 
 
 class ContentReferenceForm(ContainerForm):

@@ -11,6 +11,7 @@ from django.template.loader import get_template
 from django.template.loader_tags import ExtendsNode, ConstantIncludeNode
 from django.http import HttpResponse
 from philo.models.base import TreeModel, register_value_model
+from philo.models.fields import TemplateField
 from philo.models.nodes import View
 from philo.utils import fattr
 from philo.templatetags.containers import ContainerNode
@@ -38,7 +39,7 @@ class Template(TreeModel):
 	name = models.CharField(max_length=255)
 	documentation = models.TextField(null=True, blank=True)
 	mimetype = models.CharField(max_length=255, default=getattr(settings, 'DEFAULT_CONTENT_TYPE', 'text/html'))
-	code = models.TextField(verbose_name='django template code')
+	code = TemplateField(secure=False, verbose_name='django template code')
 	
 	@property
 	def origin(self):
@@ -66,10 +67,13 @@ class Template(TreeModel):
 								if hasattr(node, nodelist_name):
 									nodes.extend(nodelist_container_nodes(getattr(node, nodelist_name)))
 						
-						# _philo_additional_template is a property philo provides on all nodes that require it
-						# and which it monkeypatches onto the relevant default nodes.
-						if hasattr(node, LOADED_TEMPLATE_ATTR) and getattr(node, LOADED_TEMPLATE_ATTR):
-							nodes.extend(container_nodes(LOADED_TEMPLATE_ATTR))
+						# LOADED_TEMPLATE_ATTR contains the name of an attribute philo uses to declare a
+						# node as rendering an additional template. Philo monkeypatches the attribute onto
+						# the relevant default nodes.
+						if hasattr(node, LOADED_TEMPLATE_ATTR):
+							loaded_template = getattr(node, LOADED_TEMPLATE_ATTR)
+							if loaded_template:
+								nodes.extend(container_nodes(loaded_template))
 						
 						if isinstance(node, ContainerNode):
 							nodes.append(node)
@@ -143,8 +147,7 @@ class Page(View):
 class Contentlet(models.Model):
 	page = models.ForeignKey(Page, related_name='contentlets')
 	name = models.CharField(max_length=255)
-	content = models.TextField()
-	dynamic = models.BooleanField(default=False)
+	content = TemplateField()
 	
 	def __unicode__(self):
 		return self.name

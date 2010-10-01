@@ -33,24 +33,29 @@ class ContainerNode(template.Node):
 	def get_container_content(self, context):
 		page = context['page']
 		if self.references:
+			# Then it's a content reference.
 			try:
 				contentreference = page.contentreferences.get(name__exact=self.name, content_type=self.references)
 				content = contentreference.content
 			except ObjectDoesNotExist:
 				content = ''
 		else:
+			# Otherwise it's a contentlet.
 			try:
 				contentlet = page.contentlets.get(name__exact=self.name)
-				if contentlet.dynamic:
+				if '{%' in contentlet.content:
 					try:
-						content = mark_safe(template.Template(contentlet.content, name=contentlet.name).render(context))
+						content = template.Template(contentlet.content, name=contentlet.name).render(context)
 					except template.TemplateSyntaxError, error:
 						if settings.DEBUG:
 							content = ('[Error parsing contentlet \'%s\': %s]' % (self.name, error))
+						else:
+							content = settings.TEMPLATE_STRING_IF_INVALID
 				else:
 					content = contentlet.content
 			except ObjectDoesNotExist:
-				content = ''
+				content = settings.TEMPLATE_STRING_IF_INVALID
+			content = mark_safe(content)
 		return content
 
 

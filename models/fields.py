@@ -147,9 +147,9 @@ class RelationshipField(EntityProxyField):
 
 
 class TemplateField(models.TextField):
-	def __init__(self, allow=None, disallow=None, *args, **kwargs):
+	def __init__(self, allow=None, disallow=None, secure=True, *args, **kwargs):
 		super(TemplateField, self).__init__(*args, **kwargs)
-		self.validators.append(TemplateValidator(allow, disallow))
+		self.validators.append(TemplateValidator(allow, disallow, secure))
 
 
 try:

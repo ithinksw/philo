@@ -4,5 +4,6 @@ Prerequisites:
 	* Python 2.5.4+ <http://www.python.org/>
 	* Django 1.2+ <http://www.djangoproject.com/>
 	* (Optional) django-grappelli 2.0+ <http://code.google.com/p/django-grappelli/>
+	* (Optional) recaptcha-django r6 <http://code.google.com/p/recaptcha-django/>
 
 To contribute, please visit the project website <http://philo.ithinksw.org/>.

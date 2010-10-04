@@ -9,9 +9,6 @@ from philo.contrib.penfield.templatetags.embed import EmbedNode
 from philo.utils import nodelist_crawl
 
 
-embed_re = re.compile("{% embed (?P<app_label>\w+)\.(?P<model>\w+) (?P<pk>)\w+ %}")
-
-
 class Embed(models.Model):
 	embedder_content_type = models.ForeignKey(ContentType, related_name="embedder_related")
 	embedder_object_id = models.PositiveIntegerField()
@@ -31,14 +28,17 @@ class Embed(models.Model):
 		for field in embedder._meta.fields:
 			if isinstance(field, EmbedField):
 				attr = getattr(embedder, field.attname)
-				setattr(embedder, field.attname, attr.replace(self.get_embed_tag(), ''))
+				setattr(embedder, field.attname, self.embed_re.sub('', attr))
 		
 		embedder.save()
 	
-	def get_embed_tag(self):
-		"""Convenience function to construct the embed tag that would create this instance."""
-		ct = self.embedded_content_type
-		return "{%% embed %s.%s %s %%}" % (ct.app_label, ct.model, self.embedded_object_id)
+	def get_embed_re(self):
+		"""Convenience function to return a compiled regular expression to find embed tags that would create this instance."""
+		if not hasattr(self, '_embed_re'):
+			ct = self.embedded_content_type
+		 	self._embed_re = re.compile("{%% ?embed %s.%s %s( .*?)? ?%%}" % (ct.app_label, ct.model, self.embedded_object_id))
+		return self._embed_re
+	embed_re = property(get_embed_re)
 	
 	class Meta:
 		app_label = 'penfield'

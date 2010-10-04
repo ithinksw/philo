@@ -6,7 +6,10 @@ from django.template import loader, loader_tags, Parser, Lexer, Template
 import re
 from philo.models.fields import TemplateField
 from philo.contrib.penfield.templatetags.embed import EmbedNode
-from philo.utils import nodelist_crawl
+from philo.utils import nodelist_crawl, ContentTypeRegistryLimiter
+
+
+embeddable_content_types = ContentTypeRegistryLimiter()
 
 
 class Embed(models.Model):
@@ -63,6 +66,9 @@ def sync_embedded_instances(model_instance, embedded_instances):
 class EmbedField(TemplateField):
 	def process_node(self, node, results):
 		if isinstance(node, EmbedNode) and node.instance is not None:
+			if node.content_type.model_class() not in embeddable_content_types.classes:
+				raise ValidationError("Class %s.%s cannot be embedded." % (node.content_type.app_label, node.content_type.model))
+			
 			if not node.instance:
 				raise ValidationError("Instance with content type %s.%s and id %s does not exist." % (node.content_type.app_label, node.content_type.model, node.object_pk))
 			
@@ -98,9 +104,21 @@ models.signals.post_save.connect(post_save_embed_sync)
 # knowing what models should have one. Anything can be embedded! Also, cascading would probably
 # bypass the Embed model's delete method.
 def post_delete_cascade(sender, instance, **kwargs):
-	ct = ContentType.objects.get_for_model(sender)
-	embeds = Embed.objects.filter(embedded_content_type=ct, embedded_object_id=instance.id)
-	for embed in embeds:
-		embed.delete()
-	Embed.objects.filter(embedder_content_type=ct, embedder_object_id=instance.id).delete()
+	if sender in embeddable_content_types.classes:
+		# Don't bother looking for Embed objects that embed a contenttype that can't be embedded.
+		ct = ContentType.objects.get_for_model(sender)
+		embeds = Embed.objects.filter(embedded_content_type=ct, embedded_object_id=instance.id)
+		for embed in embeds:
+			embed.delete()
+	
+	if not hasattr(sender._meta, '_has_embed_fields'):
+		sender._meta._has_embed_fields = False
+		for field in sender._meta.fields:
+			if isinstance(field, EmbedField):
+				sender._meta._has_embed_fields = True
+				break
+	
+	if sender._meta._has_embed_fields:
+		# If it doesn't have embed fields, then it can't be an embedder.
+		Embed.objects.filter(embedder_content_type=ct, embedder_object_id=instance.id).delete()
 models.signals.post_delete.connect(post_delete_cascade)

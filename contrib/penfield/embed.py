@@ -2,34 +2,14 @@ from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.template import Template, loader, loader_tags
+from django.template import loader, loader_tags, Parser, Lexer, Template
 import re
+from philo.models.fields import TemplateField
 from philo.contrib.penfield.templatetags.embed import EmbedNode
+from philo.utils import nodelist_crawl
 
 
 embed_re = re.compile("{% embed (?P<app_label>\w+)\.(?P<model>\w+) (?P<pk>)\w+ %}")
-
-
-class TemplateField(models.TextField):
-	def validate(self, value, model_instance):
-		"""For value (a template), make sure that all included templates exist."""
-		super(TemplateField, self).validate(value, model_instance)
-		try:
-			self.validate_template(self.to_template(value))
-		except Exception, e:
-			raise ValidationError("Template code invalid. Error was: %s: %s" % (e.__class__.__name__, e))
-	
-	def validate_template(self, template):
-		for node in template.nodelist:
-			if isinstance(node, loader_tags.ExtendsNode):
-				extended_template = node.get_parent(Context())
-				self.validate_template(extended_template)
-			elif isinstance(node, loader_tags.IncludeNode):
-				included_template = loader.get_template(node.template_name.resolve(Context()))
-				self.validate_template(extended_template)
-	
-	def to_template(self, value):
-		return Template(value)
 
 
 class Embed(models.Model):
@@ -81,29 +61,30 @@ def sync_embedded_instances(model_instance, embedded_instances):
 
 
 class EmbedField(TemplateField):
-	_embedded_instances = set()
+	def process_node(self, node, results):
+		if isinstance(node, EmbedNode) and node.instance is not None:
+			if not node.instance:
+				raise ValidationError("Instance with content type %s.%s and id %s does not exist." % (node.content_type.app_label, node.content_type.model, node.object_pk))
+			
+			results.append(node.instance)
 	
-	def validate_template(self, template):
-		"""Check to be sure that the embedded instances and templates all exist."""
-		for node in template.nodelist:
-			if isinstance(node, loader_tags.ExtendsNode):
-				extended_template = node.get_parent(Context())
-				self.validate_template(extended_template)
-			elif isinstance(node, loader_tags.IncludeNode):
-				included_template = loader.get_template(node.template_name.resolve(Context()))
-				self.validate_template(extended_template)
-			elif isinstance(node, EmbedNode):
-				if node.template_name is not None:
-					embedded_template = loader.get_template(node.template_name)
-					self.validate_template(embedded_template)
-				elif node.object_pk is not None:
-					self._embedded_instances.add(node.model.objects.get(pk=node.object_pk))
-	
-	def pre_save(self, model_instance, add):
+	def clean(self, value, model_instance):
+		value = super(EmbedField, self).clean(value, model_instance)
+		
 		if not hasattr(model_instance, '_embedded_instances'):
 			model_instance._embedded_instances = set()
-		model_instance._embedded_instances |= self._embedded_instances
-		return getattr(model_instance, self.attname)
+		
+		model_instance._embedded_instances |= set(nodelist_crawl(Template(value).nodelist, self.process_node))
+		
+		return value
+
+
+try:
+	from south.modelsinspector import add_introspection_rules
+except ImportError:
+	pass
+else:
+	add_introspection_rules([], ["^philo\.contrib\.penfield\.embed\.EmbedField"])
 
 
 # Add a post-save signal function to run the syncer.
@@ -123,11 +104,3 @@ def post_delete_cascade(sender, instance, **kwargs):
 		embed.delete()
 	Embed.objects.filter(embedder_content_type=ct, embedder_object_id=instance.id).delete()
 models.signals.post_delete.connect(post_delete_cascade)
-
-
-class Test(models.Model):
-	template = TemplateField()
-	embedder = EmbedField()
-	
-	class Meta:
-		app_label = 'penfield'

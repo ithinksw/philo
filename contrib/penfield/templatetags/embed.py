@@ -1,50 +1,67 @@
 from django import template
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
+from philo.utils import LOADED_TEMPLATE_ATTR
 
 
 register = template.Library()
 
 
 class EmbedNode(template.Node):
-	def __init__(self, model, varname, object_pk=None, template_name=None):
+	def __init__(self, content_type, varname, object_pk=None, template_name=None):
 		assert template_name is not None or object_pk is not None
-		app_label, model = model.split('.')
-		self.model = ContentType.objects.get(app_label=app_label, model=model).model_class()
+		self.content_type = content_type
 		self.varname = varname
-		self.object_pk = object_pk
-		self.template_name = template_name
+		
+		if object_pk is not None:
+			self.object_pk = object_pk
+			try:
+				self.instance = content_type.get_object_for_this_type(pk=object_pk)
+			except content_type.model_class().DoesNotExist:
+				self.instance = False
+		else:
+			self.instance = None
+		
+		if template_name is not None:
+			try:
+				self.template = template.loader.get_template(template_name)
+			except template.TemplateDoesNotExist:
+				self.template = False
+		else:
+			self.template = None
 	
 	def render(self, context):
 		if self.template_name is not None:
-			template_name = self.template_name.resolve(context)
-		
-			try:
-				t = template.loader.get_template(template_name)
-			except template.TemplateDoesNotExist:
+			if self.template is False:
 				return settings.TEMPLATE_STRING_IF_INVALID
-			else:
-				if self.varname not in context:
-					context[self.varname] = {}
-				context[self.varname][self.model] = t
+			
+			if self.varname not in context:
+				context[self.varname] = {}
+			context[self.varname][self.content_type] = self.template
+			
 			return ''
 		
-		# Otherwise self.object_pk is set. Render the instance with the appropriate template!
-		try:
-			instance = self.model.objects.get(pk=self.object_pk.resolve(context))
-		except self.model.DoesNotExist:
+		# Otherwise self.instance should be set. Render the instance with the appropriate template!
+		if self.instance is None or self.instance is False:
 			return settings.TEMPLATE_STRING_IF_INVALID
 		
 		try:
-			t = context[self.varname][self.model]
+			t = context[self.varname][self.content_type]
 		except KeyError:
 			return settings.TEMPLATE_STRING_IF_INVALID
 		
 		context.push()
-		context['embedded'] = instance
+		context['embedded'] = self.instance
 		t_rendered = t.render(context)
 		context.pop()
 		return t_rendered
+
+
+def get_embedded(self):
+	return template.loader.get_template(self.template_name)
+
+
+setattr(EmbedNode, LOADED_TEMPLATE_ATTR, property(get_embedded))
 
 
 def do_embed(parser, token):
@@ -67,10 +84,17 @@ def do_embed(parser, token):
 			return template.defaulttags.CommentNode()
 		
 		if '.' not in args[1]:
-			raise template.TemplateSyntaxError('"%s" template tag expects the first argument to be of the type app_label.model' % tag)
+			raise template.TemplateSyntaxError('"%s" template tag expects the first argument to be of the form app_label.model' % tag)
+		
+		app_label, model = args[1].split('.')
+		try:
+			ct = ContentType.objects.get(app_label=app_label, model=model)
+		except ContentType.DoesNotExist:
+			raise template.TemplateSyntaxError('"%s" template tag option "references" requires an argument of the form app_label.model which refers to an installed content type (see django.contrib.contenttypes)' % tag)
 		
 		if len(args) == 3:
-			return EmbedNode(args[1], object_pk=args[2], varname=getattr(parser, '_embedNodeVarName', 'embed'))
+			
+			return EmbedNode(ct, object_pk=args[2], varname=getattr(parser, '_embedNodeVarName', 'embed'))
 		else:
 			# 3 args
 			if args[2] != "with":
@@ -83,7 +107,7 @@ def do_embed(parser, token):
 			
 			template_name = args[3].strip('"\'')
 			
-			return EmbedNode(args[1], template_name=template_name, varname=getattr(parser, '_embedNodeVarName', 'embed'))
+			return EmbedNode(ct, template_name=template_name, varname=getattr(parser, '_embedNodeVarName', 'embed'))
 
 
 register.tag('embed', do_embed)

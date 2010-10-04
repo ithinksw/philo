@@ -128,13 +128,13 @@ def nodelist_crawl(nodelist, callback):
 	"""This function crawls through a template's nodelist and the nodelists of any included or extended
 	templates, as determined by the presence and value of <LOADED_TEMPLATE_ATTR> on a node. Each node
 	will also be passed to a callback function for additional processing."""
-	nodes = []
+	results = []
 	for node in nodelist:
 		try:
 			if hasattr(node, 'child_nodelists'):
 				for nodelist_name in node.child_nodelists:
 					if hasattr(node, nodelist_name):
-						nodes.extend(nodelist_crawl(getattr(node, nodelist_name), callback))
+						results.extend(nodelist_crawl(getattr(node, nodelist_name), callback))
 			
 			# LOADED_TEMPLATE_ATTR contains the name of an attribute philo uses to declare a
 			# node as rendering an additional template. Philo monkeypatches the attribute onto
@@ -142,9 +142,9 @@ def nodelist_crawl(nodelist, callback):
 			if hasattr(node, LOADED_TEMPLATE_ATTR):
 				loaded_template = getattr(node, LOADED_TEMPLATE_ATTR)
 				if loaded_template:
-					nodes.extend(nodelist_crawl(loaded_template.nodelist, callback))
+					results.extend(nodelist_crawl(loaded_template.nodelist, callback))
 			
-			callback(node, nodes)
+			callback(node, results)
 		except:
 			raise # fail for this node
-	return nodes
+	return results

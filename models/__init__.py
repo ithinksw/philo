@@ -10,3 +10,4 @@ from django.contrib.sites.models import Site
 register_value_model(User)
 register_value_model(Group)
 register_value_model(Site)
+register_templatetags('philo.templatetags.embed')

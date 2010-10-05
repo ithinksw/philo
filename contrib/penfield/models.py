@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model
+from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model, TemplateField
 from philo.exceptions import ViewCanNotProvideSubpath
 from django.conf.urls.defaults import url, patterns, include
 from django.core.urlresolvers import reverse
@@ -257,8 +257,8 @@ class NewsletterArticle(Entity, Titled):
 	newsletter = models.ForeignKey(Newsletter, related_name='articles')
 	authors = models.ManyToManyField(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='newsletterarticles')
 	date = models.DateTimeField(default=datetime.now)
-	lede = models.TextField(null=True, blank=True)
-	full_text = models.TextField()
+	lede = TemplateField(null=True, blank=True, verbose_name='Summary')
+	full_text = TemplateField()
 	tags = models.ManyToManyField(Tag, related_name='newsletterarticles', blank=True, null=True)
 	
 	class Meta:

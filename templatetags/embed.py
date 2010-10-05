@@ -21,15 +21,11 @@ class ConstantEmbedNode(template.Node):
 		
 		if object_pk is not None:
 			self.compile_instance(object_pk)
-			if self.instance is False and settings.TEMPLATE_DEBUG:
-				raise
 		else:
 			self.instance = None
 		
 		if template_name is not None:
 			self.compile_template(template_name[1:-1])
-			if self.template is False and settings.TEMPLATE_DEBUG:
-				raise
 		else:
 			self.template = None
 	
@@ -39,12 +35,18 @@ class ConstantEmbedNode(template.Node):
 		try:
 			self.instance = model.objects.get(pk=object_pk)
 		except model.DoesNotExist:
+			if not hasattr(self, 'object_pk') and settings.TEMPLATE_DEBUG:
+				# Then it's a constant node.
+				raise
 			self.instance = False
 	
 	def compile_template(self, template_name):
 		try:
 			self.template = template.loader.get_template(template_name)
 		except template.TemplateDoesNotExist:
+			if not hasattr(self, 'template_name') and settings.TEMPLATE_DEBUG:
+				# Then it's a constant node.
+				raise
 			self.template = False
 	
 	def render(self, context):

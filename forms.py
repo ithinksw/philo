@@ -96,37 +96,6 @@ class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it 
 		return instance
 
 
-def validate_template(template):
-	"""
-	Makes sure that the template and all included or extended templates are valid.
-	""" 
-	for node in template.nodelist:
-		try:
-			if isinstance(node, loader_tags.ExtendsNode):
-				extended_template = node.get_parent(Context())
-				validate_template(extended_template)
-			elif isinstance(node, loader_tags.IncludeNode):
-				included_template = loader.get_template(node.template_name.resolve(Context()))
-				validate_template(extended_template)
-		except Exception, e:
-			raise ValidationError("Template code invalid. Error was: %s: %s" % (e.__class__.__name__, e))
-
-
-class TemplateForm(ModelForm):
-	def clean_code(self):
-		code = self.cleaned_data['code']
-		try:
-			t = DjangoTemplate(code)
-		except Exception, e:
-			raise ValidationError("Template code invalid. Error was: %s: %s" % (e.__class__.__name__, e))
-
-		validate_template(t)
-		return code
-
-	class Meta:
-		model = Template
-
-
 class ContainerForm(ModelForm):
 	def __init__(self, *args, **kwargs):
 		super(ContainerForm, self).__init__(*args, **kwargs)
@@ -134,14 +103,14 @@ class ContainerForm(ModelForm):
 
 
 class ContentletForm(ContainerForm):
-	content = forms.CharField(required=False, widget=AdminTextareaWidget)
+	content = forms.CharField(required=False, widget=AdminTextareaWidget, label='Content')
 	
 	def should_delete(self):
 		return not bool(self.cleaned_data['content'])
 	
 	class Meta:
 		model = Contentlet
-		fields = ['name', 'content', 'dynamic']
+		fields = ['name', 'content']
 
 
 class ContentReferenceForm(ContainerForm):
@@ -163,8 +132,8 @@ class ContentReferenceForm(ContainerForm):
 
 class ContainerInlineFormSet(BaseInlineFormSet):
 	def __init__(self, containers, data=None, files=None, instance=None, save_as_new=False, prefix=None, queryset=None):
-		# Unfortunately, I need to add some things to BaseInline between its __init__ and its super call, so
-		# a lot of this is repetition.
+		# Unfortunately, I need to add some things to BaseInline between its __init__ and its
+		# super call, so a lot of this is repetition.
 		
 		# Start cribbed from BaseInline
 		from django.db.models.fields.related import RelatedObject

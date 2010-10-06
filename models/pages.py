@@ -1,19 +1,16 @@
 # encoding: utf-8
-from django.db import models
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
-from django.conf import settings
-from django.template import add_to_builtins as register_templatetags
-from django.template import Template as DjangoTemplate
-from django.template import TemplateDoesNotExist
-from django.template import Context, RequestContext
-from django.template.loader import get_template
-from django.template.loader_tags import ExtendsNode, ConstantIncludeNode, IncludeNode
+from django.db import models
 from django.http import HttpResponse
+from django.template import TemplateDoesNotExist, Context, RequestContext, Template as DjangoTemplate, add_to_builtins as register_templatetags
 from philo.models.base import TreeModel, register_value_model
+from philo.models.fields import TemplateField
 from philo.models.nodes import View
-from philo.utils import fattr
 from philo.templatetags.containers import ContainerNode
+from philo.utils import fattr, nodelist_crawl
+from philo.validators import LOADED_TEMPLATE_ATTR
 from philo.signals import page_about_to_render_to_string, page_finished_rendering_to_string
 
 
@@ -21,7 +18,7 @@ class Template(TreeModel):
 	name = models.CharField(max_length=255)
 	documentation = models.TextField(null=True, blank=True)
 	mimetype = models.CharField(max_length=255, default=getattr(settings, 'DEFAULT_CONTENT_TYPE', 'text/html'))
-	code = models.TextField(verbose_name='django template code')
+	code = TemplateField(secure=False, verbose_name='django template code')
 	
 	@property
 	def origin(self):
@@ -39,34 +36,11 @@ class Template(TreeModel):
 		This will break if there is a recursive extends or includes in the template code.
 		Due to the use of an empty Context, any extends or include tags with dynamic arguments probably won't work.
 		"""
-		def container_nodes(template):
-			def nodelist_container_nodes(nodelist):
-				nodes = []
-				for node in nodelist:
-					try:
-						if hasattr(node, 'child_nodelists'):
-							for nodelist_name in node.child_nodelists:
-								if hasattr(node, nodelist_name):
-									nodes.extend(nodelist_container_nodes(getattr(node, nodelist_name)))
-						if isinstance(node, ContainerNode):
-							nodes.append(node)
-						elif isinstance(node, ExtendsNode):
-							extended_template = node.get_parent(Context())
-							if extended_template:
-								nodes.extend(container_nodes(extended_template))
-						elif isinstance(node, ConstantIncludeNode):
-							included_template = node.template
-							if included_template:
-								nodes.extend(container_nodes(included_template))
-						elif isinstance(node, IncludeNode):
-							included_template = get_template(node.template_name.resolve(Context()))
-							if included_template:
-								nodes.extend(container_nodes(included_template))
-					except:
-						raise # fail for this node
-				return nodes
-			return nodelist_container_nodes(template.nodelist)
-		all_nodes = container_nodes(self.django_template)
+		def process_node(node, nodes):
+			if isinstance(node, ContainerNode):
+				nodes.append(node)
+		
+		all_nodes = nodelist_crawl(self.django_template.nodelist, process_node)
 		contentlet_node_names = set([node.name for node in all_nodes if not node.references])
 		contentreference_node_names = []
 		contentreference_node_specs = []
@@ -132,8 +106,7 @@ class Page(View):
 class Contentlet(models.Model):
 	page = models.ForeignKey(Page, related_name='contentlets')
 	name = models.CharField(max_length=255)
-	content = models.TextField()
-	dynamic = models.BooleanField(default=False)
+	content = TemplateField()
 	
 	def __unicode__(self):
 		return self.name

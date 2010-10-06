@@ -4,6 +4,7 @@ from django.core.exceptions import FieldError
 from django.utils.text import capfirst
 from philo.models.base import Entity
 from philo.signals import entity_class_prepared
+from philo.validators import TemplateValidator
 
 
 __all__ = ('AttributeField', 'RelationshipField')
@@ -143,3 +144,17 @@ class RelationshipField(EntityProxyField):
 	def value_from_object(self, obj):
 		relobj = super(RelationshipField, self).value_from_object(obj)
 		return getattr(relobj, 'pk', None)
+
+
+class TemplateField(models.TextField):
+	def __init__(self, allow=None, disallow=None, secure=True, *args, **kwargs):
+		super(TemplateField, self).__init__(*args, **kwargs)
+		self.validators.append(TemplateValidator(allow, disallow, secure))
+
+
+try:
+	from south.modelsinspector import add_introspection_rules
+except ImportError:
+	pass
+else:
+	add_introspection_rules([], ["^philo\.models\.fields\.TemplateField"])

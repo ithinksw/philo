@@ -4,6 +4,7 @@ from django.contrib.contenttypes import generic
 from django.utils import simplejson as json
 from django.core.exceptions import ObjectDoesNotExist
 from philo.exceptions import AncestorDoesNotExist
+from philo.models.fields import JSONField
 from philo.utils import ContentTypeRegistryLimiter
 from philo.signals import entity_class_prepared
 from philo.validators import json_validator
@@ -37,18 +38,7 @@ class Attribute(models.Model):
 	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID')
 	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
 	key = models.CharField(max_length=255)
-	json_value = models.TextField(verbose_name='Value (JSON)', help_text='This value must be valid JSON.', validators=[json_validator])
-	
-	def get_value(self):
-		return json.loads(self.json_value)
-	
-	def set_value(self, value):
-		self.json_value = json.dumps(value)
-	
-	def delete_value(self):
-		self.json_value = json.dumps(None)
-	
-	value = property(get_value, set_value, delete_value)
+	value = JSONField() #verbose_name='Value (JSON)', help_text='This value must be valid JSON.')
 	
 	def __unicode__(self):
 		return u'"%s": %s' % (self.key, self.value)

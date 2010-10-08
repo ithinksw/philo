@@ -1,10 +1,10 @@
 from django.db import models
 from django import forms
-from django.core.exceptions import FieldError
+from django.core.exceptions import FieldError, ValidationError
+from django.utils import simplejson as json
 from django.utils.text import capfirst
-from philo.models.base import Entity
 from philo.signals import entity_class_prepared
-from philo.validators import TemplateValidator
+from philo.validators import TemplateValidator, json_validator
 
 
 __all__ = ('AttributeField', 'RelationshipField')
@@ -24,6 +24,7 @@ class EntityProxyField(object):
 		setattr(sender, self.attname, self.descriptor_class(self))
 	
 	def contribute_to_class(self, cls, name):
+		from philo.models.base import Entity
 		if issubclass(cls, Entity):
 			self.name = name
 			self.attname = name
@@ -152,9 +153,58 @@ class TemplateField(models.TextField):
 		self.validators.append(TemplateValidator(allow, disallow, secure))
 
 
+class JSONFormField(forms.Field):
+	def clean(self, value):
+		try:
+			return json.loads(value)
+		except Exception, e:
+			raise ValidationError(u'JSON decode error: %s' % e)
+
+
+class JSONDescriptor(object):
+	def __init__(self, field):
+		self.field = field
+	
+	def __get__(self, instance, owner):
+		if instance is None:
+			raise AttributeError # ?
+		
+		if self.field.name not in instance.__dict__:
+			json_string = getattr(instance, self.field.attname)
+			instance.__dict__[self.field.name] = json.loads(json_string)
+		
+		return instance.__dict__[self.field.name]
+	
+	def __set__(self, instance, value):
+		instance.__dict__[self.field.name] = value
+		setattr(instance, self.field.attname, json.dumps(value))
+	
+	def __delete__(self, instance):
+		del(instance.__dict__[self.field.name])
+		setattr(instance, self.field.attname, json.dumps(None))
+
+
+class JSONField(models.TextField):
+	def __init__(self, *args, **kwargs):
+		super(JSONField, self).__init__(*args, **kwargs)
+		self.validators.append(json_validator)
+	
+	def get_attname(self):
+		return "%s_json" % self.name
+	
+	def contribute_to_class(self, cls, name):
+		super(JSONField, self).contribute_to_class(cls, name)
+		setattr(cls, name, JSONDescriptor(self))
+	
+	def formfield(self, *args, **kwargs):
+		kwargs["form_class"] = JSONFormField
+		return super(JSONField, self).formfield(*args, **kwargs)
+
+
 try:
 	from south.modelsinspector import add_introspection_rules
 except ImportError:
 	pass
 else:
 	add_introspection_rules([], ["^philo\.models\.fields\.TemplateField"])
+	add_introspection_rules([], ["^philo\.models\.fields\.JSONField"])

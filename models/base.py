@@ -1,3 +1,4 @@
+from django import forms
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
@@ -50,6 +51,10 @@ class JSONValue(models.Model):
 	def __unicode__(self):
 		return self.value_json
 	
+	def value_formfield(self, *args, **kwargs):
+		kwargs['initial'] = self.value_json
+		return self._meta.get_field('value').formfield(*args, **kwargs)
+	
 	class Meta:
 		app_label = 'philo'
 
@@ -61,6 +66,12 @@ class ForeignKeyValue(models.Model):
 	
 	def __unicode__(self):
 		return unicode(self.value)
+	
+	def value_formfield(self, form_class=forms.ModelChoiceField, **kwargs):
+		if self.content_type is None:
+			return None
+		kwargs.update({'initial': self.object_id, 'required': False})
+		return form_class(self.content_type.model_class()._default_manager.all(), **kwargs)
 	
 	class Meta:
 		app_label = 'philo'
@@ -108,7 +119,7 @@ class Attribute(models.Model):
 	def get_value_class(self, value):
 		if isinstance(value, models.query.QuerySet):
 			return ManyToManyValue
-		elif isinstance(value, models.Model):
+		elif isinstance(value, models.Model) or (value is None and self.value_content_type.model_class() is ForeignKeyValue):
 			return ForeignKeyValue
 		else:
 			return JSONValue

@@ -7,7 +7,7 @@ from django.forms.formsets import TOTAL_FORM_COUNT
 from django.template import loader, loader_tags, TemplateDoesNotExist, Context, Template as DjangoTemplate
 from django.utils.datastructures import SortedDict
 from philo.admin.widgets import ModelLookupWidget
-from philo.models import Entity, Template, Contentlet, ContentReference
+from philo.models import Entity, Template, Contentlet, ContentReference, Attribute
 from philo.utils import fattr
 
 
@@ -93,6 +93,35 @@ class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it 
 			self.save_m2m()
 		
 		return instance
+
+
+class AttributeForm(ModelForm):
+	def __init__(self, *args, **kwargs):
+		super(AttributeForm, self).__init__(*args, **kwargs)
+		if self.instance.value is not None:
+			value_field = self.instance.value.value_formfield()
+			if value_field:
+				self.fields['value'] = value_field
+			if hasattr(self.instance.value, 'content_type'):
+				self.fields['content_type'] = self.instance.value._meta.get_field('content_type').formfield(initial=getattr(self.instance.value.content_type, 'pk', None))
+	
+	def save(self, *args, **kwargs):
+		instance = super(AttributeForm, self).save(*args, **kwargs)
+		
+		if self.cleaned_data['value_content_type'] != self.instance.value_content_type:
+			if self.instance.value is not None:
+				self.instance.value.delete()
+				del(self.cleaned_data['value'])
+		elif 'content_type' in self.cleaned_data and self.cleaned_data['content_type'] != self.instance.value.content_type:
+			self.instance.value.content_type = self.cleaned_data['content_type']
+			self.instance.value.save()
+		elif 'value' in self.cleaned_data:
+			self.instance.set_value(self.cleaned_data['value'])
+		
+		return instance
+	
+	class Meta:
+		model = Attribute
 
 
 class ContainerForm(ModelForm):

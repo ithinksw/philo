@@ -55,8 +55,8 @@
             {% endfor %}
           {% endfor %}
         {% endfor %}
-        <td>{{ inline_admin_form.form.content_type }}</td>
-        <td>{{ inline_admin_form.form.value }}</td>
+        <td>{% with inline_admin_form.form.content_type as field %}{{ field.errors.as_ul }}{{ field }}{% endwith %}</td>
+        <td>{% with inline_admin_form.form.value as field %}{{ field.errors.as_ul }}{{ field }}{% endwith %}</td>
         {% if inline_admin_formset.formset.can_delete %}
           <td class="delete">{% if inline_admin_form.original %}{{ inline_admin_form.deletion_field.field }}{% endif %}</td>
         {% endif %}

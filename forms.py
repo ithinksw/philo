@@ -98,6 +98,12 @@ class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it 
 class AttributeForm(ModelForm):
 	def __init__(self, *args, **kwargs):
 		super(AttributeForm, self).__init__(*args, **kwargs)
+		
+		# This is necessary because model forms store changes to self.instance in their clean method.
+		# Mutter mutter.
+		self._cached_value_ct = self.instance.value_content_type
+		self._cached_value = self.instance.value
+		
 		if self.instance.value is not None:
 			value_field = self.instance.value.value_formfield()
 			if value_field:
@@ -106,19 +112,39 @@ class AttributeForm(ModelForm):
 				self.fields['content_type'] = self.instance.value._meta.get_field('content_type').formfield(initial=getattr(self.instance.value.content_type, 'pk', None))
 	
 	def save(self, *args, **kwargs):
-		instance = super(AttributeForm, self).save(*args, **kwargs)
-		
-		if self.cleaned_data['value_content_type'] != self.instance.value_content_type:
+		# At this point, the cleaned_data has already been stored on self.instance.
+		if self.instance.value_content_type != self._cached_value_ct:
 			if self.instance.value is not None:
-				self.instance.value.delete()
-				del(self.cleaned_data['value'])
-		elif 'content_type' in self.cleaned_data and self.cleaned_data['content_type'] != self.instance.value.content_type:
-			self.instance.value.content_type = self.cleaned_data['content_type']
+				self._cached_value.delete()
+				if 'value' in self.cleaned_data:
+					del(self.cleaned_data['value'])
+			
+			if self.instance.value_content_type is not None:
+				# Make a blank value of the new type! Run special code for content_type attributes.
+				if hasattr(self.instance.value_content_type.model_class(), 'content_type'):
+					if self._cached_value and hasattr(self._cached_value, 'content_type'):
+						new_ct = self._cached_value.content_type
+					else:
+						new_ct = None
+					new_value = self.instance.value_content_type.model_class().objects.create(content_type=new_ct)
+				else:
+					new_value = self.instance.value_content_type.model_class().objects.create()
+				
+				new_value.apply_data(self.cleaned_data)
+				new_value.save()
+				self.instance.value = new_value
+		else:
+			# The value type is the same, but one of the fields has changed.
+			# Check to see if the changed value was the content type. We have to check the
+			# cleaned_data because self.instance.value.content_type was overridden.
+			if hasattr(self.instance.value, 'content_type') and 'content_type' in self.cleaned_data and 'value' in self.cleaned_data and (not hasattr(self._cached_value, 'content_type') or self._cached_value.content_type != self.cleaned_data['content_type']):
+				self.cleaned_data['value'] = None
+			
+			self.instance.value.apply_data(self.cleaned_data)
 			self.instance.value.save()
-		elif 'value' in self.cleaned_data:
-			self.instance.set_value(self.cleaned_data['value'])
 		
-		return instance
+		super(AttributeForm, self).save(*args, **kwargs)
+		return self.instance
 	
 	class Meta:
 		model = Attribute

@@ -6,7 +6,7 @@ from django.utils import simplejson as json
 from django.core.exceptions import ObjectDoesNotExist
 from philo.exceptions import AncestorDoesNotExist
 from philo.models.fields import JSONField
-from philo.utils import ContentTypeRegistryLimiter
+from philo.utils import ContentTypeRegistryLimiter, ContentTypeSubclassLimiter
 from philo.signals import entity_class_prepared
 from philo.validators import json_validator
 from UserDict import DictMixin
@@ -45,27 +45,44 @@ def unregister_value_model(model):
 	value_content_type_limiter.unregister_class(model)
 
 
-class JSONValue(models.Model):
+class AttributeValue(models.Model):
+	def apply_data(self, data):
+		raise NotImplementedError
+	
+	def value_formfield(self, **kwargs):
+		raise NotImplementedError
+	
+	def __unicode__(self):
+		return unicode(self.value)
+	
+	class Meta:
+		abstract = True
+
+
+attribute_value_limiter = ContentTypeSubclassLimiter(AttributeValue)
+
+
+class JSONValue(AttributeValue):
 	value = JSONField() #verbose_name='Value (JSON)', help_text='This value must be valid JSON.')
 	
 	def __unicode__(self):
 		return self.value_json
 	
-	def value_formfield(self, *args, **kwargs):
+	def value_formfield(self, **kwargs):
 		kwargs['initial'] = self.value_json
-		return self._meta.get_field('value').formfield(*args, **kwargs)
+		return self._meta.get_field('value').formfield(**kwargs)
+	
+	def apply_data(self, cleaned_data):
+		self.value = cleaned_data.get('value', None)
 	
 	class Meta:
 		app_label = 'philo'
 
 
-class ForeignKeyValue(models.Model):
+class ForeignKeyValue(AttributeValue):
 	content_type = models.ForeignKey(ContentType, related_name='foreign_key_value_set', limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
 	object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True)
 	value = generic.GenericForeignKey()
-	
-	def __unicode__(self):
-		return unicode(self.value)
 	
 	def value_formfield(self, form_class=forms.ModelChoiceField, **kwargs):
 		if self.content_type is None:
@@ -73,36 +90,56 @@ class ForeignKeyValue(models.Model):
 		kwargs.update({'initial': self.object_id, 'required': False})
 		return form_class(self.content_type.model_class()._default_manager.all(), **kwargs)
 	
+	def apply_data(self, cleaned_data):
+		if 'value' in cleaned_data and cleaned_data['value'] is not None:
+			self.value = cleaned_data['value']
+		else:
+			self.content_type = cleaned_data.get('content_type', None)
+			# If there is no value set in the cleaned data, clear the stored value.
+			self.object_id = None
+	
 	class Meta:
 		app_label = 'philo'
 
 
-class ManyToManyValue(models.Model):
+class ManyToManyValue(AttributeValue):
 	content_type = models.ForeignKey(ContentType, related_name='many_to_many_value_set', limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
 	object_ids = models.CommaSeparatedIntegerField(max_length=300, verbose_name='Value IDs', null=True, blank=True)
 	
+	def get_object_id_list(self):
+		if not self.object_ids:
+			return []
+		else:
+			return self.object_ids.split(',')
+	
 	def get_value(self):
-		return self.content_type.model_class()._default_manager.filter(id__in=self.object_ids)
+		if self.content_type is None:
+			return None
+		
+		return self.content_type.model_class()._default_manager.filter(id__in=self.get_object_id_list())
 	
 	def set_value(self, value):
+		if value is None:
+			self.object_ids = ""
+			return
 		if not isinstance(value, models.query.QuerySet):
 			raise TypeError("Value must be a QuerySet.")
 		self.content_type = ContentType.objects.get_for_model(value.model)
-		self.object_ids = ','.join(value.values_list('id', flat=True))
+		self.object_ids = ','.join([`value` for value in value.values_list('id', flat=True)])
 	
 	value = property(get_value, set_value)
 	
-	def __unicode__(self):
-		return unicode(self.value)
+	def value_formfield(self, form_class=forms.ModelMultipleChoiceField, **kwargs):
+		if self.content_type is None:
+			return None
+		kwargs.update({'initial': self.get_object_id_list(), 'required': False})
+		return form_class(self.content_type.model_class()._default_manager.all(), **kwargs)
+	
+	def apply_data(self, cleaned_data):
+		self.value = cleaned_data.get('value', None)
 	
 	class Meta:
 		app_label = 'philo'
-
-
-attribute_value_limiter = ContentTypeRegistryLimiter()
-attribute_value_limiter.register_class(JSONValue)
-attribute_value_limiter.register_class(ForeignKeyValue)
-attribute_value_limiter.register_class(ManyToManyValue)
 
 
 class Attribute(models.Model):
@@ -125,6 +162,7 @@ class Attribute(models.Model):
 			return JSONValue
 	
 	def set_value(self, value):
+		# is this useful? The best way of doing it?
 		value_class = self.get_value_class(value)
 		
 		if self.value is None or value_class != self.value_content_type.model_class():

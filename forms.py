@@ -8,7 +8,6 @@ from django.template import loader, loader_tags, TemplateDoesNotExist, Context, 
 from django.utils.datastructures import SortedDict
 from philo.admin.widgets import ModelLookupWidget
 from philo.models import Entity, Template, Contentlet, ContentReference
-from philo.models.fields import RelationshipField
 from philo.utils import fattr
 
 

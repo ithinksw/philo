@@ -33,21 +33,6 @@ class Titled(models.Model):
 		abstract = True
 
 
-class Attribute(models.Model):
-	entity_content_type = models.ForeignKey(ContentType, verbose_name='Entity type')
-	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID')
-	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
-	key = models.CharField(max_length=255)
-	value = JSONField() #verbose_name='Value (JSON)', help_text='This value must be valid JSON.')
-	
-	def __unicode__(self):
-		return u'"%s": %s' % (self.key, self.value)
-	
-	class Meta:
-		app_label = 'philo'
-		unique_together = ('key', 'entity_content_type', 'entity_object_id')
-
-
 value_content_type_limiter = ContentTypeRegistryLimiter()
 
 
@@ -59,22 +44,95 @@ def unregister_value_model(model):
 	value_content_type_limiter.unregister_class(model)
 
 
+class JSONValue(models.Model):
+	value = JSONField() #verbose_name='Value (JSON)', help_text='This value must be valid JSON.')
+	
+	def __unicode__(self):
+		return self.value_json
+	
+	class Meta:
+		app_label = 'philo'
 
-class Relationship(models.Model):
-	entity_content_type = models.ForeignKey(ContentType, related_name='relationship_entity_set', verbose_name='Entity type')
+
+class ForeignKeyValue(models.Model):
+	content_type = models.ForeignKey(ContentType, related_name='foreign_key_value_set', limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
+	object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True)
+	value = generic.GenericForeignKey()
+	
+	def __unicode__(self):
+		return unicode(self.value)
+	
+	class Meta:
+		app_label = 'philo'
+
+
+class ManyToManyValue(models.Model):
+	content_type = models.ForeignKey(ContentType, related_name='many_to_many_value_set', limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
+	object_ids = models.CommaSeparatedIntegerField(max_length=300, verbose_name='Value IDs', null=True, blank=True)
+	
+	def get_value(self):
+		return self.content_type.model_class()._default_manager.filter(id__in=self.object_ids)
+	
+	def set_value(self, value):
+		if not isinstance(value, models.query.QuerySet):
+			raise TypeError("Value must be a QuerySet.")
+		self.content_type = ContentType.objects.get_for_model(value.model)
+		self.object_ids = ','.join(value.values_list('id', flat=True))
+	
+	value = property(get_value, set_value)
+	
+	def __unicode__(self):
+		return unicode(self.value)
+	
+	class Meta:
+		app_label = 'philo'
+
+
+attribute_value_limiter = ContentTypeRegistryLimiter()
+attribute_value_limiter.register_class(JSONValue)
+attribute_value_limiter.register_class(ForeignKeyValue)
+attribute_value_limiter.register_class(ManyToManyValue)
+
+
+class Attribute(models.Model):
+	entity_content_type = models.ForeignKey(ContentType, related_name='attribute_entity_set', verbose_name='Entity type')
 	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID')
 	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
-	key = models.CharField(max_length=255)
-	value_content_type = models.ForeignKey(ContentType, related_name='relationship_value_set', limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
+	
+	value_content_type = models.ForeignKey(ContentType, related_name='attribute_value_set', limit_choices_to=attribute_value_limiter, verbose_name='Value type', null=True, blank=True)
 	value_object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True)
 	value = generic.GenericForeignKey('value_content_type', 'value_object_id')
+	
+	key = models.CharField(max_length=255)
+	
+	def get_value_class(self, value):
+		if isinstance(value, models.query.QuerySet):
+			return ManyToManyValue
+		elif isinstance(value, models.Model):
+			return ForeignKeyValue
+		else:
+			return JSONValue
+	
+	def set_value(self, value):
+		value_class = self.get_value_class(value)
+		
+		if self.value is None or value_class != self.value_content_type.model_class():
+			if self.value is not None:
+				self.value.delete()
+			new_value = value_class()
+			new_value.value = value
+			new_value.save()
+			self.value = new_value
+		else:
+			self.value.value = value
+			self.value.save()
 	
 	def __unicode__(self):
 		return u'"%s": %s' % (self.key, self.value)
 	
 	class Meta:
 		app_label = 'philo'
-		unique_together = ('key', 'entity_content_type', 'entity_object_id')
+		unique_together = (('key', 'entity_content_type', 'entity_object_id'), ('value_content_type', 'value_object_id'))
 
 
 class QuerySetMapper(object, DictMixin):
@@ -122,15 +180,10 @@ class Entity(models.Model):
 	__metaclass__ = EntityBase
 	
 	attribute_set = generic.GenericRelation(Attribute, content_type_field='entity_content_type', object_id_field='entity_object_id')
-	relationship_set = generic.GenericRelation(Relationship, content_type_field='entity_content_type', object_id_field='entity_object_id')
 	
 	@property
 	def attributes(self):
 		return QuerySetMapper(self.attribute_set)
-	
-	@property
-	def relationships(self):
-		return QuerySetMapper(self.relationship_set)
 	
 	@property
 	def _added_attribute_registry(self):
@@ -143,18 +196,6 @@ class Entity(models.Model):
 		if not hasattr(self, '_real_removed_attribute_registry'):
 			self._real_removed_attribute_registry = []
 		return self._real_removed_attribute_registry
-	
-	@property
-	def _added_relationship_registry(self):
-		if not hasattr(self, '_real_added_relationship_registry'):
-			self._real_added_relationship_registry = {}
-		return self._real_added_relationship_registry
-	
-	@property
-	def _removed_relationship_registry(self):
-		if not hasattr(self, '_real_removed_relationship_registry'):
-			self._real_removed_relationship_registry = []
-		return self._real_removed_relationship_registry
 	
 	def save(self, *args, **kwargs):
 		super(Entity, self).save(*args, **kwargs)
@@ -170,24 +211,9 @@ class Entity(models.Model):
 				attribute = Attribute()
 				attribute.entity = self
 				attribute.key = key
-			attribute.value = value
+			attribute.set_value(value)
 			attribute.save()
 		self._added_attribute_registry.clear()
-		
-		for key in self._removed_relationship_registry:
-			self.relationship_set.filter(key__exact=key).delete()
-		del self._removed_relationship_registry[:]
-		
-		for key, value in self._added_relationship_registry.items():
-			try:
-				relationship = self.relationship_set.get(key__exact=key)
-			except Relationship.DoesNotExist:
-				relationship = Relationship()
-				relationship.entity = self
-				relationship.key = key
-			relationship.value = value
-			relationship.save()
-		self._added_relationship_registry.clear()
 	
 	class Meta:
 		abstract = True

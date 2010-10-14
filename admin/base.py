@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.contenttypes import generic
 from philo.models import Tag, Attribute
-from philo.forms import AttributeForm
+from philo.forms import AttributeForm, AttributeInlineFormSet
 
 
 COLLAPSE_CLASSES = ('collapse', 'collapse-closed', 'closed',)
@@ -16,6 +16,7 @@ class AttributeInline(generic.GenericTabularInline):
 	allow_add = True
 	classes = COLLAPSE_CLASSES
 	form = AttributeForm
+	formset = AttributeInlineFormSet
 	exclude = ['value_object_id']
 
 

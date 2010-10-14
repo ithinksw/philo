@@ -1,5 +1,7 @@
 from django import forms
 from django.contrib.admin.widgets import AdminTextareaWidget
+from django.contrib.contenttypes.generic import BaseGenericInlineFormSet
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db.models import Q
 from django.forms.models import model_to_dict, fields_for_model, ModelFormMetaclass, ModelForm, BaseInlineFormSet
@@ -148,6 +150,14 @@ class AttributeForm(ModelForm):
 	
 	class Meta:
 		model = Attribute
+
+
+class AttributeInlineFormSet(BaseGenericInlineFormSet):
+	"Necessary to force the GenericInlineFormset to use the form's save method for new objects."
+	def save_new(self, form, commit):
+		setattr(form.instance, self.ct_field.get_attname(), ContentType.objects.get_for_model(self.instance).pk)
+		setattr(form.instance, self.ct_fk_field.get_attname(), self.instance.pk)
+		return form.save()
 
 
 class ContainerForm(ModelForm):

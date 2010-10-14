@@ -258,7 +258,7 @@ class NewsletterArticle(Entity, Titled):
 	authors = models.ManyToManyField(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='newsletterarticles')
 	date = models.DateTimeField(default=datetime.now)
 	lede = TemplateField(null=True, blank=True, verbose_name='Summary')
-	full_text = TemplateField()
+	full_text = TemplateField(db_index=True)
 	tags = models.ManyToManyField(Tag, related_name='newsletterarticles', blank=True, null=True)
 	
 	class Meta:

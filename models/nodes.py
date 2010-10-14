@@ -57,9 +57,6 @@ class View(Entity):
 	def attributes_with_node(self, node):
 		return QuerySetMapper(self.attribute_set, passthrough=node.attributes)
 	
-	def relationships_with_node(self, node):
-		return QuerySetMapper(self.relationship_set, passthrough=node.relationships)
-	
 	def render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
 		extra_context = extra_context or {}
 		view_about_to_render.send(sender=self, node=node, request=request, path=path, subpath=subpath, extra_context=extra_context)

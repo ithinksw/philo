@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django import forms
-from philo.admin import widgets
 from philo.admin.base import COLLAPSE_CLASSES
 from philo.admin.nodes import ViewAdmin
 from philo.models.pages import Page, Template, Contentlet, ContentReference

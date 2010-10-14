@@ -82,9 +82,9 @@ class Page(View):
 	def render_to_string(self, node=None, request=None, path=None, subpath=None, extra_context=None):
 		context = {}
 		context.update(extra_context or {})
-		context.update({'page': self, 'attributes': self.attributes, 'relationships': self.relationships})
+		context.update({'page': self, 'attributes': self.attributes})
 		if node and request:
-			context.update({'node': node, 'attributes': self.attributes_with_node(node), 'relationships': self.relationships_with_node(node)})
+			context.update({'node': node, 'attributes': self.attributes_with_node(node)})
 			page_about_to_render_to_string.send(sender=self, node=node, request=request, extra_context=context)
 			string = self.template.django_template.render(RequestContext(request, context))
 		else:

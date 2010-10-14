@@ -1,5 +1,7 @@
 from django import forms
 from django.contrib.admin.widgets import AdminTextareaWidget
+from django.contrib.contenttypes.generic import BaseGenericInlineFormSet
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db.models import Q
 from django.forms.models import model_to_dict, fields_for_model, ModelFormMetaclass, ModelForm, BaseInlineFormSet
@@ -7,8 +9,7 @@ from django.forms.formsets import TOTAL_FORM_COUNT
 from django.template import loader, loader_tags, TemplateDoesNotExist, Context, Template as DjangoTemplate
 from django.utils.datastructures import SortedDict
 from philo.admin.widgets import ModelLookupWidget
-from philo.models import Entity, Template, Contentlet, ContentReference
-from philo.models.fields import RelationshipField
+from philo.models import Entity, Template, Contentlet, ContentReference, Attribute
 from philo.utils import fattr
 
 
@@ -94,6 +95,69 @@ class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it 
 			self.save_m2m()
 		
 		return instance
+
+
+class AttributeForm(ModelForm):
+	def __init__(self, *args, **kwargs):
+		super(AttributeForm, self).__init__(*args, **kwargs)
+		
+		# This is necessary because model forms store changes to self.instance in their clean method.
+		# Mutter mutter.
+		self._cached_value_ct = self.instance.value_content_type
+		self._cached_value = self.instance.value
+		
+		if self.instance.value is not None:
+			value_field = self.instance.value.value_formfield()
+			if value_field:
+				self.fields['value'] = value_field
+			if hasattr(self.instance.value, 'content_type'):
+				self.fields['content_type'] = self.instance.value._meta.get_field('content_type').formfield(initial=getattr(self.instance.value.content_type, 'pk', None))
+	
+	def save(self, *args, **kwargs):
+		# At this point, the cleaned_data has already been stored on self.instance.
+		if self.instance.value_content_type != self._cached_value_ct:
+			if self.instance.value is not None:
+				self._cached_value.delete()
+				if 'value' in self.cleaned_data:
+					del(self.cleaned_data['value'])
+			
+			if self.instance.value_content_type is not None:
+				# Make a blank value of the new type! Run special code for content_type attributes.
+				if hasattr(self.instance.value_content_type.model_class(), 'content_type'):
+					if self._cached_value and hasattr(self._cached_value, 'content_type'):
+						new_ct = self._cached_value.content_type
+					else:
+						new_ct = None
+					new_value = self.instance.value_content_type.model_class().objects.create(content_type=new_ct)
+				else:
+					new_value = self.instance.value_content_type.model_class().objects.create()
+				
+				new_value.apply_data(self.cleaned_data)
+				new_value.save()
+				self.instance.value = new_value
+		else:
+			# The value type is the same, but one of the fields has changed.
+			# Check to see if the changed value was the content type. We have to check the
+			# cleaned_data because self.instance.value.content_type was overridden.
+			if hasattr(self.instance.value, 'content_type') and 'content_type' in self.cleaned_data and 'value' in self.cleaned_data and (not hasattr(self._cached_value, 'content_type') or self._cached_value.content_type != self.cleaned_data['content_type']):
+				self.cleaned_data['value'] = None
+			
+			self.instance.value.apply_data(self.cleaned_data)
+			self.instance.value.save()
+		
+		super(AttributeForm, self).save(*args, **kwargs)
+		return self.instance
+	
+	class Meta:
+		model = Attribute
+
+
+class AttributeInlineFormSet(BaseGenericInlineFormSet):
+	"Necessary to force the GenericInlineFormset to use the form's save method for new objects."
+	def save_new(self, form, commit):
+		setattr(form.instance, self.ct_field.get_attname(), ContentType.objects.get_for_model(self.instance).pk)
+		setattr(form.instance, self.ct_fk_field.get_attname(), self.instance.pk)
+		return form.save()
 
 
 class ContainerForm(ModelForm):

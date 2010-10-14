@@ -7,7 +7,7 @@ from philo.signals import entity_class_prepared
 from philo.validators import TemplateValidator, json_validator
 
 
-__all__ = ('AttributeField', 'RelationshipField')
+__all__ = ('JSONAttribute', 'ForeignKeyAttribute', 'ManyToManyAttribute')
 
 
 class EntityProxyField(object):
@@ -59,9 +59,7 @@ class AttributeFieldDescriptor(object):
 			raise AttributeError('The \'%s\' attribute can only be accessed from %s instances.' % (self.field.name, owner.__name__))
 	
 	def __set__(self, instance, value):
-		if self.field.key in instance._removed_attribute_registry:
-			instance._removed_attribute_registry.remove(self.field.key)
-		instance._added_attribute_registry[self.field.key] = value
+		raise NotImplementedError('AttributeFieldDescriptor subclasses must implement a __set__ method.')
 	
 	def __delete__(self, instance):
 		if self.field.key in instance._added_attribute_registry:
@@ -69,8 +67,42 @@ class AttributeFieldDescriptor(object):
 		instance._removed_attribute_registry.append(self.field.key)
 
 
+class JSONAttributeDescriptor(AttributeFieldDescriptor):
+	def __set__(self, instance, value):
+		if self.field.key in instance._removed_attribute_registry:
+			instance._removed_attribute_registry.remove(self.field.key)
+		instance._added_attribute_registry[self.field.key] = value
+
+
+class ForeignKeyAttributeDescriptor(AttributeFieldDescriptor):
+	def __set__(self, instance, value):
+		if isinstance(value, (models.Model, type(None))):
+			if self.field.key in instance._removed_attribute_registry:
+				instance._removed_attribute_registry.remove(self.field.key)
+			instance._added_attribute_registry[self.field.key] = value
+		else:
+			raise AttributeError('The \'%s\' attribute can only be set using existing Model objects.' % self.field.name)
+
+
+class ManyToManyAttributeDescriptor(AttributeFieldDescriptor):
+	def __set__(self, instance, value):
+		if isinstance(value, models.QuerySet):
+			if self.field.key in instance._removed_attribute_registry:
+				instance._removed_attribute_registry.remove(self.field.key)
+			instance._added_attribute_registry[self.field.key] = value
+		else:
+			raise AttributeError('The \'%s\' attribute can only be set to a QuerySet.' % self.field.name)
+
+
 class AttributeField(EntityProxyField):
-	descriptor_class = AttributeFieldDescriptor
+	def contribute_to_class(self, cls, name):
+		super(AttributeField, self).contribute_to_class(cls, name)
+		if self.key is None:
+			self.key = name
+
+
+class JSONAttribute(AttributeField):
+	descriptor_class = JSONAttributeDescriptor
 	
 	def __init__(self, field_template=None, key=None, **kwargs):
 		super(AttributeField, self).__init__(**kwargs)
@@ -79,63 +111,25 @@ class AttributeField(EntityProxyField):
 			field_template = models.CharField(max_length=255)
 		self.field_template = field_template
 	
-	def contribute_to_class(self, cls, name):
-		super(AttributeField, self).contribute_to_class(cls, name)
-		if self.key is None:
-			self.key = name
-	
 	def formfield(self, **kwargs):
 		defaults = {'required': False, 'label': capfirst(self.verbose_name), 'help_text': self.help_text}
 		defaults.update(kwargs)
 		return self.field_template.formfield(**defaults)
-
-
-class RelationshipFieldDescriptor(object):
-	def __init__(self, field):
-		self.field = field
 	
-	def __get__(self, instance, owner):
-		if instance:
-			if self.field.key in instance._added_relationship_registry:
-				return instance._added_relationship_registry[self.field.key]
-			if self.field.key in instance._removed_relationship_registry:
-				return None
-			try:
-				return instance.relationships[self.field.key]
-			except KeyError:
-				return None
-		else:
-			raise AttributeError('The \'%s\' attribute can only be accessed from %s instances.' % (self.field.name, owner.__name__))
-	
-	def __set__(self, instance, value):
-		if isinstance(value, (models.Model, type(None))):
-			if self.field.key in instance._removed_relationship_registry:
-				instance._removed_relationship_registry.remove(self.field.key)
-			instance._added_relationship_registry[self.field.key] = value
-		else:
-			raise AttributeError('The \'%s\' attribute can only be set using existing Model objects.' % self.field.name)
-	
-	def __delete__(self, instance):
-		if self.field.key in instance._added_relationship_registry:
-			del instance._added_relationship_registry[self.field.key]
-		instance._removed_relationship_registry.append(self.field.key)
+	def value_from_object(self, obj):
+		return getattr(obj, self.attname).value
 
 
-class RelationshipField(EntityProxyField):
-	descriptor_class = RelationshipFieldDescriptor
+class ForeignKeyAttribute(AttributeField):
+	descriptor_class = ForeignKeyAttributeDescriptor
 	
 	def __init__(self, model, limit_choices_to=None, key=None, **kwargs):
-		super(RelationshipField, self).__init__(**kwargs)
+		super(ForeignKeyAttribute, self).__init__(**kwargs)
 		self.key = key
 		self.model = model
 		if limit_choices_to is None:
 			limit_choices_to = {}
 		self.limit_choices_to = limit_choices_to
-	
-	def contribute_to_class(self, cls, name):
-		super(RelationshipField, self).contribute_to_class(cls, name)
-		if self.key is None:
-			self.key = name
 	
 	def formfield(self, form_class=forms.ModelChoiceField, **kwargs):
 		defaults = {'required': False, 'label': capfirst(self.verbose_name), 'help_text': self.help_text}
@@ -143,8 +137,13 @@ class RelationshipField(EntityProxyField):
 		return form_class(self.model._default_manager.complex_filter(self.limit_choices_to), **defaults)
 	
 	def value_from_object(self, obj):
-		relobj = super(RelationshipField, self).value_from_object(obj)
+		relobj = super(ForeignKeyAttribute, self).value_from_object(obj).value
 		return getattr(relobj, 'pk', None)
+
+
+class ManyToManyAttribute(AttributeField):
+	descriptor_class = ManyToManyAttributeDescriptor
+	#FIXME: Add __init__ and formfield methods
 
 
 class TemplateField(models.TextField):

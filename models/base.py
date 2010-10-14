@@ -104,6 +104,7 @@ class ForeignKeyValue(AttributeValue):
 
 
 class ManyToManyValue(AttributeValue):
+	# TODO: Change object_ids to object_pks.
 	content_type = models.ForeignKey(ContentType, related_name='many_to_many_value_set', limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
 	object_ids = models.CommaSeparatedIntegerField(max_length=300, verbose_name='Value IDs', null=True, blank=True)
 	
@@ -137,7 +138,12 @@ class ManyToManyValue(AttributeValue):
 		return form_class(self.content_type.model_class()._default_manager.all(), **kwargs)
 	
 	def apply_data(self, cleaned_data):
-		self.value = cleaned_data.get('value', None)
+		if 'value' in cleaned_data and cleaned_data['value'] is not None:
+			self.value = cleaned_data['value']
+		else:
+			self.content_type = cleaned_data.get('content_type', None)
+			# If there is no value set in the cleaned data, clear the stored value.
+			self.object_ids = ""
 	
 	class Meta:
 		app_label = 'philo'
@@ -153,29 +159,6 @@ class Attribute(models.Model):
 	value = generic.GenericForeignKey('value_content_type', 'value_object_id')
 	
 	key = models.CharField(max_length=255)
-	
-	def get_value_class(self, value):
-		if isinstance(value, models.query.QuerySet):
-			return ManyToManyValue
-		elif isinstance(value, models.Model) or (value is None and self.value_content_type.model_class() is ForeignKeyValue):
-			return ForeignKeyValue
-		else:
-			return JSONValue
-	
-	def set_value(self, value):
-		# is this useful? The best way of doing it?
-		value_class = self.get_value_class(value)
-		
-		if self.value is None or value_class != self.value_content_type.model_class():
-			if self.value is not None:
-				self.value.delete()
-			new_value = value_class()
-			new_value.value = value
-			new_value.save()
-			self.value = new_value
-		else:
-			self.value.value = value
-			self.value.save()
 	
 	def __unicode__(self):
 		return u'"%s": %s' % (self.key, self.value)
@@ -254,14 +237,15 @@ class Entity(models.Model):
 			self.attribute_set.filter(key__exact=key).delete()
 		del self._removed_attribute_registry[:]
 		
-		for key, value in self._added_attribute_registry.items():
+		for field, value in self._added_attribute_registry.items():
 			try:
-				attribute = self.attribute_set.get(key__exact=key)
+				attribute = self.attribute_set.get(key__exact=field.key)
 			except Attribute.DoesNotExist:
 				attribute = Attribute()
 				attribute.entity = self
-				attribute.key = key
-			attribute.set_value(value)
+				attribute.key = field.key
+			
+			field.set_attribute_value(attribute, value)
 			attribute.save()
 		self._added_attribute_registry.clear()
 	

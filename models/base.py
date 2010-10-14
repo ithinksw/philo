@@ -46,6 +46,7 @@ def unregister_value_model(model):
 
 
 class AttributeValue(models.Model):
+	attribute = generic.GenericRelation('Attribute', content_type_field='value_content_type', object_id_field='value_object_id')
 	def apply_data(self, data):
 		raise NotImplementedError
 	

@@ -129,7 +129,7 @@ class JSONAttribute(AttributeField):
 	
 	def value_from_object(self, obj):
 		try:
-			return getattr(obj, self.attname).value
+			return getattr(obj, self.attname)
 		except AttributeError:
 			return None
 	
@@ -158,7 +158,7 @@ class ForeignKeyAttribute(AttributeField):
 	
 	def value_from_object(self, obj):
 		try:
-			relobj = super(ForeignKeyAttribute, self).value_from_object(obj).value
+			relobj = super(ForeignKeyAttribute, self).value_from_object(obj)
 		except AttributeError:
 			return None
 		return getattr(relobj, 'pk', None)

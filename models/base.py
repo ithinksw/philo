@@ -175,11 +175,15 @@ class QuerySetMapper(object, DictMixin):
 	
 	def __getitem__(self, key):
 		try:
-			return self.queryset.get(key__exact=key).value
+			value = self.queryset.get(key__exact=key).value
 		except ObjectDoesNotExist:
 			if self.passthrough is not None:
 				return self.passthrough.__getitem__(key)
 			raise KeyError
+		else:
+			if value is not None:
+				return value.value
+			return value
 	
 	def keys(self):
 		keys = set(self.queryset.values_list('key', flat=True).distinct())

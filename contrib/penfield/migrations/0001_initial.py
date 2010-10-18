@@ -3,6 +3,7 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
+from philo.migrations import person_model, frozen_person
 
 class Migration(SchemaMigration):
 
@@ -22,7 +23,7 @@ class Migration(SchemaMigration):
             ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
             ('slug', self.gf('django.db.models.fields.SlugField')(max_length=255, db_index=True)),
             ('blog', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='entries', null=True, to=orm['penfield.Blog'])),
-            ('author', self.gf('django.db.models.fields.related.ForeignKey')(related_name='blogentries', to=orm['oberlin.Person'])),
+            ('author', self.gf('django.db.models.fields.related.ForeignKey')(related_name='blogentries', to=orm[person_model])),
             ('date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
             ('content', self.gf('django.db.models.fields.TextField')()),
             ('excerpt', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
@@ -82,7 +83,7 @@ class Migration(SchemaMigration):
         db.create_table('penfield_newsletterarticle_authors', (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
             ('newsletterarticle', models.ForeignKey(orm['penfield.newsletterarticle'], null=False)),
-            ('person', models.ForeignKey(orm['oberlin.person'], null=False))
+            ('person', models.ForeignKey(orm[person_model], null=False))
         ))
         db.create_unique('penfield_newsletterarticle_authors', ['newsletterarticle_id', 'person_id'])
 
@@ -212,13 +213,7 @@ class Migration(SchemaMigration):
             'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         },
-        'oberlin.person': {
-            'Meta': {'object_name': 'Person'},
-            'bio': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '70', 'blank': 'True'}),
-            'user': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['auth.User']", 'unique': 'True', 'null': 'True', 'blank': 'True'})
-        },
+        person_model: frozen_person,
         'penfield.blog': {
             'Meta': {'object_name': 'Blog'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -227,7 +222,7 @@ class Migration(SchemaMigration):
         },
         'penfield.blogentry': {
             'Meta': {'object_name': 'BlogEntry'},
-            'author': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'blogentries'", 'to': "orm['oberlin.Person']"}),
+            'author': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'blogentries'", 'to': "orm['%s']" % person_model}),
             'blog': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'entries'", 'null': 'True', 'to': "orm['penfield.Blog']"}),
             'content': ('django.db.models.fields.TextField', [], {}),
             'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
@@ -261,7 +256,7 @@ class Migration(SchemaMigration):
         },
         'penfield.newsletterarticle': {
             'Meta': {'unique_together': "(('newsletter', 'slug'),)", 'object_name': 'NewsletterArticle'},
-            'authors': ('django.db.models.fields.related.ManyToManyField', [], {'related_name': "'newsletterarticles'", 'symmetrical': 'False', 'to': "orm['oberlin.Person']"}),
+            'authors': ('django.db.models.fields.related.ManyToManyField', [], {'related_name': "'newsletterarticles'", 'symmetrical': 'False', 'to': "orm['%s']" % person_model}),
             'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'full_text': ('philo.models.fields.TemplateField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),

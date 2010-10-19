@@ -2,6 +2,7 @@
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.http import HttpResponse
 from django.template import TemplateDoesNotExist, Context, RequestContext, Template as DjangoTemplate, add_to_builtins as register_templatetags
@@ -98,6 +99,24 @@ class Page(View):
 	
 	def __unicode__(self):
 		return self.title
+	
+	def clean_fields(self, exclude=None):
+		try:
+			super(Page, self).clean_fields(exclude)
+		except ValidationError, e:
+			errors = e.message_dict
+		else:
+			errors = {}
+		
+		if 'template' not in errors and 'template' not in exclude:
+			try:
+				self.template.clean_fields()
+				self.template.clean()
+			except ValidationError, e:
+				errors['template'] = e.messages
+		
+		if errors:
+			raise ValidationError(errors)
 	
 	class Meta:
 		app_label = 'philo'

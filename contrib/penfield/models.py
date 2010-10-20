@@ -3,9 +3,8 @@ from django.conf import settings
 from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model, TemplateField
 from philo.exceptions import ViewCanNotProvideSubpath
 from django.conf.urls.defaults import url, patterns, include
-from django.core.urlresolvers import reverse
 from django.http import Http404
-from datetime import datetime
+from datetime import date, datetime
 from philo.utils import paginate
 from philo.contrib.penfield.validators import validate_pagination_count
 from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
@@ -75,7 +74,7 @@ class BlogView(MultiView, FeedMultiViewMixin):
 	def per_page(self):
 		return self.entries_per_page
 	
-	def get_subpath(self, obj):
+	def get_reverse_params(self, obj):
 		if isinstance(obj, BlogEntry):
 			if obj.blog == self.blog:
 				kwargs = {'slug': obj.slug}
@@ -85,25 +84,17 @@ class BlogView(MultiView, FeedMultiViewMixin):
 						kwargs.update({'month': str(obj.date.month).zfill(2)})
 						if self.entry_permalink_style == 'D':
 							kwargs.update({'day': str(obj.date.day).zfill(2)})
-				return reverse(self.entry_view, urlconf=self, kwargs=kwargs)
+				return self.entry_view, [], kwargs
 		elif isinstance(obj, Tag):
 			if obj in self.blog.entry_tags:
-				return reverse('entries_by_tag', urlconf=self, kwargs={'tag_slugs': obj.slug})
-		elif isinstance(obj, (str, unicode)):
-			split_obj = obj.split(':')
-			if len(split_obj) > 1:
-				kwargs = {}
-				try:
-					kwargs.update({'year': str(int(split_obj[1])).zfill(4)})
-					if len(split_obj) > 2:
-						kwargs.update({'month': str(int(split_obj[2])).zfill(2)})
-						if len(split_obj) > 3:
-							kwargs.update({'day': str(int(split_obj[3])).zfill(2)})
-							return reverse('entries_by_day', urlconf=self, kwargs=kwargs)
-						return reverse('entries_by_month', urlconf=self, kwargs=kwargs)
-					return reverse('entries_by_year', urlconf=self, kwargs=kwargs)
-				except:
-					pass
+				return 'entries_by_tag', [], {'tag_slugs': obj.slug}
+		elif isinstance(obj, (date, datetime)):
+			kwargs = {
+				'year': str(obj.year).zfill(4),
+				'month': str(obj.month).zfill(2),
+				'day': str(obj.day).zfill(2)
+			}
+			return 'entries_by_day', [], kwargs
 		raise ViewCanNotProvideSubpath
 	
 	def get_context(self):
@@ -310,7 +301,7 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 	def __unicode__(self):
 		return self.newsletter.__unicode__()
 	
-	def get_subpath(self, obj):
+	def get_reverse_params(self, obj):
 		if isinstance(obj, NewsletterArticle):
 			if obj.newsletter == self.newsletter:
 				kwargs = {'slug': obj.slug}
@@ -320,10 +311,17 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 						kwargs.update({'month': str(obj.date.month).zfill(2)})
 						if self.article_permalink_style == 'D':
 							kwargs.update({'day': str(obj.date.day).zfill(2)})
-				return reverse(self.article_view, urlconf=self, kwargs=kwargs)
+				return self.article_view, [], kwargs
 		elif isinstance(obj, NewsletterIssue):
 			if obj.newsletter == self.newsletter:
-				return reverse('issue', urlconf=self, kwargs={'numbering': obj.numbering})
+				return 'issue', [], {'numbering': obj.numbering}
+		elif isinstance(obj, (date, datetime)):
+			kwargs = {
+				'year': str(obj.year).zfill(4),
+				'month': str(obj.month).zfill(2),
+				'day': str(obj.day).zfill(2)
+			}
+			return 'articles_by_day', [], kwargs
 		raise ViewCanNotProvideSubpath
 	
 	@property

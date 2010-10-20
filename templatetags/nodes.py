@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.template.defaulttags import kwarg_re
+from django.utils.encoding import smart_str
 from philo.exceptions import ViewCanNotProvideSubpath
 
 
@@ -26,32 +27,36 @@ class NodeURLNode(template.Node):
 		else:
 			node = context['node']
 		
-		if self.with_obj is not None:
-			try:
-				view_name, args, kwargs = node.view.get_reverse_params(self.with_obj.resolve(context))
-			except ViewCanNotProvideSubpath:
-				return settings.TEMPLATE_STRING_IF_INVALID
-		elif self.view_name is not None:
-			view_name = self.view_name
-			args = [arg.resolve(context) for arg in self.args]
-			kwargs = dict([(smart_str(k, 'ascii'), v.resolve(context)) for k, v in self.kwargs.items()])
-		else:
-			return node.get_absolute_url()
-		
-		if not node.view.accepts_subpath:
+		if not node:
 			return settings.TEMPLATE_STRING_IF_INVALID
 		
-		url = ''
-		try:
-			subpath = reverse(view_name, urlconf=node.view, args=args, kwargs=kwargs)
-		except NoReverseMatch:
-			if self.as_var is None:
-				raise
+		if self.with_obj is None and self.view_name is None:
+			url = node.get_absolute_url()
 		else:
-			if subpath[0] == '/':
-				subpath = subpath[1:]
+			if not node.view.accepts_subpath:
+				return settings.TEMPLATE_STRING_IF_INVALID
 			
-			url = node.get_absolute_url() + subpath
+			if self.with_obj is not None:
+				try:
+					view_name, args, kwargs = node.view.get_reverse_params(self.with_obj.resolve(context))
+				except ViewCanNotProvideSubpath:
+					return settings.TEMPLATE_STRING_IF_INVALID
+			else: # self.view_name is not None
+				view_name = self.view_name
+				args = [arg.resolve(context) for arg in self.args]
+				kwargs = dict([(smart_str(k, 'ascii'), v.resolve(context)) for k, v in self.kwargs.items()])
+			
+			url = ''
+			try:
+				subpath = reverse(view_name, urlconf=node.view, args=args, kwargs=kwargs)
+			except NoReverseMatch:
+				if self.as_var is None:
+					raise
+			else:
+				if subpath[0] == '/':
+					subpath = subpath[1:]
+				
+				url = node.get_absolute_url() + subpath
 		
 		if self.as_var:
 			context[self.as_var] = url

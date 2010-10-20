@@ -1,0 +1,219 @@
+[
+    {
+        "pk": 1, 
+        "model": "philo.tag", 
+        "fields": {
+            "name": "Test tag", 
+            "slug": "test-tag"
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "philo.node", 
+        "fields": {
+            "view_object_id": 1, 
+            "slug": "never", 
+            "parent": 3, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ]
+        }
+    }, 
+    {
+        "pk": 2, 
+        "model": "philo.node", 
+        "fields": {
+            "view_object_id": 1, 
+            "slug": "blog", 
+            "parent": 3, 
+            "view_content_type": [
+                "penfield", 
+                "blogview"
+            ]
+        }
+    }, 
+    {
+        "pk": 3, 
+        "model": "philo.node", 
+        "fields": {
+            "view_object_id": 1, 
+            "slug": "root", 
+            "parent": null, 
+            "view_content_type": [
+                "philo", 
+                "redirect"
+            ]
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "philo.redirect", 
+        "fields": {
+            "status_code": 302, 
+            "target": "never"
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "philo.template", 
+        "fields": {
+            "mimetype": "text/html", 
+            "code": "Never is working!\r\n{% node_url %}", 
+            "name": "Never", 
+            "parent": null, 
+            "documentation": "", 
+            "slug": "never"
+        }
+    }, 
+    {
+        "pk": 2, 
+        "model": "philo.template", 
+        "fields": {
+            "mimetype": "text/html", 
+            "code": "An index page!\r\n{% node_url %}\r\n\r\n{% for entry in entries %}\r\n<h4><a href='{% node_url with entry %}'>{{ entry.title }}</a></h4>\r\n<div class='post content'>\r\n{{ entry.content }}\r\n</div>\r\n{% endfor %}", 
+            "name": "Index", 
+            "parent": null, 
+            "documentation": "", 
+            "slug": "index"
+        }
+    }, 
+    {
+        "pk": 3, 
+        "model": "philo.template", 
+        "fields": {
+            "mimetype": "text/html", 
+            "code": "Entry detail page.", 
+            "name": "Entry", 
+            "parent": null, 
+            "documentation": "", 
+            "slug": "entry"
+        }
+    }, 
+    {
+        "pk": 4, 
+        "model": "philo.template", 
+        "fields": {
+            "mimetype": "text/html", 
+            "code": "Tag page!", 
+            "name": "Tag", 
+            "parent": null, 
+            "documentation": "", 
+            "slug": "tag"
+        }
+    }, 
+    {
+        "pk": 5, 
+        "model": "philo.template", 
+        "fields": {
+            "mimetype": "text/html", 
+            "code": "Entry archive page!", 
+            "name": "Entry Archives!", 
+            "parent": null, 
+            "documentation": "", 
+            "slug": "entry-archives"
+        }
+    }, 
+    {
+        "pk": 6, 
+        "model": "philo.template", 
+        "fields": {
+            "mimetype": "text/html", 
+            "code": "tag archives...", 
+            "name": "Tag Archives", 
+            "parent": null, 
+            "documentation": "", 
+            "slug": "tag-archives"
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "philo.page", 
+        "fields": {
+            "template": 1, 
+            "title": "Never"
+        }
+    }, 
+    {
+        "pk": 2, 
+        "model": "philo.page", 
+        "fields": {
+            "template": 2, 
+            "title": "Index"
+        }
+    }, 
+    {
+        "pk": 3, 
+        "model": "philo.page", 
+        "fields": {
+            "template": 3, 
+            "title": "Entry"
+        }
+    }, 
+    {
+        "pk": 4, 
+        "model": "philo.page", 
+        "fields": {
+            "template": 4, 
+            "title": "Tag"
+        }
+    }, 
+    {
+        "pk": 5, 
+        "model": "philo.page", 
+        "fields": {
+            "template": 5, 
+            "title": "Entry Archive"
+        }
+    }, 
+    {
+        "pk": 6, 
+        "model": "philo.page", 
+        "fields": {
+            "template": 6, 
+            "title": "Tag Archive Page"
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "penfield.blog", 
+        "fields": {
+            "slug": "free-lovin", 
+            "title": "Free lovin'"
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "penfield.blogentry", 
+        "fields": {
+            "content": "Lorem ipsum.\r\n\r\nDolor sit amet.", 
+            "author": 1, 
+            "title": "First Entry", 
+            "excerpt": "", 
+            "blog": 1, 
+            "date": "2010-10-20 10:38:58", 
+            "slug": "first-entry", 
+            "tags": [
+                1
+            ]
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "penfield.blogview", 
+        "fields": {
+            "entry_archive_page": 5, 
+            "tag_page": 4, 
+            "feed_suffix": "feed", 
+            "entry_permalink_style": "D", 
+            "tag_permalink_base": "tags", 
+            "feeds_enabled": true, 
+            "entries_per_page": null, 
+            "tag_archive_page": 6, 
+            "blog": 1, 
+            "entry_permalink_base": "entries", 
+            "index_page": 2, 
+            "entry_page": 3
+        }
+    }
+]

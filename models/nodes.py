@@ -3,8 +3,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.contrib.sites.models import Site
 from django.http import HttpResponse, HttpResponseServerError, HttpResponseRedirect
+from django.core.exceptions import ViewDoesNotExist
 from django.core.servers.basehttp import FileWrapper
-from django.core.urlresolvers import resolve, clear_url_caches
+from django.core.urlresolvers import resolve, clear_url_caches, reverse
 from django.template import add_to_builtins as register_templatetags
 from inspect import getargspec
 from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED
@@ -33,10 +34,18 @@ class Node(TreeEntity):
 		return self.view.render_to_response(request, extra_context)
 	
 	def get_absolute_url(self):
-		root = Site.objects.get_current().root_node
 		try:
-			return '/%s' % self.get_path(root=root)
-		except AncestorDoesNotExist:
+			root = Site.objects.get_current().root_node
+		except Site.DoesNotExist:
+			root = None
+		
+		try:
+			path = self.get_path(root=root)
+			if path:
+				path += '/'
+			root_url = reverse('philo-root')
+			return '%s%s' % (root_url, path)
+		except AncestorDoesNotExist, ViewDoesNotExist:
 			return None
 	
 	class Meta:
@@ -81,7 +90,13 @@ _view_content_type_limiter.cls = View
 class MultiView(View):
 	accepts_subpath = True
 	
-	urlpatterns = []
+	@property
+	def urlpatterns(self, obj):
+		raise NotImplementedError("MultiView subclasses must implement urlpatterns.")
+	
+	def get_reverse_params(self, obj):
+		"""This method should return a view_name, args, kwargs tuple suitable for reversing a url for the given obj using self as the urlconf."""
+		raise NotImplementedError("MultiView subclasses must implement get_subpath.")
 	
 	def actually_render_to_response(self, request, extra_context=None):
 		clear_url_caches()

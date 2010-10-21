@@ -40,6 +40,10 @@ class Migration(SchemaMigration):
         # Adding unique constraint on 'Attribute', fields ['value_object_id', 'value_content_type']
         db.create_unique('philo_attribute', ['value_object_id', 'value_content_type_id'])
 
+        # Manual addition! This is necessary to immediately cause contenttype creation.
+        # (needed for the next migration)
+        db.send_pending_create_signals()
+
 
     def backwards(self, orm):
         

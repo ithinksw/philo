@@ -1,6 +1,7 @@
-from django.db import models
 from django import forms
 from django.core.exceptions import FieldError, ValidationError
+from django.db import models
+from django.db.models.fields import NOT_PROVIDED
 from django.utils import simplejson as json
 from django.utils.text import capfirst
 from philo.signals import entity_class_prepared
@@ -13,11 +14,12 @@ __all__ = ('JSONAttribute', 'ForeignKeyAttribute', 'ManyToManyAttribute')
 class EntityProxyField(object):
 	descriptor_class = None
 	
-	def __init__(self, *args, **kwargs):
+	def __init__(self, verbose_name=None, help_text=None, default=NOT_PROVIDED, *args, **kwargs):
 		if self.descriptor_class is None:
 			raise NotImplementedError('EntityProxyField subclasses must specify a descriptor_class.')
-		self.verbose_name = kwargs.get('verbose_name', None)
-		self.help_text = kwargs.get('help_text', None)
+		self.verbose_name = verbose_name
+		self.help_text = help_text
+		self.default = default
 	
 	def actually_contribute_to_class(self, sender, **kwargs):
 		sender._entity_meta.add_proxy_field(self)
@@ -39,6 +41,9 @@ class EntityProxyField(object):
 	
 	def value_from_object(self, obj):
 		return getattr(obj, self.attname)
+	
+	def has_default(self):
+		return self.default is not NOT_PROVIDED
 
 
 class AttributeFieldDescriptor(object):
@@ -124,6 +129,8 @@ class JSONAttribute(AttributeField):
 	
 	def formfield(self, **kwargs):
 		defaults = {'required': False, 'label': capfirst(self.verbose_name), 'help_text': self.help_text}
+		if self.has_default():
+			defaults['initial'] = self.default
 		defaults.update(kwargs)
 		return self.field_template.formfield(**defaults)
 	
@@ -153,6 +160,8 @@ class ForeignKeyAttribute(AttributeField):
 	
 	def formfield(self, form_class=forms.ModelChoiceField, **kwargs):
 		defaults = {'required': False, 'label': capfirst(self.verbose_name), 'help_text': self.help_text}
+		if self.has_default():
+			defaults['initial'] = self.default
 		defaults.update(kwargs)
 		return form_class(self.model._default_manager.complex_filter(self.limit_choices_to), **defaults)
 	

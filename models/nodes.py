@@ -5,14 +5,14 @@ from django.contrib.sites.models import Site
 from django.http import HttpResponse, HttpResponseServerError, HttpResponseRedirect
 from django.core.exceptions import ViewDoesNotExist
 from django.core.servers.basehttp import FileWrapper
-from django.core.urlresolvers import resolve, clear_url_caches, reverse
+from django.core.urlresolvers import resolve, clear_url_caches, reverse, NoReverseMatch
 from django.template import add_to_builtins as register_templatetags
 from inspect import getargspec
 from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED
 from philo.models.base import TreeEntity, Entity, QuerySetMapper, register_value_model
 from philo.utils import ContentTypeSubclassLimiter
 from philo.validators import RedirectValidator
-from philo.exceptions import ViewDoesNotProvideSubpaths, AncestorDoesNotExist
+from philo.exceptions import ViewCanNotProvideSubpath, ViewDoesNotProvideSubpaths, AncestorDoesNotExist
 from philo.signals import view_about_to_render, view_finished_rendering
 
 
@@ -62,7 +62,18 @@ class View(Entity):
 	accepts_subpath = False
 	
 	def get_subpath(self, obj):
-		raise ViewDoesNotProvideSubpaths
+		if not self.accepts_subpath:
+			raise ViewDoesNotProvideSubpaths
+		
+		view_name, args, kwargs = self.get_reverse_params(obj)
+		try:
+			return reverse(view_name, args=args, kwargs=kwargs, urlconf=self)
+		except NoReverseMatch:
+			raise ViewCanNotProvideSubpath
+	
+	def get_reverse_params(self, obj):
+		"""This method should return a view_name, args, kwargs tuple suitable for reversing a url for the given obj using self as the urlconf."""
+		raise NotImplementedError("View subclasses must implement get_reverse_params to support subpaths.")
 	
 	def attributes_with_node(self, node):
 		return QuerySetMapper(self.attribute_set, passthrough=node.attributes)
@@ -93,10 +104,6 @@ class MultiView(View):
 	@property
 	def urlpatterns(self, obj):
 		raise NotImplementedError("MultiView subclasses must implement urlpatterns.")
-	
-	def get_reverse_params(self, obj):
-		"""This method should return a view_name, args, kwargs tuple suitable for reversing a url for the given obj using self as the urlconf."""
-		raise NotImplementedError("MultiView subclasses must implement get_subpath.")
 	
 	def actually_render_to_response(self, request, extra_context=None):
 		clear_url_caches()

@@ -45,8 +45,8 @@ class URLLinkValidator(RegexValidator):
 def json_validator(value):
 	try:
 		json.loads(value)
-	except:
-		raise ValidationError(u'\'%s\' is not valid JSON' % value)
+	except Exception, e:
+		raise ValidationError(u'JSON decode error: %s' % e)
 
 
 class TemplateValidationParser(Parser):

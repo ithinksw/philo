@@ -3,9 +3,8 @@ from django.conf import settings
 from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model, TemplateField
 from philo.exceptions import ViewCanNotProvideSubpath
 from django.conf.urls.defaults import url, patterns, include
-from django.core.urlresolvers import reverse
 from django.http import Http404
-from datetime import datetime
+from datetime import date, datetime
 from philo.utils import paginate
 from philo.contrib.penfield.validators import validate_pagination_count
 from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
@@ -75,7 +74,7 @@ class BlogView(MultiView, FeedMultiViewMixin):
 	def per_page(self):
 		return self.entries_per_page
 	
-	def get_subpath(self, obj):
+	def get_reverse_params(self, obj):
 		if isinstance(obj, BlogEntry):
 			if obj.blog == self.blog:
 				kwargs = {'slug': obj.slug}
@@ -85,25 +84,17 @@ class BlogView(MultiView, FeedMultiViewMixin):
 						kwargs.update({'month': str(obj.date.month).zfill(2)})
 						if self.entry_permalink_style == 'D':
 							kwargs.update({'day': str(obj.date.day).zfill(2)})
-				return reverse(self.entry_view, urlconf=self, kwargs=kwargs)
+				return self.entry_view, [], kwargs
 		elif isinstance(obj, Tag):
 			if obj in self.blog.entry_tags:
-				return reverse('entries_by_tag', urlconf=self, kwargs={'tag_slugs': obj.slug})
-		elif isinstance(obj, (str, unicode)):
-			split_obj = obj.split(':')
-			if len(split_obj) > 1:
-				kwargs = {}
-				try:
-					kwargs.update({'year': str(int(split_obj[1])).zfill(4)})
-					if len(split_obj) > 2:
-						kwargs.update({'month': str(int(split_obj[2])).zfill(2)})
-						if len(split_obj) > 3:
-							kwargs.update({'day': str(int(split_obj[3])).zfill(2)})
-							return reverse('entries_by_day', urlconf=self, kwargs=kwargs)
-						return reverse('entries_by_month', urlconf=self, kwargs=kwargs)
-					return reverse('entries_by_year', urlconf=self, kwargs=kwargs)
-				except:
-					pass
+				return 'entries_by_tag', [], {'tag_slugs': obj.slug}
+		elif isinstance(obj, (date, datetime)):
+			kwargs = {
+				'year': str(obj.year).zfill(4),
+				'month': str(obj.month).zfill(2),
+				'day': str(obj.day).zfill(2)
+			}
+			return 'entries_by_day', [], kwargs
 		raise ViewCanNotProvideSubpath
 	
 	def get_context(self):
@@ -157,10 +148,10 @@ class BlogView(MultiView, FeedMultiViewMixin):
 			)
 		return urlpatterns
 	
-	def get_all_entries(self, request, node=None, extra_context=None):
+	def get_all_entries(self, request, extra_context=None):
 		return self.blog.entries.all(), extra_context
 	
-	def get_entries_by_ymd(self, request, year=None, month=None, day=None, node=None, extra_context=None):
+	def get_entries_by_ymd(self, request, year=None, month=None, day=None, extra_context=None):
 		if not self.entry_archive_page:
 			raise Http404
 		entries = self.blog.entries.all()
@@ -175,7 +166,7 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		context.update({'year': year, 'month': month, 'day': day})
 		return entries, context
 	
-	def get_entries_by_tag(self, request, tag_slugs, node=None, extra_context=None):
+	def get_entries_by_tag(self, request, tag_slugs, extra_context=None):
 		tags = []
 		for tag_slug in tag_slugs.replace('+', '/').split('/'):
 			if tag_slug: # ignore blank slugs, handles for multiple consecutive separators (+ or /)
@@ -220,7 +211,7 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		defaults.update(kwargs or {})
 		return super(BlogView, self).get_feed(feed_type, extra_context, defaults)
 	
-	def entry_view(self, request, slug, year=None, month=None, day=None, node=None, extra_context=None):
+	def entry_view(self, request, slug, year=None, month=None, day=None, extra_context=None):
 		entries = self.blog.entries.all()
 		if year:
 			entries = entries.filter(date__year=year)
@@ -235,15 +226,15 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		context = self.get_context()
 		context.update(extra_context or {})
 		context.update({'entry': entry})
-		return self.entry_page.render_to_response(node, request, extra_context=context)
+		return self.entry_page.render_to_response(request, extra_context=context)
 	
-	def tag_archive_view(self, request, node=None, extra_context=None):
+	def tag_archive_view(self, request, extra_context=None):
 		if not self.tag_archive_page:
 			raise Http404
 		context = {}
 		context.update(extra_context or {})
 		context.update({'blog': self.blog})
-		return self.tag_archive_page.render_to_response(node, request, extra_context=context)
+		return self.tag_archive_page.render_to_response(request, extra_context=context)
 
 
 class Newsletter(Entity, Titled):
@@ -258,7 +249,7 @@ class NewsletterArticle(Entity, Titled):
 	authors = models.ManyToManyField(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='newsletterarticles')
 	date = models.DateTimeField(default=datetime.now)
 	lede = TemplateField(null=True, blank=True, verbose_name='Summary')
-	full_text = TemplateField()
+	full_text = TemplateField(db_index=True)
 	tags = models.ManyToManyField(Tag, related_name='newsletterarticles', blank=True, null=True)
 	
 	class Meta:
@@ -310,7 +301,7 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 	def __unicode__(self):
 		return self.newsletter.__unicode__()
 	
-	def get_subpath(self, obj):
+	def get_reverse_params(self, obj):
 		if isinstance(obj, NewsletterArticle):
 			if obj.newsletter == self.newsletter:
 				kwargs = {'slug': obj.slug}
@@ -320,10 +311,17 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 						kwargs.update({'month': str(obj.date.month).zfill(2)})
 						if self.article_permalink_style == 'D':
 							kwargs.update({'day': str(obj.date.day).zfill(2)})
-				return reverse(self.article_view, urlconf=self, kwargs=kwargs)
+				return self.article_view, [], kwargs
 		elif isinstance(obj, NewsletterIssue):
 			if obj.newsletter == self.newsletter:
-				return reverse('issue', urlconf=self, kwargs={'numbering': obj.numbering})
+				return 'issue', [], {'numbering': obj.numbering}
+		elif isinstance(obj, (date, datetime)):
+			kwargs = {
+				'year': str(obj.year).zfill(4),
+				'month': str(obj.month).zfill(2),
+				'day': str(obj.day).zfill(2)
+			}
+			return 'articles_by_day', [], kwargs
 		raise ViewCanNotProvideSubpath
 	
 	@property
@@ -375,10 +373,10 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 	def get_context(self):
 		return {'newsletter': self.newsletter}
 	
-	def get_all_articles(self, request, node, extra_context=None):
+	def get_all_articles(self, request, extra_context=None):
 		return self.newsletter.articles.all(), extra_context
 	
-	def get_articles_by_ymd(self, request, year, month=None, day=None, node=None, extra_context=None):
+	def get_articles_by_ymd(self, request, year, month=None, day=None, extra_context=None):
 		articles = self.newsletter.articles.filter(dat__year=year)
 		if month:
 			articles = articles.filter(date__month=month)
@@ -386,7 +384,7 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 			articles = articles.filter(date__day=day)
 		return articles
 	
-	def get_articles_by_issue(self, request, numbering, node=None, extra_context=None):
+	def get_articles_by_issue(self, request, numbering, extra_context=None):
 		try:
 			issue = self.newsletter.issues.get(numbering=numbering)
 		except:
@@ -395,7 +393,7 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 		context.update({'issue': issue})
 		return issue.articles.all(), context
 	
-	def article_view(self, request, slug, year=None, month=None, day=None, node=None, extra_context=None):
+	def article_view(self, request, slug, year=None, month=None, day=None, extra_context=None):
 		articles = self.newsletter.articles.all()
 		if year:
 			articles = articles.filter(date__year=year)
@@ -410,15 +408,15 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 		context = self.get_context()
 		context.update(extra_context or {})
 		context.update({'article': article})
-		return self.article_page.render_to_response(node, request, extra_context=context)
+		return self.article_page.render_to_response(request, extra_context=context)
 	
-	def issue_archive_view(self, request, node=None, extra_context=None):
+	def issue_archive_view(self, request, extra_context=None):
 		if not self.issue_archive_page:
 			raise Http404
 		context = {}
 		context.update(extra_context or {})
 		context.update({'newsletter': self.newsletter})
-		return self.issue_archive_page.render_to_response(node, request, extra_context=context)
+		return self.issue_archive_page.render_to_response(request, extra_context=context)
 	
 	def add_item(self, feed, obj, kwargs=None):
 		defaults = {

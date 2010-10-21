@@ -307,22 +307,15 @@ class TreeModel(models.Model):
 		return False
 	
 	def get_path(self, root=None, pathsep='/', field='slug'):
-		if root is not None:
-			if not self.has_ancestor(root):
-				raise AncestorDoesNotExist(root)
-			path = ''
-			parent = self
-			while parent and parent != root:
-				path = getattr(parent, field, '?') + pathsep + path
-				parent = parent.parent
-			return path
-		else:
-			path = getattr(self, field, '?')
-			parent = self.parent
-			while parent and parent != root:
-				path = getattr(parent, field, '?') + pathsep + path
-				parent = parent.parent
-			return path
+		if root is not None and not self.has_ancestor(root):
+			raise AncestorDoesNotExist(root)
+		
+		path = getattr(self, field, '?')
+		parent = self.parent
+		while parent and parent != root:
+			path = getattr(parent, field, '?') + pathsep + path
+			parent = parent.parent
+		return path
 	path = property(get_path)
 	
 	def __unicode__(self):

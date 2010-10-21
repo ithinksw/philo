@@ -80,22 +80,22 @@ class Page(View):
 		return self._containers
 	containers = property(get_containers)
 	
-	def render_to_string(self, node=None, request=None, path=None, subpath=None, extra_context=None):
+	def render_to_string(self, request=None, extra_context=None):
 		context = {}
 		context.update(extra_context or {})
 		context.update({'page': self, 'attributes': self.attributes})
-		if node and request:
-			context.update({'node': node, 'attributes': self.attributes_with_node(node)})
-			page_about_to_render_to_string.send(sender=self, node=node, request=request, extra_context=context)
+		if request:
+			context.update({'node': request.node, 'attributes': self.attributes_with_node(request.node)})
+			page_about_to_render_to_string.send(sender=self, request=request, extra_context=context)
 			string = self.template.django_template.render(RequestContext(request, context))
 		else:
-			page_about_to_render_to_string.send(sender=self, node=node, request=request, extra_context=context)
+			page_about_to_render_to_string.send(sender=self, request=request, extra_context=context)
 		 	string = self.template.django_template.render(Context(context))
 		page_finished_rendering_to_string.send(sender=self, string=string)
 		return string
 	
-	def actually_render_to_response(self, node, request, path=None, subpath=None, extra_context=None):
-		return HttpResponse(self.render_to_string(node, request, path, subpath, extra_context), mimetype=self.template.mimetype)
+	def actually_render_to_response(self, request, extra_context=None):
+		return HttpResponse(self.render_to_string(request, extra_context), mimetype=self.template.mimetype)
 	
 	def __unicode__(self):
 		return self.title

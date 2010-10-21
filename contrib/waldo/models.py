@@ -71,7 +71,7 @@ class LoginMultiView(MultiView):
 		context.update(extra_dict or {})
 		return context
 	
-	def display_login_page(self, request, message, node=None, extra_context=None):
+	def display_login_page(self, request, message, extra_context=None):
 		request.session.set_test_cookie()
 		
 		referrer = request.META.get('HTTP_REFERER', None)
@@ -85,7 +85,7 @@ class LoginMultiView(MultiView):
 				redirect = '%s?%s' % (referrer[2], referrer[4])
 		
 		if referrer is None:
-			redirect = node.get_absolute_url()
+			redirect = request.node.get_absolute_url()
 		
 		path = request.get_full_path()
 		if redirect != path:
@@ -102,14 +102,14 @@ class LoginMultiView(MultiView):
 			'form': form
 		})
 		context.update(extra_context or {})
-		return self.login_page.render_to_response(node, request, extra_context=context)
+		return self.login_page.render_to_response(request, extra_context=context)
 	
-	def login(self, request, node=None, extra_context=None):
+	def login(self, request, extra_context=None):
 		"""
 		Displays the login form for the given HttpRequest.
 		"""
 		if request.user.is_authenticated():
-			return HttpResponseRedirect(node.get_absolute_url())
+			return HttpResponseRedirect(request.node.get_absolute_url())
 		
 		context = self.get_context(extra_context)
 		
@@ -121,12 +121,12 @@ class LoginMultiView(MultiView):
 				message = _("Please log in again, because your session has expired.")
 			else:
 				message = ""
-			return self.display_login_page(request, message, node, context)
+			return self.display_login_page(request, message, context)
 
 		# Check that the user accepts cookies.
 		if not request.session.test_cookie_worked():
 			message = _("Looks like your browser isn't configured to accept cookies. Please enable cookies, reload this page, and try again.")
-			return self.display_login_page(request, message, node, context)
+			return self.display_login_page(request, message, context)
 		else:
 			request.session.delete_test_cookie()
 		
@@ -148,7 +148,7 @@ class LoginMultiView(MultiView):
 									" Try '%s' instead.") % user.username
 					else:
 						message = _("Usernames cannot contain the '@' character.")
-			return self.display_login_page(request, message, node, context)
+			return self.display_login_page(request, message, context)
 
 		# The user data is correct; log in the user in and continue.
 		else:
@@ -157,21 +157,21 @@ class LoginMultiView(MultiView):
 				try:
 					redirect = request.session.pop('redirect')
 				except KeyError:
-					redirect = node.get_absolute_url()
+					redirect = request.node.get_absolute_url()
 				return HttpResponseRedirect(redirect)
 			else:
-				return self.display_login_page(request, ERROR_MESSAGE, node, context)
+				return self.display_login_page(request, ERROR_MESSAGE, context)
 	login = never_cache(login)
 	
 	def logout(self, request):
 		return auth_views.logout(request, request.META['HTTP_REFERER'])
 	
 	def login_required(self, view):
-		def inner(request, node=None, *args, **kwargs):
+		def inner(request, *args, **kwargs):
 			if not request.user.is_authenticated():
 				login_url = reverse('login', urlconf=self).strip('/')
-				return HttpResponseRedirect('%s%s/' % (node.get_absolute_url(), login_url))
-			return view(request, node=node, *args, **kwargs)
+				return HttpResponseRedirect('%s%s/' % (request.node.get_absolute_url(), login_url))
+			return view(request, *args, **kwargs)
 		
 		return inner
 	
@@ -186,9 +186,9 @@ class LoginMultiView(MultiView):
 		else:
 			send_mail(subject, text_content, from_email, [email])
 	
-	def password_reset(self, request, node=None, extra_context=None, token_generator=password_token_generator):
+	def password_reset(self, request, extra_context=None, token_generator=password_token_generator):
 		if request.user.is_authenticated():
-			return HttpResponseRedirect(node.get_absolute_url())
+			return HttpResponseRedirect(request.node.get_absolute_url())
 		
 		if request.method == 'POST':
 			form = PasswordResetForm(request.POST)
@@ -196,7 +196,7 @@ class LoginMultiView(MultiView):
 				current_site = Site.objects.get_current()
 				for user in form.users_cache:
 					token = token_generator.make_token(user)
-					link = 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), reverse('password_reset_confirm', urlconf=self, kwargs={'uidb36': int_to_base36(user.id), 'token': token}).strip('/'))
+					link = 'http://%s/%s/%s/' % (current_site.domain, request.node.get_absolute_url().strip('/'), reverse('password_reset_confirm', urlconf=self, kwargs={'uidb36': int_to_base36(user.id), 'token': token}).strip('/'))
 					context = {
 						'link': link,
 						'username': user.username
@@ -209,9 +209,9 @@ class LoginMultiView(MultiView):
 		
 		context = self.get_context({'form': form})
 		context.update(extra_context or {})
-		return self.password_reset_page.render_to_response(node, request, extra_context=context)
+		return self.password_reset_page.render_to_response(request, extra_context=context)
 	
-	def password_reset_confirm(self, request, node=None, extra_context=None, uidb36=None, token=None, token_generator=password_token_generator):
+	def password_reset_confirm(self, request, extra_context=None, uidb36=None, token=None, token_generator=password_token_generator):
 		"""
 		Checks that a given hash in a password reset link is valid. If so,
 		displays the password set form.
@@ -231,16 +231,16 @@ class LoginMultiView(MultiView):
 				if form.is_valid():
 					form.save()
 					messages.add_message(request, messages.SUCCESS, "Password reset successful.")
-					return HttpResponseRedirect('/%s/%s/' % (node.get_absolute_url().strip('/'), reverse('login', urlconf=self).strip('/')))
+					return HttpResponseRedirect('/%s/%s/' % (request.node.get_absolute_url().strip('/'), reverse('login', urlconf=self).strip('/')))
 			else:
 				form = SetPasswordForm(user)
 			
 			context = self.get_context({'form': form})
-			return self.password_set_page.render_to_response(node, request, extra_context=context)
+			return self.password_set_page.render_to_response(request, extra_context=context)
 		
 		raise Http404
 	
-	def password_change(self, request, node=None, extra_context=None):
+	def password_change(self, request, extra_context=None):
 		if request.method == 'POST':
 			form = PasswordChangeForm(request.user, request.POST)
 			if form.is_valid():
@@ -252,11 +252,11 @@ class LoginMultiView(MultiView):
 		
 		context = self.get_context({'form': form})
 		context.update(extra_context or {})
-		return self.password_change_page.render_to_response(node, request, extra_context=context)
+		return self.password_change_page.render_to_response(request, extra_context=context)
 	
-	def register(self, request, node=None, extra_context=None, token_generator=registration_token_generator):
+	def register(self, request, extra_context=None, token_generator=registration_token_generator):
 		if request.user.is_authenticated():
-			return HttpResponseRedirect(node.get_absolute_url())
+			return HttpResponseRedirect(request.node.get_absolute_url())
 		
 		if request.method == 'POST':
 			form = RegistrationForm(request.POST)
@@ -264,21 +264,21 @@ class LoginMultiView(MultiView):
 				user = form.save()
 				current_site = Site.objects.get_current()
 				token = token_generator.make_token(user)
-				link = 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), reverse('register_confirm', urlconf=self, kwargs={'uidb36': int_to_base36(user.id), 'token': token}).strip('/'))
+				link = 'http://%s/%s/%s/' % (current_site.domain, request.node.get_absolute_url().strip('/'), reverse('register_confirm', urlconf=self, kwargs={'uidb36': int_to_base36(user.id), 'token': token}).strip('/'))
 				context = {
 					'link': link
 				}
 				self.send_confirmation_email('Confirm account creation at %s' % current_site.name, user.email, self.register_confirmation_email, context)
 				messages.add_message(request, messages.SUCCESS, 'An email has been sent to %s with details on activating your account.' % user.email, fail_silently=True)
-				return HttpResponseRedirect(node.get_absolute_url())
+				return HttpResponseRedirect(request.node.get_absolute_url())
 		else:
 			form = RegistrationForm()
 		
 		context = self.get_context({'form': form})
 		context.update(extra_context or {})
-		return self.register_page.render_to_response(node, request, extra_context=context)
+		return self.register_page.render_to_response(request, extra_context=context)
 	
-	def register_confirm(self, request, node=None, extra_context=None, uidb36=None, token=None, token_generator=registration_token_generator):
+	def register_confirm(self, request, extra_context=None, uidb36=None, token=None, token_generator=registration_token_generator):
 		"""
 		Checks that a given hash in a registration link is valid and activates
 		the given account. If so, log them in and redirect to
@@ -303,12 +303,12 @@ class LoginMultiView(MultiView):
 				# if anything goes wrong, ABSOLUTELY make sure that the true password is restored.
 				user.password = true_password
 				user.save()
-			return self.post_register_confirm_redirect(request, node)
+			return self.post_register_confirm_redirect(request)
 		
 		raise Http404
 	
-	def post_register_confirm_redirect(self, request, node):
-		return HttpResponseRedirect(node.get_absolute_url())
+	def post_register_confirm_redirect(self, request):
+		return HttpResponseRedirect(request.node.get_absolute_url())
 	
 	class Meta:
 		abstract = True
@@ -363,7 +363,7 @@ class AccountMultiView(LoginMultiView):
 		
 		return form_instances
 	
-	def account_view(self, request, node=None, extra_context=None, token_generator=email_token_generator, *args, **kwargs):
+	def account_view(self, request, extra_context=None, token_generator=email_token_generator, *args, **kwargs):
 		if request.method == 'POST':
 			form_instances = self.get_account_form_instances(request.user, request.POST)
 			current_email = request.user.email
@@ -383,7 +383,7 @@ class AccountMultiView(LoginMultiView):
 					
 					current_site = Site.objects.get_current()
 					token = token_generator.make_token(request.user, email)
-					link = 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), reverse('email_change_confirm', urlconf=self, kwargs={'uidb36': int_to_base36(request.user.id), 'email': email.replace('@', '+'), 'token': token}).strip('/'))
+					link = 'http://%s/%s/%s/' % (current_site.domain, request.node.get_absolute_url().strip('/'), reverse('email_change_confirm', urlconf=self, kwargs={'uidb36': int_to_base36(request.user.id), 'email': email.replace('@', '+'), 'token': token}).strip('/'))
 					context = {
 						'link': link
 					}
@@ -401,7 +401,7 @@ class AccountMultiView(LoginMultiView):
 			'forms': form_instances
 		})
 		context.update(extra_context or {})
-		return self.manage_account_page.render_to_response(node, request, extra_context=context)
+		return self.manage_account_page.render_to_response(request, extra_context=context)
 	
 	def has_valid_account(self, user):
 		user_form, profile_form = self.get_account_forms()
@@ -428,11 +428,11 @@ class AccountMultiView(LoginMultiView):
 		inner = self.login_required(inner)
 		return inner
 	
-	def post_register_confirm_redirect(self, request, node):
+	def post_register_confirm_redirect(self, request):
 		messages.add_message(request, messages.INFO, 'Welcome! Please fill in some more information.', fail_silently=True)
-		return HttpResponseRedirect('/%s/%s/' % (node.get_absolute_url().strip('/'), reverse('account', urlconf=self).strip('/')))
+		return HttpResponseRedirect('/%s/%s/' % (request.node.get_absolute_url().strip('/'), reverse('account', urlconf=self).strip('/')))
 	
-	def email_change_confirm(self, request, node=None, extra_context=None, uidb36=None, token=None, email=None, token_generator=email_token_generator):
+	def email_change_confirm(self, request, extra_context=None, uidb36=None, token=None, email=None, token_generator=email_token_generator):
 		"""
 		Checks that a given hash in an email change link is valid. If so, changes the email and redirects to the account page.
 		"""
@@ -455,7 +455,7 @@ class AccountMultiView(LoginMultiView):
 			user.email = email
 			user.save()
 			messages.add_message(request, messages.SUCCESS, 'Email changed successfully.')
-			return HttpResponseRedirect('/%s/%s/' % (node.get_absolute_url().strip('/'), reverse('account', urlconf=self).strip('/')))
+			return HttpResponseRedirect('/%s/%s/' % (request.node.get_absolute_url().strip('/'), reverse('account', urlconf=self).strip('/')))
 		
 		raise Http404
 	

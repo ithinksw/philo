@@ -24,8 +24,8 @@ class FeedMultiViewMixin(object):
 		"""
 		Wraps an object-fetching function and renders the results as a page.
 		"""
-		def inner(request, node=None, extra_context=None, **kwargs):
-			objects, extra_context = func(request=request, node=node, extra_context=extra_context, **kwargs)
+		def inner(request, extra_context=None, **kwargs):
+			objects, extra_context = func(request=request, extra_context=extra_context, **kwargs)
 
 			context = self.get_context()
 			context.update(extra_context or {})
@@ -37,7 +37,7 @@ class FeedMultiViewMixin(object):
 			else:
 				context.update({self.list_var: objects})
 
-			return page.render_to_response(node, request, extra_context=context)
+			return page.render_to_response(request, extra_context=context)
 
 		return inner
 	
@@ -45,8 +45,8 @@ class FeedMultiViewMixin(object):
 		"""
 		Wraps an object-fetching function and renders the results as a rss or atom feed.
 		"""
-		def inner(request, node=None, extra_context=None, **kwargs):
-			objects, extra_context = func(request=request, node=node, extra_context=extra_context, **kwargs)
+		def inner(request, extra_context=None, **kwargs):
+			objects, extra_context = func(request=request, extra_context=extra_context, **kwargs)
 	
 			if 'HTTP_ACCEPT' in request.META and 'rss' in request.META['HTTP_ACCEPT'] and 'atom' not in request.META['HTTP_ACCEPT']:
 				feed_type = 'rss'
@@ -54,15 +54,15 @@ class FeedMultiViewMixin(object):
 				feed_type = 'atom'
 			
 			current_site = Site.objects.get_current()
-			
+			#Could this be done with request.path instead somehow?
 			feed_kwargs = {
-				'link': 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), reverse(reverse_name, urlconf=self, kwargs=kwargs).strip('/'))
+				'link': 'http://%s/%s/%s/' % (current_site.domain, request.node.get_absolute_url().strip('/'), reverse(reverse_name, urlconf=self, kwargs=kwargs).strip('/'))
 			}
 			feed = self.get_feed(feed_type, extra_context, feed_kwargs)
 			
 			for obj in objects:
 				kwargs = {
-					'link': 'http://%s/%s/%s/' % (current_site.domain, node.get_absolute_url().strip('/'), self.get_subpath(obj).strip('/'))
+					'link': 'http://%s/%s/%s/' % (current_site.domain, request.node.get_absolute_url().strip('/'), self.get_subpath(obj).strip('/'))
 				}
 				self.add_item(feed, obj, kwargs=kwargs)
 	

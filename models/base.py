@@ -340,11 +340,5 @@ class TreeEntity(Entity, TreeModel):
 			return QuerySetMapper(self.attribute_set, passthrough=self.parent.attributes)
 		return super(TreeEntity, self).attributes
 	
-	@property
-	def relationships(self):
-		if self.parent:
-			return QuerySetMapper(self.relationship_set, passthrough=self.parent.relationships)
-		return super(TreeEntity, self).relationships
-	
 	class Meta:
 		abstract = True

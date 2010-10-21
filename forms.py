@@ -21,6 +21,8 @@ def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widge
 	ignored = []
 	opts = entity_model._entity_meta
 	for f in opts.proxy_fields:
+		if not f.editable:
+			continue
 		if fields and not f.name in fields:
 			continue
 		if exclude and f.name in exclude:
@@ -86,7 +88,11 @@ class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it 
 		instance = super(EntityForm, self).save(commit=False)
 		
 		for f in instance._entity_meta.proxy_fields:
+			if not f.editable or not f.name in cleaned_data:
+				continue
 			if self._meta.fields and f.name not in self._meta.fields:
+				continue
+			if self._meta.exclude and f.name in self._meta.exclude:
 				continue
 			setattr(instance, f.attname, cleaned_data[f.name])
 		

@@ -14,12 +14,13 @@ __all__ = ('JSONAttribute', 'ForeignKeyAttribute', 'ManyToManyAttribute')
 class EntityProxyField(object):
 	descriptor_class = None
 	
-	def __init__(self, verbose_name=None, help_text=None, default=NOT_PROVIDED, *args, **kwargs):
+	def __init__(self, verbose_name=None, help_text=None, default=NOT_PROVIDED, editable=True, *args, **kwargs):
 		if self.descriptor_class is None:
 			raise NotImplementedError('EntityProxyField subclasses must specify a descriptor_class.')
 		self.verbose_name = verbose_name
 		self.help_text = help_text
 		self.default = default
+		self.editable = editable
 	
 	def actually_contribute_to_class(self, sender, **kwargs):
 		sender._entity_meta.add_proxy_field(self)
@@ -61,7 +62,7 @@ class AttributeFieldDescriptor(object):
 			except KeyError:
 				return None
 		else:
-			raise AttributeError('The \'%s\' attribute can only be accessed from %s instances.' % (self.field.name, owner.__name__))
+			return None
 	
 	def __set__(self, instance, value):
 		raise NotImplementedError('AttributeFieldDescriptor subclasses must implement a __set__ method.')

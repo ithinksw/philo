@@ -27,7 +27,7 @@ def node_view(request, path=None, **kwargs):
 			raise
 		
 		try:
-			Http404View = node.relationships['Http404']
+			Http404View = node.attributes['Http404']
 		except KeyError:
 			Http404View = None
 		
@@ -42,7 +42,7 @@ def node_view(request, path=None, **kwargs):
 			raise
 		
 		try:
-			Http500View = node.relationships['Http500']
+			Http500View = node.attributes['Http500']
 			
 			if not Http500View:
 				raise e

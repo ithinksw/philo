@@ -421,7 +421,7 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 	def add_item(self, feed, obj, kwargs=None):
 		defaults = {
 			'title': obj.title,
-			'author_name': ', '.join(obj.authors),
+			'author_name': ', '.join([author.get_full_name() for author in obj.authors.all()]),
 			'pubdate': obj.date,
 			'description': obj.lede or obj.full_text,
 			'categories': [tag.name for tag in obj.tags.all()]

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.contenttypes import generic
 from philo.models import Tag, Attribute
@@ -12,12 +13,15 @@ class AttributeInline(generic.GenericTabularInline):
 	ct_fk_field = 'entity_object_id'
 	model = Attribute
 	extra = 1
-	template = 'admin/philo/edit_inline/tabular_attribute.html'
 	allow_add = True
 	classes = COLLAPSE_CLASSES
 	form = AttributeForm
 	formset = AttributeInlineFormSet
-	exclude = ['value_object_id']
+	fields = ['key', 'value_content_type']
+	if 'grappelli' in settings.INSTALLED_APPS:
+		template = 'admin/philo/edit_inline/grappelli_tabular_attribute.html'
+	else:
+		template = 'admin/philo/edit_inline/tabular_attribute.html'
 
 
 class EntityAdmin(admin.ModelAdmin):

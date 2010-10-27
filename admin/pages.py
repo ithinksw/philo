@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 from django import forms
 from philo.admin.base import COLLAPSE_CLASSES
@@ -13,7 +14,11 @@ class ContentletInline(admin.StackedInline):
 	formset = ContentletInlineFormSet
 	form = ContentletForm
 	can_delete = False
-	template = 'admin/philo/edit_inline/tabular_container.html'
+	classes = ('collapse-open', 'collapse','open')
+	if 'grappelli' in settings.INSTALLED_APPS:
+		template = 'admin/philo/edit_inline/grappelli_tabular_container.html'
+	else:
+		template = 'admin/philo/edit_inline/tabular_container.html'
 
 
 class ContentReferenceInline(admin.StackedInline):
@@ -23,7 +28,11 @@ class ContentReferenceInline(admin.StackedInline):
 	formset = ContentReferenceInlineFormSet
 	form = ContentReferenceForm
 	can_delete = False
-	template = 'admin/philo/edit_inline/tabular_container.html'
+	classes = ('collapse-open', 'collapse','open')
+	if 'grappelli' in settings.INSTALLED_APPS:
+		template = 'admin/philo/edit_inline/grappelli_tabular_container.html'
+	else:
+		template = 'admin/philo/edit_inline/tabular_container.html'
 
 
 class PageAdmin(ViewAdmin):

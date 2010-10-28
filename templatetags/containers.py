@@ -43,7 +43,7 @@ class ContainerNode(template.Node):
 			# Otherwise it's a contentlet.
 			try:
 				contentlet = page.contentlets.get(name__exact=self.name)
-				if '{%' in contentlet.content:
+				if '{%' in contentlet.content or '{{' in contentlet.content:
 					try:
 						content = template.Template(contentlet.content, name=contentlet.name).render(context)
 					except template.TemplateSyntaxError, error:

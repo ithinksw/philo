@@ -121,13 +121,11 @@ class ManyToManyValue(AttributeValue):
 		return self.content_type.model_class()._default_manager.filter(id__in=self.get_object_id_list())
 	
 	def set_value(self, value):
-		if value is None:
-			self.object_ids = ""
-			return
-		if not isinstance(value, models.query.QuerySet):
-			raise TypeError("Value must be a QuerySet.")
-		self.content_type = ContentType.objects.get_for_model(value.model)
-		self.object_ids = ','.join([`value` for value in value.values_list('id', flat=True)])
+		# Value is probably a queryset - but allow any iterable.
+		if isinstance(value, models.query.QuerySet):
+			value = value.values_list('id', flat=True)
+		
+		self.object_ids = ','.join([str(v) for v in value])
 	
 	value = property(get_value, set_value)
 	

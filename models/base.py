@@ -234,7 +234,7 @@ class Entity(models.Model):
 	
 	@property
 	def attributes(self):
-		return QuerySetMapper(self.attribute_set)
+		return QuerySetMapper(self.attribute_set.all())
 	
 	@property
 	def _added_attribute_registry(self):
@@ -344,7 +344,7 @@ class TreeEntity(Entity, TreeModel):
 	@property
 	def attributes(self):
 		if self.parent:
-			return QuerySetMapper(self.attribute_set, passthrough=self.parent.attributes)
+			return QuerySetMapper(self.attribute_set.all(), passthrough=self.parent.attributes)
 		return super(TreeEntity, self).attributes
 	
 	class Meta:

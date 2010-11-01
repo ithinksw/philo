@@ -164,7 +164,7 @@ class LoginMultiView(MultiView):
 	login = never_cache(login)
 	
 	def logout(self, request):
-		return auth_views.logout(request, request.META['HTTP_REFERER'])
+		return auth_views.logout(request, request.META.get('HTTP_REFERER', request.node.get_absolute_url()))
 	
 	def login_required(self, view):
 		def inner(request, *args, **kwargs):

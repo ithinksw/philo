@@ -282,34 +282,74 @@ class TreeManager(models.Manager):
 	def roots(self):
 		return self.filter(parent__isnull=True)
 	
-	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/'):
+	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/', field='slug'):
 		"""
-		Returns the object with the path, or None if there is no object with that path,
-		unless absolute_result is set to False, in which case it returns a tuple containing
-		the deepest object found along the path, and the remainder of the path after that
-		object as a string (or None in the case that there is no remaining path).
+		Returns the object with the path, unless absolute_result is set to False, in which
+		case it returns a tuple containing the deepest object found along the path, and the
+		remainder of the path after that object as a string (or None if there is no remaining
+		path). Raises a DoesNotExist exception if no object is found with the given path.
 		"""
-		slugs = path.split(pathsep)
-		obj = root
-		remaining_slugs = list(slugs)
-		remainder = None
-		for slug in slugs:
-			remaining_slugs.remove(slug)
-			if slug: # ignore blank slugs, handles for multiple consecutive pathseps
-				try:
-					obj = self.get(slug__exact=slug, parent__exact=obj)
-				except self.model.DoesNotExist:
-					if absolute_result:
-						obj = None
-					remaining_slugs.insert(0, slug)
-					remainder = pathsep.join(remaining_slugs)
-					break
-		if obj:
-			if absolute_result:
-				return obj
+		segments = path.split(pathsep)
+		
+		# Clean out blank segments. Handles multiple consecutive pathseps.
+		while True:
+			try:
+				segments.remove('')
+			except ValueError:
+				break
+		
+		# Special-case a lack of segments. No queries necessary.
+		if not segments:
+			if root is not None:
+				return root, None
 			else:
-				return (obj, remainder)
-		raise self.model.DoesNotExist('%s matching query does not exist.' % self.model._meta.object_name)
+				raise self.model.DoesNotExist('%s matching query does not exist.' % self.model._meta.object_name)
+		
+		def make_query_kwargs(segments):
+			kwargs = {}
+			prefix = ""
+			revsegs = list(segments)
+			revsegs.reverse()
+			
+			for segment in revsegs:
+				kwargs["%s%s__exact" % (prefix, field)] = segment
+				prefix += "parent__"
+			
+			kwargs[prefix[:-2]] = root
+			return kwargs
+		
+		def find_obj(segments, depth, deepest_found):
+			try:
+				obj = self.get(**make_query_kwargs(segments[:depth]))
+			except self.model.DoesNotExist:
+				if absolute_result:
+					raise
+				
+				depth = (deepest_found + depth)/2
+				if deepest_found == depth:
+					# This should happen if nothing is found with any part of the given path.
+					raise
+				
+				# Try finding one with half the path since the deepest find.
+				return find_obj(segments, depth, deepest_found)
+			else:
+				# Yay! Found one! Could there be a deeper one?
+				if absolute_result:
+					return obj
+				
+				deepest_found = depth
+				depth = (len(segments) + depth)/2
+				
+				if deepest_found == depth:
+					return obj, pathsep.join(segments[deepest_found:]) or None
+				
+				try:
+					return find_obj(segments, depth, deepest_found)
+				except self.model.DoesNotExist:
+					# Then the deepest one was already found.
+					return obj, pathsep.join(segments[deepest_found:])
+		
+		return find_obj(segments, len(segments), 0)
 
 
 class TreeModel(models.Model):

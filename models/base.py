@@ -291,6 +291,11 @@ class TreeManager(models.Manager):
 		"""
 		segments = path.split(pathsep)
 		
+		# Check for a trailing pathsep so we can restore it later.
+		trailing_pathsep = False
+		if segments[-1] == '':
+			trailing_pathsep = True
+		
 		# Clean out blank segments. Handles multiple consecutive pathseps.
 		while True:
 			try:
@@ -318,6 +323,12 @@ class TreeManager(models.Manager):
 			kwargs[prefix[:-2]] = root
 			return kwargs
 		
+		def build_path(segments):
+			path = pathsep.join(segments)
+			if trailing_pathsep and segments and segments[-1] != '':
+				path += pathsep
+			return path
+		
 		def find_obj(segments, depth, deepest_found):
 			try:
 				obj = self.get(**make_query_kwargs(segments[:depth]))
@@ -341,13 +352,13 @@ class TreeManager(models.Manager):
 				depth = (len(segments) + depth)/2
 				
 				if deepest_found == depth:
-					return obj, pathsep.join(segments[deepest_found:]) or None
+					return obj, build_path(segments[deepest_found:]) or None
 				
 				try:
 					return find_obj(segments, depth, deepest_found)
 				except self.model.DoesNotExist:
 					# Then the deepest one was already found.
-					return obj, pathsep.join(segments[deepest_found:])
+					return obj, build_path(segments[deepest_found:])
 		
 		return find_obj(segments, len(segments), 0)
 

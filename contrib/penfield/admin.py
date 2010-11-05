@@ -1,5 +1,5 @@
 from django.contrib import admin
-from philo.admin import EntityAdmin
+from philo.admin import EntityAdmin, AddTagAdmin
 from philo.contrib.penfield.models import BlogEntry, Blog, BlogView, Newsletter, NewsletterArticle, NewsletterIssue, NewsletterView
 
 
@@ -12,7 +12,7 @@ class BlogAdmin(TitledAdmin):
 	pass
 
 
-class BlogEntryAdmin(TitledAdmin):
+class BlogEntryAdmin(TitledAdmin, AddTagAdmin):
 	filter_horizontal = ['tags']
 
 
@@ -24,8 +24,8 @@ class NewsletterAdmin(TitledAdmin):
 	pass
 
 
-class NewsletterArticleAdmin(TitledAdmin):
-	pass
+class NewsletterArticleAdmin(TitledAdmin, AddTagAdmin):
+	filter_horizontal = TitledAdmin.filter_horizontal + ('tags', 'authors')
 
 
 class NewsletterIssueAdmin(TitledAdmin):

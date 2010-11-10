@@ -282,6 +282,26 @@ class TreeManager(models.Manager):
 	def roots(self):
 		return self.filter(parent__isnull=True)
 	
+	def get_branch_pks(self, root, depth=5, inclusive=True):
+		branch_pks = []
+		parent_pks = [root.pk]
+		
+		if inclusive:
+			branch_pks.append(root.pk)
+		
+		for i in xrange(depth):
+			child_pks = list(self.filter(parent__pk__in=parent_pks).exclude(pk__in=branch_pks).values_list('pk', flat=True))
+			if not child_pks:
+				break
+			
+			branch_pks += child_pks
+			parent_pks = child_pks
+		
+		return branch_pks
+	
+	def get_branch(self, root, depth=5, inclusive=True):
+		return self.filter(pk__in=self.get_branch_pks(root, depth, inclusive))
+	
 	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/', field='slug'):
 		"""
 		Returns the object with the path, unless absolute_result is set to False, in which

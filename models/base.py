@@ -368,24 +368,47 @@ class TreeModel(models.Model):
 	parent = models.ForeignKey('self', related_name='children', null=True, blank=True)
 	slug = models.SlugField(max_length=255)
 	
-	def has_ancestor(self, ancestor):
-		parent = self
+	def has_ancestor(self, ancestor, inclusive=False):
+		if inclusive:
+			parent = self
+		else:
+			parent = self.parent
+		
+		parents = []
+		
 		while parent:
 			if parent == ancestor:
 				return True
+			# If we've found this parent before, the path is recursive and ancestor wasn't on it.
+			if parent in parents:
+				return False
+			parents.append(parent)
 			parent = parent.parent
+		# If ancestor is None, catch it here.
+		if parent == ancestor:
+			return True
 		return False
 	
 	def get_path(self, root=None, pathsep='/', field='slug'):
-		if root is not None and not self.has_ancestor(root):
+		parent = self.parent
+		parents = [self]
+		
+		def compile_path(parents):
+			return pathsep.join([getattr(parent, field, '?') for parent in parents])
+		
+		while parent and parent != root:
+			if parent in parents:
+				if root is not None:
+					raise AncestorDoesNotExist(root)
+				parents.append(parent)
+				return u"\u2026%s%s" % (pathsep, compile_path(parents[::-1]))
+			parents.append(parent)
+			parent = parent.parent
+		
+		if root is not None and parent is None:
 			raise AncestorDoesNotExist(root)
 		
-		path = getattr(self, field, '?')
-		parent = self.parent
-		while parent and parent != root:
-			path = getattr(parent, field, '?') + pathsep + path
-			parent = parent.parent
-		return path
+		return compile_path(parents[::-1])
 	path = property(get_path)
 	
 	def __unicode__(self):

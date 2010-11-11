@@ -10,6 +10,7 @@ from django.template import add_to_builtins as register_templatetags
 from inspect import getargspec
 from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED
 from philo.models.base import TreeEntity, Entity, QuerySetMapper, register_value_model
+from philo.models.fields import JSONField
 from philo.utils import ContentTypeSubclassLimiter
 from philo.validators import RedirectValidator
 from philo.exceptions import ViewCanNotProvideSubpath, ViewDoesNotProvideSubpaths, AncestorDoesNotExist
@@ -17,6 +18,7 @@ from philo.signals import view_about_to_render, view_finished_rendering
 
 
 _view_content_type_limiter = ContentTypeSubclassLimiter(None)
+DEFAULT_NAVIGATION_DEPTH = 3
 
 
 class Node(TreeEntity):
@@ -48,12 +50,75 @@ class Node(TreeEntity):
 		except AncestorDoesNotExist, ViewDoesNotExist:
 			return None
 	
+	def get_navigation(self, depth=DEFAULT_NAVIGATION_DEPTH, current_depth=0, found_node_pks=None):
+		navigation = self.view.get_navigation(self, depth, current_depth)
+		
+		if depth == current_depth:
+			return navigation
+		import pdb
+		pdb.set_trace()
+		found_node_pks = found_node_pks or [self.pk]
+		ordered_child_pks = NodeNavigationOverride.objects.filter(parent=self, child__parent=self).values_list('child__pk', flat=True)
+		
+		children = self.children.exclude(pk__in=found_node_pks)
+		ordered_children = children.filter(pk__in=ordered_child_pks)
+		unordered_children = children.exclude(pk__in=ordered_child_pks)
+		
+		children = list(ordered_children) + list(unordered_children)
+		
+		if children:
+			child_navigation = []
+			for child in children:
+				found_node_pks.append(child.pk)
+				try:
+					child_navigation.append(child.get_navigation(depth, current_depth + 1, found_node_pks))
+				except NotImplementedError:
+					pass
+			
+			if child_navigation:
+				if 'children' in navigation:
+					navigation['children'] += child_navigation
+				else:
+					navigation['children'] = child_navigation
+		
+		return navigation
+	
+	def save(self):
+		super(Node, self).save()
+		
+	
 	class Meta:
 		app_label = 'philo'
 
 
 # the following line enables the selection of a node as the root for a given django.contrib.sites Site object
 models.ForeignKey(Node, related_name='sites', null=True, blank=True).contribute_to_class(Site, 'root_node')
+
+
+class NodeNavigationOverride(Entity):
+	parent = models.ForeignKey(Node, related_name="navigation_override_child_set")
+	child = models.OneToOneField(Node, related_name="navigation_override")
+	url = models.CharField(max_length=200, validators=[RedirectValidator()], blank=True)
+	title = models.CharField(max_length=100, blank=True)
+	order = models.PositiveSmallIntegerField(blank=True, null=True)
+	child_navigation = JSONField()
+	
+	def get_navigation(self, node, depth, current_depth):
+		if self.child_navigation:
+			depth = current_depth
+		default = node.get_navigation(depth, current_depth)
+		if self.url:
+			default['url'] = self.url
+		if self.title:
+			default['title'] = self.title
+		if self.child_navigation:
+			if 'children' in default:
+				default['children'] += self.child_navigation
+			else:
+				default['children'] = self.child_navigation
+	
+	class Meta:
+		ordering = ['order']
 
 
 class View(Entity):
@@ -90,6 +155,9 @@ class View(Entity):
 	
 	def actually_render_to_response(self, request, extra_context=None):
 		raise NotImplementedError('View subclasses must implement render_to_response.')
+	
+	def get_navigation(self, node, depth, current_depth):
+		raise NotImplementedError('View subclasses must implement get_navigation.')
 	
 	class Meta:
 		abstract = True

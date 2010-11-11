@@ -102,6 +102,12 @@ class Page(View):
 		if errors:
 			raise ValidationError(errors)
 	
+	def get_navigation(self, node, depth, current_depth):
+		return {
+			'url': node.get_absolute_url(),
+			'title': self.title
+		}
+	
 	class Meta:
 		app_label = 'philo'
 

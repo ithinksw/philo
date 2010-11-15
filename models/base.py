@@ -282,10 +282,14 @@ class TreeManager(models.Manager):
 	
 	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/', field='slug'):
 		"""
-		Given a <pathsep>-separated path, fetch the matching model of this type. If the path
-		you're searching for is known to exist, it is always faster to use absolute_result=True.
-		Unless the path depth is over ~40, in which case the high cost of the absolute query
-		makes a binary search (i.e. non-absolute) faster.
+		Returns the object with the path, unless absolute_result is set to False, in which
+		case it returns a tuple containing the deepest object found along the path, and the
+		remainder of the path after that object as a string (or None if there is no remaining
+		path). Raises a DoesNotExist exception if no object is found with the given path.
+		
+		If the path you're searching for is known to exist, it is always faster to use
+		absolute_result=True - unless the path depth is over ~40, in which case the high cost
+		of the absolute query makes a binary search (i.e. non-absolute) faster.
 		"""
 		# Note: SQLite allows max of 64 tables in one join. That means the binary search will
 		# only work on paths with a max depth of 127 and the absolute fetch will only work

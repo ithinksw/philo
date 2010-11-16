@@ -9,7 +9,7 @@ from django.forms.formsets import TOTAL_FORM_COUNT
 from django.template import loader, loader_tags, TemplateDoesNotExist, Context, Template as DjangoTemplate
 from django.utils.datastructures import SortedDict
 from philo.admin.widgets import ModelLookupWidget
-from philo.models import Entity, Template, Contentlet, ContentReference, Attribute
+from philo.models import Entity, Template, Contentlet, ContentReference, Attribute, Node, NodeNavigationOverride
 from philo.utils import fattr
 
 
@@ -338,3 +338,44 @@ class ContentReferenceInlineFormSet(ContainerInlineFormSet):
 			kwargs['instance'] = self.model(name=name, content_type=content_type)
 
 		return super(ContentReferenceInlineFormSet, self)._construct_form(i, **kwargs)
+
+
+class NodeWithOverrideForm(forms.ModelForm):
+	title = NodeNavigationOverride._meta.get_field('title').formfield()
+	url = NodeNavigationOverride._meta.get_field('url').formfield()
+	child_navigation = NodeNavigationOverride._meta.get_field('child_navigation').formfield(required=False)
+	
+	def __init__(self, *args, **kwargs):
+		super(NodeWithOverrideForm, self).__init__(*args, **kwargs)
+		if self.instance.pk:
+			self._override = override = self.get_override(self.instance)
+			self.initial.update({
+				'title': override.title,
+				'url': override.url,
+				'child_navigation': override.child_navigation_json
+			})
+	
+	def get_override(self, instance):
+		try:
+			return NodeNavigationOverride.objects.get(parent=self.instance.parent, child=self.instance)
+		except NodeNavigationOverride.DoesNotExist:
+			override = NodeNavigationOverride(parent=self.instance.parent, child=self.instance)
+			override.child_navigation = None
+			return override
+	
+	def save(self, commit=True):
+		obj = super(NodeWithOverrideForm, self).save(commit)
+		cleaned_data = self.cleaned_data
+		override = self.get_override(obj)
+			
+		# Override information should only be set if there was no previous override or if the
+		# information was just manually set - i.e. was not equal to the data on the cached override.
+		if not override.pk or cleaned_data['title'] != self._override.title or cleaned_data['url'] != self._override.url or cleaned_data['child_navigation'] != self._override.child_navigation:
+			override.title = self.cleaned_data['title']
+			override.url = self.cleaned_data['url']
+			override.child_navigation = self.cleaned_data['child_navigation']
+			override.save()
+		return obj
+	
+	class Meta:
+		model = Node

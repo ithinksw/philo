@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.http import Http404
 from django.views.decorators.vary import vary_on_headers
 from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED
@@ -5,7 +6,7 @@ from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED
 
 @vary_on_headers('Accept')
 def node_view(request, path=None, **kwargs):
-	if not hasattr(request, 'node'):
+	if "philo.middleware.RequestNodeMiddleware" not in settings.MIDDLEWARE_CLASSES:
 		raise MIDDLEWARE_NOT_CONFIGURED
 	
 	if not request.node:

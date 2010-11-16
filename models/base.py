@@ -328,9 +328,6 @@ class TreeManager(models.Manager):
 				kwargs["%s%s__exact" % (prefix, field)] = segment
 				prefix += "parent__"
 			
-			if not prefix and root is not None:
-				prefix = "parent__"
-			
 			if prefix:
 				kwargs[prefix[:-2]] = root
 			
@@ -342,13 +339,15 @@ class TreeManager(models.Manager):
 				path += pathsep
 			return path
 		
-		def find_obj(segments, depth, deepest_found):
+		def find_obj(segments, depth, deepest_found=None):
 			if deepest_found is None:
 				deepest_level = 0
-			else:
+			elif root is None:
 				deepest_level = deepest_found.get_level() + 1
+			else:
+				deepest_level = deepest_found.get_level() - root.get_level()
 			try:
-				obj = self.get(**make_query_kwargs(segments[deepest_level:depth], deepest_found))
+				obj = self.get(**make_query_kwargs(segments[deepest_level:depth], deepest_found or root))
 			except self.model.DoesNotExist:
 				if not deepest_level and depth > 1:
 					# make sure there's a root node...
@@ -364,7 +363,10 @@ class TreeManager(models.Manager):
 				return find_obj(segments, depth, deepest_found)
 			else:
 				# Yay! Found one!
-				deepest_level = obj.get_level() + 1
+				if root is None:
+					deepest_level = obj.get_level() + 1
+				else:
+					deepest_level = obj.get_level() - root.get_level()
 				
 				# Could there be a deeper one?
 				if obj.is_leaf_node():
@@ -391,7 +393,7 @@ class TreeManager(models.Manager):
 		# can be reduced. It might be possible to weight the search towards the beginning
 		# of the path, since short paths are more likely, but how far forward? It would
 		# need to shift depending on len(segments) - perhaps logarithmically?
-		return find_obj(segments, len(segments)/2 or len(segments), root)
+		return find_obj(segments, len(segments)/2 or len(segments))
 
 
 class TreeModel(MPTTModel):

@@ -22,14 +22,6 @@ class Template(TreeModel):
 	code = TemplateField(secure=False, verbose_name='django template code')
 	
 	@property
-	def origin(self):
-		return 'philo.models.Template: ' + self.path
-	
-	@property
-	def django_template(self):
-		return DjangoTemplate(self.code)
-	
-	@property
 	def containers(self):
 		"""
 		Returns a tuple where the first item is a list of names of contentlets referenced by containers,
@@ -41,7 +33,7 @@ class Template(TreeModel):
 			if isinstance(node, ContainerNode):
 				nodes.append(node)
 		
-		all_nodes = nodelist_crawl(self.django_template.nodelist, process_node)
+		all_nodes = nodelist_crawl(DjangoTemplate(self.code).nodelist, process_node)
 		contentlet_node_names = set([node.name for node in all_nodes if not node.references])
 		contentreference_node_names = []
 		contentreference_node_specs = []
@@ -53,15 +45,6 @@ class Template(TreeModel):
 	
 	def __unicode__(self):
 		return self.get_path(pathsep=u' › ', field='name')
-	
-	@staticmethod
-	@fattr(is_usable=True)
-	def loader(template_name, template_dirs=None): # load_template_source
-		try:
-			template = Template.objects.get_with_path(template_name)
-		except Template.DoesNotExist:
-			raise TemplateDoesNotExist(template_name)
-		return (template.code, template.origin)
 	
 	class Meta:
 		app_label = 'philo'
@@ -84,13 +67,14 @@ class Page(View):
 		context = {}
 		context.update(extra_context or {})
 		context.update({'page': self, 'attributes': self.attributes})
+		template = DjangoTemplate(self.template.code)
 		if request:
 			context.update({'node': request.node, 'attributes': self.attributes_with_node(request.node)})
 			page_about_to_render_to_string.send(sender=self, request=request, extra_context=context)
-			string = self.template.django_template.render(RequestContext(request, context))
+			string = template.render(RequestContext(request, context))
 		else:
 			page_about_to_render_to_string.send(sender=self, request=request, extra_context=context)
-		 	string = self.template.django_template.render(Context(context))
+		 	string = template.render(Context(context))
 		page_finished_rendering_to_string.send(sender=self, string=string)
 		return string
 	

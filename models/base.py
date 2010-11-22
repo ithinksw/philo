@@ -402,6 +402,9 @@ class TreeModel(MPTTModel):
 	slug = models.SlugField(max_length=255)
 	
 	def get_path(self, root=None, pathsep='/', field='slug'):
+		if root == self:
+			return ''
+		
 		if root is not None and not self.is_descendant_of(root):
 			raise AncestorDoesNotExist(root)
 		

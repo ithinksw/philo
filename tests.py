@@ -61,12 +61,13 @@ class TreePathTestCase(TestCase):
 	def assertQueryLimit(self, max, expected_result, *args, **kwargs):
 		# As a rough measure of efficiency, limit the number of queries required for a given operation.
 		settings.DEBUG = True
+		call = kwargs.pop('callable', Node.objects.get_with_path)
 		try:
 			queries = len(connection.queries)
 			if isinstance(expected_result, type) and issubclass(expected_result, Exception):
-				self.assertRaises(expected_result, Node.objects.get_with_path, *args, **kwargs)
+				self.assertRaises(expected_result, call, *args, **kwargs)
 			else:
-				self.assertEqual(Node.objects.get_with_path(*args, **kwargs), expected_result)
+				self.assertEqual(call(*args, **kwargs), expected_result)
 			queries = len(connection.queries) - queries
 			if queries > max:
 				raise AssertionError('"%d" unexpectedly not less than or equal to "%s"' % (queries, max))
@@ -110,3 +111,18 @@ class TreePathTestCase(TestCase):
 		
 		# Speed increase for leaf nodes - should this be tested?
 		self.assertQueryLimit(1, (fifth, 'sub/path/tail/len/five'), 'root/second/third/fourth/fifth/sub/path/tail/len/five', absolute_result=False)
+	
+	def test_get_path(self):
+		root = Node.objects.get(slug='root')
+		root2 = Node.objects.get(slug='root')
+		third = Node.objects.get(slug='third')
+		second2 = Node.objects.get(slug='second2')
+		fifth = Node.objects.get(slug='fifth')
+		e = AncestorDoesNotExist
+		
+		self.assertQueryLimit(0, 'root', callable=root.get_path)
+		self.assertQueryLimit(0, '', root2, callable=root.get_path)
+		self.assertQueryLimit(1, 'root/second/third', callable=third.get_path)
+		self.assertQueryLimit(1, 'second/third', root, callable=third.get_path)
+		self.assertQueryLimit(1, e, third, callable=second2.get_path)
+		self.assertQueryLimit(1, '? - ?', root, ' - ', 'title', callable=third.get_path)

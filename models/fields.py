@@ -92,7 +92,7 @@ class ForeignKeyAttributeDescriptor(AttributeFieldDescriptor):
 
 class ManyToManyAttributeDescriptor(AttributeFieldDescriptor):
 	def __set__(self, instance, value):
-		if isinstance(value, models.QuerySet):
+		if isinstance(value, models.query.QuerySet):
 			if self.field in instance._removed_attribute_registry:
 				instance._removed_attribute_registry.remove(self.field)
 			instance._added_attribute_registry[self.field] = value

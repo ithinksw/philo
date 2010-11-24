@@ -25,7 +25,7 @@ class NodeURLNode(template.Node):
 		if self.node:
 			node = self.node.resolve(context)
 		else:
-			node = context['node']
+			node = context.get('node', None)
 		
 		if not node:
 			return settings.TEMPLATE_STRING_IF_INVALID

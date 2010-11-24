@@ -387,7 +387,7 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 	def get_articles_by_issue(self, request, numbering, extra_context=None):
 		try:
 			issue = self.newsletter.issues.get(numbering=numbering)
-		except:
+		except NewsletterIssue.DoesNotExist:
 			raise Http404
 		context = extra_context or {}
 		context.update({'issue': issue})
@@ -403,7 +403,7 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 			articles = articles.filter(date__day=day)
 		try:
 			article = articles.get(slug=slug)
-		except:
+		except NewsletterArticle.DoesNotExist:
 			raise Http404
 		context = self.get_context()
 		context.update(extra_context or {})

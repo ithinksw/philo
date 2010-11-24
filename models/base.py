@@ -46,7 +46,12 @@ def unregister_value_model(model):
 
 
 class AttributeValue(models.Model):
-	attribute = generic.GenericRelation('Attribute', content_type_field='value_content_type', object_id_field='value_object_id')
+	attribute_set = generic.GenericRelation('Attribute', content_type_field='value_content_type', object_id_field='value_object_id')
+	
+	@property
+	def attribute(self):
+		return self.attribute_set.all()[0]
+	
 	def apply_data(self, data):
 		raise NotImplementedError
 	
@@ -81,7 +86,7 @@ class JSONValue(AttributeValue):
 
 
 class ForeignKeyValue(AttributeValue):
-	content_type = models.ForeignKey(ContentType, related_name='foreign_key_value_set', limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
+	content_type = models.ForeignKey(ContentType, limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
 	object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True)
 	value = generic.GenericForeignKey()
 	
@@ -104,15 +109,14 @@ class ForeignKeyValue(AttributeValue):
 
 
 class ManyToManyValue(AttributeValue):
-	# TODO: Change object_ids to object_pks.
-	content_type = models.ForeignKey(ContentType, related_name='many_to_many_value_set', limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
-	object_ids = models.CommaSeparatedIntegerField(max_length=300, verbose_name='Value IDs', null=True, blank=True)
+	content_type = models.ForeignKey(ContentType, limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
+	values = models.ManyToManyField(ForeignKeyValue, blank=True, null=True)
 	
 	def get_object_id_list(self):
-		if not self.object_ids:
+		if not self.values.count():
 			return []
 		else:
-			return self.object_ids.split(',')
+			return self.values.values_list('object_id', flat=True)
 	
 	def get_value(self):
 		if self.content_type is None:
@@ -121,13 +125,28 @@ class ManyToManyValue(AttributeValue):
 		return self.content_type.model_class()._default_manager.filter(id__in=self.get_object_id_list())
 	
 	def set_value(self, value):
-		if value is None:
-			self.object_ids = ""
-			return
-		if not isinstance(value, models.query.QuerySet):
-			raise TypeError("Value must be a QuerySet.")
-		self.content_type = ContentType.objects.get_for_model(value.model)
-		self.object_ids = ','.join([`value` for value in value.values_list('id', flat=True)])
+		# Value is probably a queryset - but allow any iterable.
+		
+		# These lines shouldn't be necessary; however, if value is an EmptyQuerySet,
+		# the code (specifically the object_id__in query) won't work without them. Unclear why...
+		if not value:
+			value = []
+		
+		# Before we can fiddle with the many-to-many to foreignkeyvalues, we need
+		# a pk.
+		if self.pk is None:
+			self.save()
+		
+		if isinstance(value, models.query.QuerySet):
+			value = value.values_list('id', flat=True)
+		
+		self.values.filter(~models.Q(object_id__in=value)).delete()
+		current = self.get_object_id_list()
+		
+		for v in value:
+			if v in current:
+				continue
+			self.values.create(content_type=self.content_type, object_id=v)
 	
 	value = property(get_value, set_value)
 	
@@ -143,7 +162,7 @@ class ManyToManyValue(AttributeValue):
 		else:
 			self.content_type = cleaned_data.get('content_type', None)
 			# If there is no value set in the cleaned data, clear the stored value.
-			self.object_ids = ""
+			self.value = []
 	
 	class Meta:
 		app_label = 'philo'
@@ -220,7 +239,7 @@ class Entity(models.Model):
 	
 	@property
 	def attributes(self):
-		return QuerySetMapper(self.attribute_set)
+		return QuerySetMapper(self.attribute_set.all())
 	
 	@property
 	def _added_attribute_registry(self):
@@ -263,34 +282,105 @@ class TreeManager(models.Manager):
 	def roots(self):
 		return self.filter(parent__isnull=True)
 	
-	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/'):
+	def get_branch_pks(self, root, depth=5, inclusive=True):
+		branch_pks = []
+		parent_pks = [root.pk]
+		
+		if inclusive:
+			branch_pks.append(root.pk)
+		
+		for i in xrange(depth):
+			child_pks = list(self.filter(parent__pk__in=parent_pks).exclude(pk__in=branch_pks).values_list('pk', flat=True))
+			if not child_pks:
+				break
+			
+			branch_pks += child_pks
+			parent_pks = child_pks
+		
+		return branch_pks
+	
+	def get_branch(self, root, depth=5, inclusive=True):
+		return self.filter(pk__in=self.get_branch_pks(root, depth, inclusive))
+	
+	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/', field='slug'):
 		"""
-		Returns the object with the path, or None if there is no object with that path,
-		unless absolute_result is set to False, in which case it returns a tuple containing
-		the deepest object found along the path, and the remainder of the path after that
-		object as a string (or None in the case that there is no remaining path).
+		Returns the object with the path, unless absolute_result is set to False, in which
+		case it returns a tuple containing the deepest object found along the path, and the
+		remainder of the path after that object as a string (or None if there is no remaining
+		path). Raises a DoesNotExist exception if no object is found with the given path.
 		"""
-		slugs = path.split(pathsep)
-		obj = root
-		remaining_slugs = list(slugs)
-		remainder = None
-		for slug in slugs:
-			remaining_slugs.remove(slug)
-			if slug: # ignore blank slugs, handles for multiple consecutive pathseps
-				try:
-					obj = self.get(slug__exact=slug, parent__exact=obj)
-				except self.model.DoesNotExist:
-					if absolute_result:
-						obj = None
-					remaining_slugs.insert(0, slug)
-					remainder = pathsep.join(remaining_slugs)
-					break
-		if obj:
-			if absolute_result:
-				return obj
+		segments = path.split(pathsep)
+		
+		# Check for a trailing pathsep so we can restore it later.
+		trailing_pathsep = False
+		if segments[-1] == '':
+			trailing_pathsep = True
+		
+		# Clean out blank segments. Handles multiple consecutive pathseps.
+		while True:
+			try:
+				segments.remove('')
+			except ValueError:
+				break
+		
+		# Special-case a lack of segments. No queries necessary.
+		if not segments:
+			if root is not None:
+				return root, None
 			else:
-				return (obj, remainder)
-		raise self.model.DoesNotExist('%s matching query does not exist.' % self.model._meta.object_name)
+				raise self.model.DoesNotExist('%s matching query does not exist.' % self.model._meta.object_name)
+		
+		def make_query_kwargs(segments):
+			kwargs = {}
+			prefix = ""
+			revsegs = list(segments)
+			revsegs.reverse()
+			
+			for segment in revsegs:
+				kwargs["%s%s__exact" % (prefix, field)] = segment
+				prefix += "parent__"
+			
+			kwargs[prefix[:-2]] = root
+			return kwargs
+		
+		def build_path(segments):
+			path = pathsep.join(segments)
+			if trailing_pathsep and segments and segments[-1] != '':
+				path += pathsep
+			return path
+		
+		def find_obj(segments, depth, deepest_found):
+			try:
+				obj = self.get(**make_query_kwargs(segments[:depth]))
+			except self.model.DoesNotExist:
+				if absolute_result:
+					raise
+				
+				depth = (deepest_found + depth)/2
+				if deepest_found == depth:
+					# This should happen if nothing is found with any part of the given path.
+					raise
+				
+				# Try finding one with half the path since the deepest find.
+				return find_obj(segments, depth, deepest_found)
+			else:
+				# Yay! Found one! Could there be a deeper one?
+				if absolute_result:
+					return obj
+				
+				deepest_found = depth
+				depth = (len(segments) + depth)/2
+				
+				if deepest_found == depth:
+					return obj, build_path(segments[deepest_found:]) or None
+				
+				try:
+					return find_obj(segments, depth, deepest_found)
+				except self.model.DoesNotExist:
+					# Then the deepest one was already found.
+					return obj, build_path(segments[deepest_found:])
+		
+		return find_obj(segments, len(segments), 0)
 
 
 class TreeModel(models.Model):
@@ -298,24 +388,47 @@ class TreeModel(models.Model):
 	parent = models.ForeignKey('self', related_name='children', null=True, blank=True)
 	slug = models.SlugField(max_length=255)
 	
-	def has_ancestor(self, ancestor):
-		parent = self
+	def has_ancestor(self, ancestor, inclusive=False):
+		if inclusive:
+			parent = self
+		else:
+			parent = self.parent
+		
+		parents = []
+		
 		while parent:
 			if parent == ancestor:
 				return True
+			# If we've found this parent before, the path is recursive and ancestor wasn't on it.
+			if parent in parents:
+				return False
+			parents.append(parent)
 			parent = parent.parent
+		# If ancestor is None, catch it here.
+		if parent == ancestor:
+			return True
 		return False
 	
 	def get_path(self, root=None, pathsep='/', field='slug'):
-		if root is not None and not self.has_ancestor(root):
+		parent = self.parent
+		parents = [self]
+		
+		def compile_path(parents):
+			return pathsep.join([getattr(parent, field, '?') for parent in parents])
+		
+		while parent and parent != root:
+			if parent in parents:
+				if root is not None:
+					raise AncestorDoesNotExist(root)
+				parents.append(parent)
+				return u"\u2026%s%s" % (pathsep, compile_path(parents[::-1]))
+			parents.append(parent)
+			parent = parent.parent
+		
+		if root is not None and parent is None:
 			raise AncestorDoesNotExist(root)
 		
-		path = getattr(self, field, '?')
-		parent = self.parent
-		while parent and parent != root:
-			path = getattr(parent, field, '?') + pathsep + path
-			parent = parent.parent
-		return path
+		return compile_path(parents[::-1])
 	path = property(get_path)
 	
 	def __unicode__(self):
@@ -330,7 +443,7 @@ class TreeEntity(Entity, TreeModel):
 	@property
 	def attributes(self):
 		if self.parent:
-			return QuerySetMapper(self.attribute_set, passthrough=self.parent.attributes)
+			return QuerySetMapper(self.attribute_set.all(), passthrough=self.parent.attributes)
 		return super(TreeEntity, self).attributes
 	
 	class Meta:

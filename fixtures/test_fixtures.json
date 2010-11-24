@@ -47,6 +47,97 @@
         }
     }, 
     {
+        "pk": 4, 
+        "model": "philo.node", 
+        "fields": {
+            "view_object_id": 1, 
+            "slug": "more", 
+            "parent": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ]
+        }
+    }, 
+    {
+        "pk": 5, 
+        "model": "philo.node", 
+        "fields": {
+            "view_object_id": 1, 
+            "slug": "second", 
+            "parent": 4, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ]
+        }
+    }, 
+    {
+        "pk": 6, 
+        "model": "philo.node", 
+        "fields": {
+            "view_object_id": 1, 
+            "slug": "third", 
+            "parent": 5, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ]
+        }
+    }, 
+    {
+        "pk": 7, 
+        "model": "philo.node", 
+        "fields": {
+            "view_object_id": 1, 
+            "slug": "recursive1", 
+            "parent": 9, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ]
+        }
+    }, 
+    {
+        "pk": 8, 
+        "model": "philo.node", 
+        "fields": {
+            "view_object_id": 1, 
+            "slug": "recursive2", 
+            "parent": 7, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ]
+        }
+    }, 
+    {
+        "pk": 9, 
+        "model": "philo.node", 
+        "fields": {
+            "view_object_id": 1, 
+            "slug": "recursive3", 
+            "parent": 8, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ]
+        }
+    }, 
+    {
+        "pk": 10, 
+        "model": "philo.node", 
+        "fields": {
+            "view_object_id": 1, 
+            "slug": "postrecursive1", 
+            "parent": 9, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ]
+        }
+    }, 
+    {
         "pk": 1, 
         "model": "philo.redirect", 
         "fields": {

@@ -78,6 +78,7 @@ class TemplateTestCase(TestCase):
 			'simple02': ('{% extends "simple01" %}', {}, '%sSimple' % blog.title),
 			'simple03': ('{% embed penfield.blog with "embed000" %}', {}, settings.TEMPLATE_STRING_IF_INVALID),
 			'simple04': ('{% embed penfield.blog 1 %}', {}, settings.TEMPLATE_STRING_IF_INVALID),
+			'simple05': ('{% embed penfield.blog with "embed01" %}{% embed blog %}', {'blog': blog}, blog.title),
 			
 			# Kwargs
 			'kwargs01': ('{% embed penfield.blog with "embed02" %}{% embed penfield.blog 1 var1="hi" var2=lo %}', {'lo': 'lo'}, '%shilo' % blog.title),

@@ -1,9 +1,9 @@
 from django.contrib import admin
-from philo.admin.base import EntityAdmin
+from philo.admin.base import EntityAdmin, TreeEntityAdmin
 from philo.models import Node, Redirect, File
 
 
-class NodeAdmin(EntityAdmin):
+class NodeAdmin(TreeEntityAdmin):
 	pass
 
 

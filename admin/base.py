@@ -7,6 +7,7 @@ from django.utils.html import escape
 from philo.models import Tag, Attribute
 from philo.forms import AttributeForm, AttributeInlineFormSet
 from philo.admin.widgets import TagFilteredSelectMultiple
+from mptt.admin import MPTTModelAdmin
 
 
 COLLAPSE_CLASSES = ('collapse', 'collapse-closed', 'closed',)
@@ -31,6 +32,14 @@ class AttributeInline(generic.GenericTabularInline):
 class EntityAdmin(admin.ModelAdmin):
 	inlines = [AttributeInline]
 	save_on_top = True
+
+
+class TreeAdmin(MPTTModelAdmin):
+	pass
+
+
+class TreeEntityAdmin(TreeAdmin, EntityAdmin):
+	pass
 
 
 class TagAdmin(admin.ModelAdmin):

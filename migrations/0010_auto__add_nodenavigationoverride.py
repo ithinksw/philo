@@ -11,7 +11,7 @@ class Migration(SchemaMigration):
         # Adding model 'NodeNavigationOverride'
         db.create_table('philo_nodenavigationoverride', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('parent', self.gf('django.db.models.fields.related.ForeignKey')(related_name='child_navigation_overrides', to=orm['philo.Node'])),
+            ('parent', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, null=True, related_name='child_navigation_overrides', to=orm['philo.Node'])),
             ('child', self.gf('django.db.models.fields.related.ForeignKey')(related_name='navigation_overrides', to=orm['philo.Node'])),
             ('title', self.gf('django.db.models.fields.CharField')(max_length=100, blank=True)),
             ('url', self.gf('django.db.models.fields.CharField')(max_length=200, blank=True)),

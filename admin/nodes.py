@@ -1,12 +1,13 @@
 from django.contrib import admin
 from philo.admin.base import EntityAdmin, TreeEntityAdmin, COLLAPSE_CLASSES
 from philo.models import Node, Redirect, File, NodeNavigationOverride
-from philo.forms import NodeWithOverrideForm
+from philo.forms import NodeWithOverrideForm, NodeOverrideInlineFormSet
 
 
 class ChildNavigationOverrideInline(admin.StackedInline):
 	fk_name = 'parent'
 	model = NodeNavigationOverride
+	formset = NodeOverrideInlineFormSet
 	sortable_field_name = 'order'
 	verbose_name = 'child'
 	verbose_name_plural = 'children'

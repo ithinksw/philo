@@ -379,3 +379,15 @@ class NodeWithOverrideForm(forms.ModelForm):
 	
 	class Meta:
 		model = Node
+
+
+class NodeOverrideInlineFormSet(BaseInlineFormSet):
+	def __init__(self, data=None, files=None, instance=None, save_as_new=False, prefix=None, queryset=None):
+		if queryset is None:
+			queryset = self.model._default_manager
+		queryset = queryset.filter(parent=instance, child__parent=instance)
+		super(NodeOverrideInlineFormSet, self).__init__(data, files, instance, save_as_new, prefix, queryset)
+	
+	def add_fields(self, form, index):
+		super(NodeOverrideInlineFormSet, self).add_fields(form, index)
+		form.fields['child'].queryset = self.instance.children.all()

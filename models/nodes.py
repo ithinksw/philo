@@ -59,7 +59,6 @@ class Node(TreeEntity):
 			node_overrides = dict([(override.child.pk, override) for override in NodeNavigationOverride.objects.filter(parent=parent, child__in=nodes).select_related('child')])
 			
 			navigation_list = []
-			
 			for node in nodes:
 				node._override = node_overrides.get(node.pk, None)
 				
@@ -82,7 +81,11 @@ class Node(TreeEntity):
 			
 			return navigation_list
 		
-		return get_nav(self.parent, tree)
+		navigation = get_nav(self.parent, tree)
+		root = navigation[0]
+		navigation = [root] + root['children']
+		del(root['children'])
+		return navigation
 	
 	def save(self):
 		super(Node, self).save()
@@ -106,18 +109,26 @@ class NodeNavigationOverride(Entity):
 	child_navigation = JSONField()
 	hide = models.BooleanField()
 	
-	def get_navigation(self, node, depth, current_depth):
-		if self.child_navigation:
-			depth = current_depth
-		default = node.view.get_navigation(depth, current_depth)
+	def get_navigation(self, node, max_depth):
+		default = node.view.get_navigation(node, max_depth)
 		if self.url:
 			default['url'] = self.url
 		if self.title:
 			default['title'] = self.title
 		if self.order:
 			default['order'] = self.order
-		if isinstance(self.child_navigation, list):
+		if isinstance(self.child_navigation, list) and node.get_level() < max_depth:
+			child_navigation = self.child_navigation[:]
+			
+			for child in child_navigation:
+				child['url'] = default['url'] + child['url']
+			
 			if 'children' in default:
+				overridden = set([child['url'] for child in default['children']]) & set([child['url'] for child in self.child_navigation])
+				if overridden:
+					for child in default[:]:
+						if child['url'] in overridden:
+							default.remove(child)
 				default['children'] += self.child_navigation
 			else:
 				default['children'] = self.child_navigation

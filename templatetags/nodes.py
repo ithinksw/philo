@@ -113,3 +113,83 @@ def do_node_url(parser, token):
 		return NodeURLNode(view_name=view_name, args=args, kwargs=kwargs, node=node, as_var=as_var)
 	
 	return NodeURLNode(node=node, as_var=as_var)
+
+
+class NavigationNode(template.Node):
+	def __init__(self, node=None, as_var=None):
+		self.as_var = as_var
+		self.node = node
+	
+	def render(self, context):
+		if 'request' not in context:
+			return settings.TEMPLATE_STRING_IF_INVALID
+		
+		if self.node:
+			node = self.node.resolve(context)
+		else:
+			node = context.get('node', None)
+		
+		if not node:
+			return settings.TEMPLATE_STRING_IF_INVALID
+		
+		try:
+			nav_root = node.attributes['navigation_root']
+		except KeyError:
+			if settings.TEMPLATE_DEBUG:
+				raise
+			return settings.TEMPLATE_STRING_IF_INVALID
+		
+		# Should I get its override and check for a max depth override there?
+		navigation = nav_root.get_navigation()
+		
+		if self.as_var:
+			context[self.as_var] = navigation
+			return ''
+		
+		return self.compile(navigation, context['request'].path, nav_root.get_absolute_url(), nav_root.get_level(), nav_root.get_level() + 3)
+	
+	def compile(self, navigation, active_path, root_url, current_depth, max_depth):
+		compiled = ""
+		for item in navigation:
+			if item['url'] in active_path and (item['url'] != root_url or root_url == active_path):
+				compiled += "<li class='active'>"
+			else:
+				compiled += "<li>"
+			
+			if item['url']:
+				compiled += "<a href='%s'>" % item['url']
+			
+			compiled += item['title']
+			
+			if item['url']:
+				compiled += "</a>"
+			
+			if 'children' in item and current_depth < max_depth:
+				compiled += "<ul>%s</ul>" % self.compile(item['children'], active_path, root_url, current_depth + 1, max_depth)
+			
+			compiled += "</li>"
+		return compiled
+
+
+@register.tag(name='navigation')
+def do_navigation(parser, token):
+	"""
+	{% navigation [for <node>] [as <var>] %}
+	"""
+	bits = token.split_contents()
+	tag = bits[0]
+	bits = bits[1:]
+	node = None
+	as_var = None
+	
+	if len(bits) >= 2 and bits[-2] == 'as':
+		as_var = bits[-1]
+		bits = bits[:-2]
+	
+	if len(bits) >= 2 and bits[-2] == 'for':
+		node = parser.compile_filter(bits[-1])
+		bits = bits[-2]
+	
+	if bits:
+		raise template.TemplateSyntaxError('`%s` template tag expects the syntax {%% %s [for <node>] [as <var>] %}' % (tag, tag))
+	return NavigationNode(node, as_var)

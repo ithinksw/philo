@@ -39,9 +39,10 @@ class TemplateTestCase(TestCase):
 		expected_invalid_str = 'INVALID'
 		
 		failures = []
-		
+		tests = template_tests.items()
+		tests.sort()
 		# Run tests
-		for name, vals in template_tests.items():
+		for name, vals in tests:
 			xx, context, result = vals
 			try:
 				test_template = loader.get_template(name)
@@ -96,6 +97,13 @@ class TemplateTestCase(TestCase):
 			# Blocks and includes
 			'block-include01': ('{% extends "simple01" %}{% embed penfield.blog with "embed03" %}{% block one %}{% include "simple01" %}{% embed penfield.blog 1 %}{% endblock %}', {}, "%sSimple%sSimple%s is a lie!" % (blog.title, blog.title, blog.title)),
 			'block-include02': ('{% extends "simple01" %}{% block one %}{% include "simple04" %}{% embed penfield.blog with "embed03" %}{% include "simple04" %}{% embed penfield.blog 1 %}{% endblock %}', {}, "%sSimple%s%s is a lie!%s is a lie!" % (blog.title, blog.title, blog.title, blog.title)),
+			
+			# Tests for more complex situations...
+			'complex01': ('{% block one %}{% endblock %}complex{% block two %}{% endblock %}', {}, 'complex'),
+			'complex02': ('{% extends "complex01" %}', {}, 'complex'),
+			'complex03': ('{% extends "complex02" %}{% embed penfield.blog with "embed01" %}', {}, 'complex'),
+			'complex04': ('{% extends "complex03" %}{% block one %}{% embed penfield.blog 1 %}{% endblock %}', {}, '%scomplex' % blog.title),
+			'complex05': ('{% extends "complex03" %}{% block one %}{% include "simple04" %}{% endblock %}', {}, '%scomplex' % blog.title),
 		}
 
 

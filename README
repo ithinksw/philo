@@ -3,7 +3,21 @@ Philo is a foundation for developing web content management systems.
 Prerequisites:
 	* Python 2.5.4+ <http://www.python.org/>
 	* Django 1.2+ <http://www.djangoproject.com/>
+	* django-mptt 0.4+ <https://github.com/django-mptt/django-mptt/> 
 	* (Optional) django-grappelli 2.0+ <http://code.google.com/p/django-grappelli/>
 	* (Optional) recaptcha-django r6 <http://code.google.com/p/recaptcha-django/>
+	* (Optional) south 0.7.2+ <http://south.aeracode.org/>
 
 To contribute, please visit the project website <http://philo.ithinksw.org/>.
+
+====
+Using philo
+====
+After installing philo and mptt on your python path, make sure to complete the following steps:
+
+1. add 'philo.middleware.RequestNodeMiddleware' to settings.MIDDLEWARE_CLASSES.
+2. add 'philo' and 'mptt' to settings.INSTALLED_APPS.
+3. include 'philo.urls' somewhere in your urls.py file.
+4. Optionally add a root node to your current Site.
+
+Philo should be ready to go!

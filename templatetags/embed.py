@@ -65,6 +65,9 @@ def get_embed_dict(embed_list, context):
 	embeds = {}
 	for e in embed_list:
 		ct = e.get_content_type(context)
+		if ct is None:
+			# Then the embed doesn't exist for this context.
+			continue
 		if ct not in embeds:
 			embeds[ct] = [e]
 		else:
@@ -263,7 +266,10 @@ class InstanceEmbedNode(EmbedNode):
 		return self.instance.resolve(context)
 	
 	def get_content_type(self, context):
-		return ContentType.objects.get_for_model(self.get_instance(context))
+		instance = self.get_instance(context)
+		if instance is None:
+			return None
+		return ContentType.objects.get_for_model(instance)
 
 
 def get_embedded(self):

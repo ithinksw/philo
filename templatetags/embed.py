@@ -267,7 +267,7 @@ class InstanceEmbedNode(EmbedNode):
 	
 	def get_content_type(self, context):
 		instance = self.get_instance(context)
-		if instance is None:
+		if not instance:
 			return None
 		return ContentType.objects.get_for_model(instance)
 

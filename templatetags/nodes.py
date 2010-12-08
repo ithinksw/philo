@@ -51,7 +51,9 @@ class NodeURLNode(template.Node):
 				subpath = reverse(view_name, urlconf=node.view, args=args, kwargs=kwargs)
 			except NoReverseMatch:
 				if self.as_var is None:
-					raise
+					if settings.TEMPLATE_DEBUG:
+						raise
+					return settings.TEMPLATE_STRING_IF_INVALID
 			else:
 				if subpath[0] == '/':
 					subpath = subpath[1:]

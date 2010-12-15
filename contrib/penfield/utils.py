@@ -87,11 +87,14 @@ class FeedMultiViewMixin(object):
 		return self.atom_feed(**defaults)
 	
 	def feed_patterns(self, object_fetcher, page, base_name):
-		feed_name = '%s_feed' % base_name
 		urlpatterns = patterns('',
-			url(r'^%s/$' % self.feed_suffix, self.feed_view(object_fetcher, feed_name), name=feed_name),
 			url(r'^$', self.page_view(object_fetcher, page), name=base_name)
 		)
+		if self.feeds_enabled:
+			feed_name = '%s_feed' % base_name
+			urlpatterns = patterns('',
+				url(r'^%s/$' % self.feed_suffix, self.feed_view(object_fetcher, feed_name), name=feed_name),
+			) + urlpatterns
 		return urlpatterns
 	
 	def add_item(self, feed, obj, kwargs=None):

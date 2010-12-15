@@ -210,8 +210,6 @@ class ConstantEmbedNode(template.Node):
 		try:
 			t = context.render_context[EMBED_CONTEXT_KEY].get_embed_template(self, context)
 		except (KeyError, IndexError):
-			if settings.TEMPLATE_DEBUG:
-				raise
 			self.mark_rendered_for(context)
 			return settings.TEMPLATE_STRING_IF_INVALID
 		

@@ -358,6 +358,8 @@ class TreeManager(models.Manager):
 				
 				if deepest_level == depth:
 					# This should happen if nothing is found with any part of the given path.
+					if root is not None:
+						return root, build_path(segments)
 					raise
 				
 				return find_obj(segments, depth, deepest_found)

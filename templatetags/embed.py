@@ -215,10 +215,8 @@ class ConstantEmbedNode(template.Node):
 		
 		context.push()
 		context['embedded'] = instance
-		kwargs = {}
 		for k, v in self.kwargs.items():
-			kwargs[k] = v.resolve(context)
-		context.update(kwargs)
+			context[k] = v.resolve(context)
 		t_rendered = t.render(context)
 		context.pop()
 		self.mark_rendered_for(context)

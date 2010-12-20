@@ -358,7 +358,7 @@ class TreeManager(models.Manager):
 				
 				if deepest_level == depth:
 					# This should happen if nothing is found with any part of the given path.
-					if root is not None:
+					if root is not None and deepest_found is None:
 						return root, build_path(segments)
 					raise
 				
@@ -413,7 +413,7 @@ class TreeModel(MPTTModel):
 		qs = self.get_ancestors()
 		
 		if root is not None:
-			qs = qs.filter(level__gt=root.level)
+			qs = qs.filter(**{'%s__gt' % self._mptt_meta.level_attr: root.get_level()})
 		
 		return pathsep.join([getattr(parent, field, '?') for parent in list(qs) + [self]])
 	path = property(get_path)

@@ -7,7 +7,6 @@ from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator as password_token_generator
 from django.contrib.sites.models import Site
 from django.core.mail import EmailMultiAlternatives, send_mail
-from django.core.urlresolvers import reverse
 from django.db import models
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
@@ -17,19 +16,12 @@ from django.utils.translation import ugettext_lazy, ugettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from philo.models import MultiView, Page
-from philo.contrib.waldo.forms import LOGIN_FORM_KEY, LoginForm, RegistrationForm
+from philo.contrib.waldo.forms import LOGIN_FORM_KEY, LoginForm, RegistrationForm, UserAccountForm
 from philo.contrib.waldo.tokens import registration_token_generator, email_token_generator
 import urlparse
 
 
 ERROR_MESSAGE = ugettext_lazy("Please enter a correct username and password. Note that both fields are case-sensitive.")
-
-
-def get_field_data(obj, fields):
-	if fields == None:
-		fields = [field.name for field in obj._meta.fields if field.editable]
-	
-	return dict([(field.name, field.value_from_object(obj)) for field in obj._meta.fields if field.name in fields])
 
 
 class LoginMultiView(MultiView):
@@ -336,16 +328,13 @@ class LoginMultiView(MultiView):
 
 class AccountMultiView(LoginMultiView):
 	"""
-	Subclasses may define an account_profile model, fields from the User model
-	to include in the account, and fields from the account profile to use in
-	the account.
+	By default, the `account` consists of the first_name, last_name, and email fields
+	of the User model. Using a different account model is as simple as writing a form that
+	accepts a User instance as the first argument.
 	"""
 	manage_account_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_manage_account_related')
 	email_change_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_email_change_confirmation_email_related')
-	user_fields = ['first_name', 'last_name', 'email']
-	required_user_fields = user_fields
-	account_profile = None
-	account_profile_fields = None
+	account_form = UserAccountForm
 	
 	@property
 	def urlpatterns(self):
@@ -356,50 +345,18 @@ class AccountMultiView(LoginMultiView):
 		)
 		return urlpatterns
 	
-	def get_account_forms(self):
-		user_form = forms.models.modelform_factory(User, fields=self.user_fields)
-		
-		if self.account_profile is None:
-			profile_form = None
-		else:
-			profile_form = forms.models.modelform_factory(self.account_profile, fields=self.account_profile_fields or [field.name for field in self.account_profile._meta.fields if field.editable and field.name != 'user'])
-		
-		for field_name, field in user_form.base_fields.items():
-			if field_name in self.required_user_fields:
-				field.required = True
-		return user_form, profile_form
-	
-	def get_account_form_instances(self, user, data=None):
-		form_instances = []
-		user_form, profile_form = self.get_account_forms()
-		if data is None:
-			form_instances.append(user_form(instance=user))
-			if profile_form:
-				form_instances.append(profile_form(instance=self.account_profile._default_manager.get_or_create(user=user)[0]))
-		else:
-			form_instances.append(user_form(data, instance=user))
-			if profile_form:
-				form_instances.append(profile_form(data, instance=self.account_profile._default_manager.get_or_create(user=user)[0]))
-		
-		return form_instances
-	
 	def account_view(self, request, extra_context=None, token_generator=email_token_generator, *args, **kwargs):
 		if request.method == 'POST':
-			form_instances = self.get_account_form_instances(request.user, request.POST)
-			current_email = request.user.email
+			form = self.account_form(request.user, request.POST, request.FILES)
 			
-			for form in form_instances:
-				if not form.is_valid():
-					break
-			else:
-				# When the user_form is validated, it changes the model instance, i.e. request.user, in place.
-				email = request.user.email
-				if current_email != email:
+			if form.is_valid():
+				if 'email' in form.changed_data:
+					# ModelForms modify their instances in-place during validation,
+					# so reset the instance's email to its previous value here,
+					# then remove the new value from cleaned_data.
+					request.user.email = form.initial['email']
 					
-					request.user.email = current_email
-					
-					for form in form_instances:
-						form.cleaned_data.pop('email', None)
+					email = form.cleaned_data.pop('email')
 					
 					context = {
 						'link': self.make_confirmation_link('email_change_confirm', token_generator, request.user, request.node, token_args=[email], reverse_kwargs={'email': email.replace('@', '+')})
@@ -407,18 +364,17 @@ class AccountMultiView(LoginMultiView):
 					current_site = Site.objects.get_current()
 					self.send_confirmation_email('Confirm account email change at %s' % current_site.domain, email, self.email_change_confirmation_email, context)
 					messages.add_message(request, messages.SUCCESS, "An email has be sent to %s to confirm the email change." % email)
-					
-				for form in form_instances:
-					form.save()
+				
+				form.save()
 				messages.add_message(request, messages.SUCCESS, "Account information saved.", fail_silently=True)
 				return HttpResponseRedirect('')
 		else:
-			form_instances = self.get_account_form_instances(request.user)
+			form = self.account_form(request.user)
 		
 		context = self.get_context()
 		context.update(extra_context or {})
 		context.update({
-			'forms': form_instances
+			'form': form
 		})
 		return self.manage_account_page.render_to_response(request, extra_context=context)
 	

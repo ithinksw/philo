@@ -10,16 +10,13 @@ from django.template import add_to_builtins as register_templatetags
 from inspect import getargspec
 from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED
 from philo.models.base import TreeEntity, Entity, QuerySetMapper, register_value_model
-from philo.models.fields import JSONField
 from philo.utils import ContentTypeSubclassLimiter
 from philo.validators import RedirectValidator
 from philo.exceptions import ViewCanNotProvideSubpath, ViewDoesNotProvideSubpaths, AncestorDoesNotExist
 from philo.signals import view_about_to_render, view_finished_rendering
-from mptt.templatetags.mptt_tags import cache_tree_children
 
 
 _view_content_type_limiter = ContentTypeSubclassLimiter(None)
-DEFAULT_NAVIGATION_DEPTH = 3
 
 
 class Node(TreeEntity):
@@ -51,93 +48,12 @@ class Node(TreeEntity):
 		except AncestorDoesNotExist, ViewDoesNotExist:
 			return None
 	
-	def get_navigation(self, depth=DEFAULT_NAVIGATION_DEPTH):
-		max_depth = depth + self.get_level()
-		tree = cache_tree_children(self.get_descendants(include_self=True).filter(level__lte=max_depth))
-		
-		def get_nav(parent, nodes):
-			node_overrides = dict([(override.child.pk, override) for override in NodeNavigationOverride.objects.filter(parent=parent, child__in=nodes).select_related('child')])
-			
-			navigation_list = []
-			for node in nodes:
-				node._override = node_overrides.get(node.pk, None)
-				
-				if node._override:
-					if node._override.hide:
-						continue
-					navigation = node._override.get_navigation(node, max_depth)
-				else:
-					navigation = node.view.get_navigation(node, max_depth)
-				
-				if not node.is_leaf_node() and node.get_level() < max_depth:
-					children = navigation.get('children', [])
-					children += get_nav(node, node.get_children())
-					navigation['children'] = children
-				
-				if 'children' in navigation:
-					navigation['children'].sort(cmp=lambda x,y: cmp(x['order'], y['order']))
-				
-				navigation_list.append(navigation)
-			
-			return navigation_list
-		
-		navigation = get_nav(self.parent, tree)
-		root = navigation[0]
-		navigation = [root] + root['children']
-		del(root['children'])
-		return navigation
-	
-	def save(self):
-		super(Node, self).save()
-		
-	
 	class Meta:
 		app_label = 'philo'
 
 
 # the following line enables the selection of a node as the root for a given django.contrib.sites Site object
 models.ForeignKey(Node, related_name='sites', null=True, blank=True).contribute_to_class(Site, 'root_node')
-
-
-class NodeNavigationOverride(Entity):
-	parent = models.ForeignKey(Node, related_name="child_navigation_overrides", blank=True, null=True)
-	child = models.ForeignKey(Node, related_name="navigation_overrides")
-	
-	title = models.CharField(max_length=100, blank=True)
-	url = models.CharField(max_length=200, validators=[RedirectValidator()], blank=True)
-	order = models.PositiveSmallIntegerField(blank=True, null=True)
-	child_navigation = JSONField()
-	hide = models.BooleanField()
-	
-	def get_navigation(self, node, max_depth):
-		default = node.view.get_navigation(node, max_depth)
-		if self.url:
-			default['url'] = self.url
-		if self.title:
-			default['title'] = self.title
-		if self.order:
-			default['order'] = self.order
-		if isinstance(self.child_navigation, list) and node.get_level() < max_depth:
-			child_navigation = self.child_navigation[:]
-			
-			for child in child_navigation:
-				child['url'] = default['url'] + child['url']
-			
-			if 'children' in default:
-				overridden = set([child['url'] for child in default['children']]) & set([child['url'] for child in self.child_navigation])
-				if overridden:
-					for child in default[:]:
-						if child['url'] in overridden:
-							default.remove(child)
-				default['children'] += self.child_navigation
-			else:
-				default['children'] = self.child_navigation
-		return default
-	
-	class Meta:
-		ordering = ['order']
-		unique_together = ('parent', 'child',)
-		app_label = 'philo'
 
 
 class View(Entity):
@@ -174,22 +90,6 @@ class View(Entity):
 	
 	def actually_render_to_response(self, request, extra_context=None):
 		raise NotImplementedError('View subclasses must implement render_to_response.')
-	
-	def get_navigation(self, node, max_depth):
-		"""
-		Subclasses should implement get_navigation to support auto-generated navigation.
-		max_depth is the deepest `level` that should be generated; node is the node that
-		is asking for the navigation. This method should return a dictionary of the form:
-			{
-				'url': url,
-				'title': title,
-				'order': order, # None for no ordering.
-				'children': [ # Optional
-					<similar child navigation dictionaries>
-				]
-			}
-		"""
-		raise NotImplementedError('View subclasses must implement get_navigation.')
 	
 	class Meta:
 		abstract = True

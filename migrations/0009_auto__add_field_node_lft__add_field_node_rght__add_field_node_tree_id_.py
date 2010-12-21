@@ -3,6 +3,8 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
+from philo.models import Node, Template
+
 
 class Migration(SchemaMigration):
 
@@ -31,6 +33,10 @@ class Migration(SchemaMigration):
 
         # Adding field 'Template.level'
         db.add_column('philo_template', 'level', self.gf('django.db.models.fields.PositiveIntegerField')(default=1, db_index=True), keep_default=False)
+
+        # Rebuild trees!
+        Template._tree_manager.rebuild()
+        Node._tree_manager.rebuild()
 
 
     def backwards(self, orm):

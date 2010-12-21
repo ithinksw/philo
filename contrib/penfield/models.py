@@ -37,6 +37,7 @@ class BlogEntry(Entity, Titled):
 	class Meta:
 		ordering = ['-date']
 		verbose_name_plural = "blog entries"
+		get_latest_by = "date"
 
 
 register_value_model(BlogEntry)
@@ -104,7 +105,12 @@ class BlogView(MultiView, FeedMultiViewMixin):
 	def urlpatterns(self):
 		urlpatterns = patterns('',
 			url(r'^', include(self.feed_patterns(self.get_all_entries, self.index_page, 'index'))),
-			url(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)/%s/' % (self.tag_permalink_base, self.feed_suffix), self.feed_view(self.get_entries_by_tag, 'entries_by_tag_feed'), name='entries_by_tag_feed'),
+		)
+		if self.feeds_enabled:
+			urlpatterns += patterns('',
+				url(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)/%s/' % (self.tag_permalink_base, self.feed_suffix), self.feed_view(self.get_entries_by_tag, 'entries_by_tag_feed'), name='entries_by_tag_feed'),
+			)
+		urlpatterns += patterns('',
 			url(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)/' % self.tag_permalink_base, self.page_view(self.get_entries_by_tag, self.tag_page), name='entries_by_tag')
 		)
 		if self.tag_archive_page:

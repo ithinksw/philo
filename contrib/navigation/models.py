@@ -31,7 +31,7 @@ class NavigationManager(models.Manager):
 			hosted_navigation = self.__class__._cache[self.db][key]
 		except KeyError:
 			# Find the most recent host!
-			ancestors = node.get_ancestors(ascending=True, include_self=True).annotate(num_navigation=models.Count("hosted_navigation_set"))
+			ancestors = node.get_ancestors(ascending=True, include_self=True).annotate(num_navigation=models.Count("hosted_navigation"))
 			
 			# Iterate down the ancestors until you find one that:
 			# a) is cached, or
@@ -49,7 +49,7 @@ class NavigationManager(models.Manager):
 				return self.none()
 			
 			if ancestor.pk not in self.__class__._cache[self.db]:
-				self.__class__._cache[self.db][ancestor.pk] = host_node.hosted_navigation_set.select_related('target_node')
+				self.__class__._cache[self.db][ancestor.pk] = host_node.hosted_navigation.select_related('target_node')
 			
 			hosted_navigation = self.__class__._cache[self.db][ancestor.pk]
 			
@@ -88,9 +88,9 @@ class NavigationManager(models.Manager):
 class Navigation(TreeEntity):
 	text = models.CharField(max_length=50)
 	
-	hosting_node = models.ForeignKey(Node, blank=True, null=True, related_name='hosted_navigation_set', help_text="Be part of this node's root navigation.")
+	hosting_node = models.ForeignKey(Node, blank=True, null=True, related_name='hosted_navigation', help_text="Be part of this node's root navigation.")
 	
-	target_node = models.ForeignKey(Node, blank=True, null=True, related_name='targeting_navigation_set', help_text="Point to this node's url.")
+	target_node = models.ForeignKey(Node, blank=True, null=True, related_name='targeting_navigation', help_text="Point to this node's url.")
 	url_or_subpath = models.CharField(max_length=200, validators=[RedirectValidator()], blank=True, help_text="Point to this url or, if a node is defined and accepts subpaths, this subpath of the node.")
 	reversing_parameters = JSONField(blank=True, help_text="If reversing parameters are defined, url_or_subpath will instead be interpreted as the view name to be reversed.")
 	
@@ -113,7 +113,7 @@ class Navigation(TreeEntity):
 	def get_target_url(self):
 		node = self.target_node
 		if node is not None and node.accepts_subpath and self.url_or_subpath:
-			if self.reversing_parameters:
+			if self.reversing_parameters is not None:
 				view_name = self.url_or_subpath
 				params = self.reversing_parameters
 				args = isinstance(params, list) and params or None
@@ -128,6 +128,7 @@ class Navigation(TreeEntity):
 			return node.get_absolute_url()
 		else:
 			return self.url_or_subpath
+	target_url = property(get_target_url)
 	
 	def __unicode__(self):
 		return self.get_path(field='text', pathsep=u' › ')

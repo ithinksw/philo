@@ -39,6 +39,7 @@ class NodeNavigationInline(NavigationInline):
 
 
 class NavigationAdmin(TreeEntityAdmin):
+	list_display = ('__unicode__', 'target_node', 'url_or_subpath', 'reversing_parameters')
 	fieldsets = (
 		(None, {
 			'fields': ('text', 'hosting_node',)

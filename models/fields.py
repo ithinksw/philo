@@ -200,7 +200,11 @@ class TemplateField(models.TextField):
 
 
 class JSONFormField(forms.Field):
+	default_validators = [json_validator]
+	
 	def clean(self, value):
+		if value == '' and not self.required:
+			return None
 		try:
 			return json.loads(value)
 		except Exception, e:
@@ -231,9 +235,7 @@ class JSONDescriptor(object):
 
 
 class JSONField(models.TextField):
-	def __init__(self, *args, **kwargs):
-		super(JSONField, self).__init__(*args, **kwargs)
-		self.validators.append(json_validator)
+	default_validators = [json_validator]
 	
 	def get_attname(self):
 		return "%s_json" % self.name

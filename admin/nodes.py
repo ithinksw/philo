@@ -4,7 +4,11 @@ from philo.models import Node, Redirect, File
 
 
 class NodeAdmin(TreeEntityAdmin):
-	pass
+	list_display = ('slug', 'view', 'accepts_subpath')
+	
+	def accepts_subpath(self, obj):
+		return obj.accepts_subpath
+	accepts_subpath.boolean = True
 
 
 class ViewAdmin(EntityAdmin):

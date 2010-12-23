@@ -2,6 +2,7 @@
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import NoReverseMatch
 from django.db import models
+from django.forms.models import model_to_dict
 from philo.models import TreeEntity, JSONField, Node, TreeManager
 from philo.validators import RedirectValidator
 
@@ -17,7 +18,7 @@ class NavigationManager(TreeManager):
 	# Navigation will probably be used frequently.
 	_cache = {}
 	
-	def for_node(self, node):
+	def closest_navigation(self, node):
 		"""
 		Returns the set of Navigation objects for a given node's navigation. This
 		will be the most recent set of defined hosted navigation among the node's
@@ -55,19 +56,28 @@ class NavigationManager(TreeManager):
 		return hosted_navigation
 	
 	def _add_to_cache(self, using, node, qs=None):
-		if node is None or node.pk is None:
-			qs = self.none()
-			key = None
-		else:
-			key = node.pk
+		key = getattr(node, 'pk', None)
 		
 		if qs is None:
-			qs = node.hosted_navigation.select_related('target_node')
+			if key is None:
+				roots = self.none()
+			else:
+				roots = node.hosted_navigation.select_related('target_node')
+			
+			for root in roots:
+				root_qs = root.get_descendants(include_self=True).complex_filter({'%s__lte' % root._mptt_meta.level_attr: root.get_level() + root.depth}).exclude(depth__isnull=True)
+				if qs is None:
+					qs = root_qs
+				else:
+					qs |= root_qs
+		
+			if qs is None:
+				qs = self.none()
 		
 		self.__class__._cache.setdefault(using, {})[key] = qs
 	
 	def _get_from_cache(self, using, node):
-		key = node.pk
+		key = getattr(node, 'pk', None)
 		return self.__class__._cache[self.db][key]
 	
 	def _is_cached(self, using, node):
@@ -82,25 +92,17 @@ class NavigationManager(TreeManager):
 		Clear out the navigation cache. This needs to happen during database flushes
 		or if a navigation entry is changed to prevent caching of outdated navigation information.
 		
-		TODO: call this method from update() and delete()!
+		TODO: call this method from update() and delete()! - But how? Those aren't methods available
+		from the manager. The only solution would be to make a special QuerySet subclass that calls
+		this method for each instance.
 		"""
 		if navigation is None:
 			self.__class__._cache.clear()
 		else:
 			cache = self.__class__._cache[self.db]
-			for pk in cache.keys():
-				for qs in cache[pk]:
-					if navigation in qs:
-						cache.pop(pk)
-						break
-					else:
-						for instance in qs:
-							if navigation.is_descendant(instance):
-								cache.pop(pk)
-								break
-						# necessary?
-						if pk not in cache:
-							break
+			for pk, qs in cache.items():
+				if navigation in qs:
+					cache.pop(pk)
 
 
 class Navigation(TreeEntity):
@@ -115,6 +117,13 @@ class Navigation(TreeEntity):
 	
 	order = models.PositiveSmallIntegerField(blank=True, null=True)
 	depth = models.PositiveSmallIntegerField(blank=True, null=True, default=DEFAULT_NAVIGATION_DEPTH, help_text="For the root of a hosted tree, defines the depth of the tree. A blank depth will hide this section of navigation. Otherwise, depth is ignored.")
+	
+	def __init__(self, *args, **kwargs):
+		super(Navigation, self).__init__(*args, **kwargs)
+		self._initial_data = model_to_dict(self)
+	
+	def __unicode__(self):
+		return self.get_path(field='text', pathsep=u' › ')
 	
 	def clean(self):
 		# Should this be enforced? Not enforcing it would allow creation of "headers" in the navbar.
@@ -149,10 +158,20 @@ class Navigation(TreeEntity):
 			return self.url_or_subpath
 	target_url = property(get_target_url)
 	
-	def __unicode__(self):
-		return self.get_path(field='text', pathsep=u' › ')
+	def _has_changed(self):
+		if model_to_dict(self) == self._initial_data:
+			return False
+		return True
 	
-	# TODO: Add delete and save methods to handle cache clearing.
+	def save(self, *args, **kwargs):
+		super(Navigation, self).save(*args, **kwargs)
+		if self._has_changed():
+			self._initial_data = model_to_dict(self)
+			Navigation.objects.clear_cache(self)
+	
+	def delete(self, *args, **kwargs):
+		super(Navigation, self).delete(*args, **kwargs)
+		Navigation.objects.clear_cache(self)
 	
 	class Meta:
 		ordering = ['order']

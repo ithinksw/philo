@@ -7,7 +7,8 @@ register = template.Library()
 
 
 @register.filter
-def get_descendants(roots):
+def get_navigation(node):
+	roots = Navigation.objects.for_node(node)
 	qs = None
 	for root in roots:
 		root_qs = root.get_descendants(include_self=True).complex_filter({'%s__lte' % root._mptt_meta.level_attr: root.get_level() + root.depth}).exclude(depth__isnull=True)

@@ -2,7 +2,7 @@
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import NoReverseMatch
 from django.db import models
-from philo.models import TreeEntity, JSONField, Node
+from philo.models import TreeEntity, JSONField, Node, TreeManager
 from philo.validators import RedirectValidator
 
 #from mptt.templatetags.mptt_tags import cache_tree_children
@@ -11,7 +11,7 @@ from philo.validators import RedirectValidator
 DEFAULT_NAVIGATION_DEPTH = 3
 
 
-class NavigationManager(models.Manager):
+class NavigationManager(TreeManager):
 	
 	# Analagous to contenttypes, cache Navigation to avoid repeated lookups all over the place.
 	# Navigation will probably be used frequently.
@@ -26,9 +26,8 @@ class NavigationManager(models.Manager):
 		
 		TODO: Should this create the auto-generated navigation in "physical" form?
 		"""
-		key = node.pk
 		try:
-			hosted_navigation = self.__class__._cache[self.db][key]
+			return self._get_from_cache(self.db, node)
 		except KeyError:
 			# Find the most recent host!
 			ancestors = node.get_ancestors(ascending=True, include_self=True).annotate(num_navigation=models.Count("hosted_navigation"))
@@ -36,28 +35,47 @@ class NavigationManager(models.Manager):
 			# Iterate down the ancestors until you find one that:
 			# a) is cached, or
 			# b) has hosted navigation.
-			pks_to_cache = []
+			nodes_to_cache = []
 			host_node = None
 			for ancestor in ancestors:
-				if ancestor.pk in self.__class__._cache[self.db] or ancestor.num_navigation > 0:
+				if self._is_cached(self.db, ancestor) or ancestor.num_navigation > 0:
 					host_node = ancestor
 					break
 				else:
-					pks_to_cache.append(ancestor.pk)
+					nodes_to_cache.append(ancestor)
 			
-			if host_node is None:
-				return self.none()
+			if not self._is_cached(self.db, host_node):
+				self._add_to_cache(self.db, host_node)
 			
-			if ancestor.pk not in self.__class__._cache[self.db]:
-				self.__class__._cache[self.db][ancestor.pk] = host_node.hosted_navigation.select_related('target_node')
-			
-			hosted_navigation = self.__class__._cache[self.db][ancestor.pk]
-			
-			# Cache the queryset instance for every pk that was passed over, as well.
-			for pk in pks_to_cache:
-				self.__class__._cache[self.db][pk] = hosted_navigation
+			# Cache the queryset instance for every node that was passed over, as well.
+			hosted_navigation = self._get_from_cache(self.db, host_node)
+			for node in nodes_to_cache:
+				self._add_to_cache(self.db, node, hosted_navigation)
 		
 		return hosted_navigation
+	
+	def _add_to_cache(self, using, node, qs=None):
+		if node is None or node.pk is None:
+			qs = self.none()
+			key = None
+		else:
+			key = node.pk
+		
+		if qs is None:
+			qs = node.hosted_navigation.select_related('target_node')
+		
+		self.__class__._cache.setdefault(using, {})[key] = qs
+	
+	def _get_from_cache(self, using, node):
+		key = node.pk
+		return self.__class__._cache[self.db][key]
+	
+	def _is_cached(self, using, node):
+		try:
+			self._get_from_cache(using, node)
+		except KeyError:
+			return False
+		return True
 	
 	def clear_cache(self, navigation=None):
 		"""
@@ -86,6 +104,7 @@ class NavigationManager(models.Manager):
 
 
 class Navigation(TreeEntity):
+	objects = NavigationManager()
 	text = models.CharField(max_length=50)
 	
 	hosting_node = models.ForeignKey(Node, blank=True, null=True, related_name='hosted_navigation', help_text="Be part of this node's root navigation.")

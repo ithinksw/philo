@@ -158,6 +158,33 @@ class Navigation(TreeEntity):
 			return self.url_or_subpath
 	target_url = property(get_target_url)
 	
+	def is_active(self, request):
+		# First check if this particular navigation is active. It is considered active if:
+		# - the requested node is this instance's target node and its subpath matches the requested path.
+		# - the requested node is a descendant of this instance's target node and this instance's target
+		#   node is not the hosting node of this navigation structure.
+		# - this instance has no target node and the url matches either the request path or the full url.
+		# - any of this instance's children are active.
+		node = request.node
+		
+		if self.target_node == node:
+			if self.target_url == request.path:
+				return True
+		elif self.target_node is None:
+			if self.url_or_subpath == request.path or self.url_or_subpath == "http%s://%s%s" % (request.is_secure() and 's' or '', request.get_host(), request.path):
+				return True
+		elif self.target_node.is_ancestor_of(node) and self.target_node != self.hosting_node:
+			return True
+		
+		# Always fall back to whether the node has active children.
+		return self.has_active_children(request)
+	
+	def has_active_children(self, request):
+		for child in self.get_children():
+			if child.is_active(request):
+				return True
+		return False
+	
 	def _has_changed(self):
 		if model_to_dict(self) == self._initial_data:
 			return False

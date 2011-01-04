@@ -6,10 +6,24 @@ from django.forms.models import model_to_dict
 from philo.models import TreeEntity, JSONField, Node, TreeManager
 from philo.validators import RedirectValidator
 
-#from mptt.templatetags.mptt_tags import cache_tree_children
-
 
 DEFAULT_NAVIGATION_DEPTH = 3
+
+
+class NavigationQuerySet(models.query.QuerySet):
+	"""
+	This subclass is necessary to trigger cache clearing for Navigation when a mass update
+	or deletion is performed. For now, either action will trigger a clearing of the entire
+	navigation cache, since there's no convenient way to iterate over the changed or
+	deleted instances.
+	"""
+	def update(self, *args, **kwargs):
+		super(NavigationQuerySet, self).update(*args, **kwargs)
+		Navigation.objects.clear_cache()
+	
+	def delete(self, *args, **kwargs):
+		super(NavigationQuerySet, self).delete(*args, **kwargs)
+		Navigation.objects.clear_cache()
 
 
 class NavigationManager(TreeManager):
@@ -17,6 +31,9 @@ class NavigationManager(TreeManager):
 	# Analagous to contenttypes, cache Navigation to avoid repeated lookups all over the place.
 	# Navigation will probably be used frequently.
 	_cache = {}
+	
+	def get_queryset(self):
+		return NavigationQuerySet(self.model, using=self._db)
 	
 	def closest_navigation(self, node):
 		"""
@@ -91,10 +108,6 @@ class NavigationManager(TreeManager):
 		"""
 		Clear out the navigation cache. This needs to happen during database flushes
 		or if a navigation entry is changed to prevent caching of outdated navigation information.
-		
-		TODO: call this method from update() and delete()! - But how? Those aren't methods available
-		from the manager. The only solution would be to make a special QuerySet subclass that calls
-		this method for each instance.
 		"""
 		if navigation is None:
 			self.__class__._cache.clear()

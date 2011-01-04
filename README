@@ -3,7 +3,7 @@ Philo is a foundation for developing web content management systems.
 Prerequisites:
 	* Python 2.5.4+ <http://www.python.org/>
 	* Django 1.2+ <http://www.djangoproject.com/>
-	* django-mptt 0.4+ <https://github.com/django-mptt/django-mptt/> 
+	* django-mptt e734079+ <https://github.com/django-mptt/django-mptt/> 
 	* (Optional) django-grappelli 2.0+ <http://code.google.com/p/django-grappelli/>
 	* (Optional) recaptcha-django r6 <http://code.google.com/p/recaptcha-django/>
 	* (Optional) south 0.7.2+ <http://south.aeracode.org/>

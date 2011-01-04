@@ -425,12 +425,12 @@ class TreeModel(MPTTModel):
 		if root is not None and not self.is_descendant_of(root):
 			raise AncestorDoesNotExist(root)
 		
-		qs = self.get_ancestors()
+		qs = self.get_ancestors(include_self=True)
 		
 		if root is not None:
 			qs = qs.filter(**{'%s__gt' % self._mptt_meta.level_attr: root.get_level()})
 		
-		return pathsep.join([getattr(parent, field, '?') for parent in list(qs) + [self]])
+		return pathsep.join([getattr(parent, field, '?') for parent in qs])
 	path = property(get_path)
 	
 	def __unicode__(self):

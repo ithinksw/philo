@@ -197,7 +197,7 @@ class BlogView(MultiView, FeedMultiViewMixin):
 	def add_item(self, feed, obj, kwargs=None):
 		defaults = {
 			'title': obj.title,
-			'description': obj.excerpt or obj.content,
+			'description': obj.content,
 			'author_name': obj.author.get_full_name(),
 			'pubdate': obj.date
 		}
@@ -429,7 +429,7 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 			'title': obj.title,
 			'author_name': ', '.join([author.get_full_name() for author in obj.authors.all()]),
 			'pubdate': obj.date,
-			'description': obj.lede or obj.full_text,
+			'description': obj.full_text,
 			'categories': [tag.name for tag in obj.tags.all()]
 		}
 		defaults.update(kwargs or {})

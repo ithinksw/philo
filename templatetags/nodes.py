@@ -51,7 +51,9 @@ class NodeURLNode(template.Node):
 				subpath = reverse(view_name, urlconf=node.view, args=args, kwargs=kwargs)
 			except NoReverseMatch:
 				if self.as_var is None:
-					raise
+					if settings.TEMPLATE_DEBUG:
+						raise
+					return settings.TEMPLATE_STRING_IF_INVALID
 			else:
 				if subpath[0] == '/':
 					subpath = subpath[1:]
@@ -68,7 +70,7 @@ class NodeURLNode(template.Node):
 @register.tag(name='node_url')
 def do_node_url(parser, token):
 	"""
-	{% node_url [for <node>] [as <var] %}
+	{% node_url [for <node>] [as <var>] %}
 	{% node_url with <obj> [for <node>] [as <var>] %}
 	{% node_url <view_name> [<arg1> [<arg2> ...] ] [for <node>] [as <var>] %}
 	{% node_url <view_name> [<key1>=<value1> [<key2>=<value2> ...] ] [for <node>] [as <var>]%}

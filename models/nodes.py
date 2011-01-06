@@ -119,6 +119,14 @@ class MultiView(View):
 			kwargs['extra_context'] = extra_context
 		return view(request, *args, **kwargs)
 	
+	def reverse(self, view_name, args=None, kwargs=None, node=None):
+		"""Shortcut method to handle the common pattern of getting the absolute url for a multiview's
+		subpaths."""
+		subpath = reverse(view_name, urlconf=self, args=args or [], kwargs=kwargs or {})
+		if node is not None:
+			return '/%s/%s/' % (node.get_absolute_url().strip('/'), subpath.strip('/'))
+		return subpath
+	
 	class Meta:
 		abstract = True
 

@@ -57,3 +57,17 @@ class RegistrationForm(UserCreationForm):
 		new_user.is_active = False
 		new_user.save()
 		return new_user
+
+
+class UserAccountForm(forms.ModelForm):
+	first_name = User._meta.get_field('first_name').formfield(required=True)
+	last_name = User._meta.get_field('last_name').formfield(required=True)
+	email = User._meta.get_field('email').formfield(required=True, widget=EmailInput)
+	
+	def __init__(self, user, *args, **kwargs):
+		kwargs['instance'] = user
+		super(UserAccountForm, self).__init__(*args, **kwargs)
+	
+	class Meta:
+		model = User
+		fields = ('first_name', 'last_name', 'email')

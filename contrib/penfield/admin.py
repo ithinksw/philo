@@ -26,6 +26,13 @@ class NewsletterAdmin(TitledAdmin):
 
 class NewsletterArticleAdmin(TitledAdmin, AddTagAdmin):
 	filter_horizontal = TitledAdmin.filter_horizontal + ('tags', 'authors')
+	list_display = ['title', 'date', 'author_names']
+	search_fields = ('title', 'authors__name',)
+	date_hierarchy = 'date'
+	
+	def author_names(self, obj):
+		return ', '.join([author.get_full_name() for author in obj.authors.all()])
+	author_names.short_description = "Authors"
 
 
 class NewsletterIssueAdmin(TitledAdmin):

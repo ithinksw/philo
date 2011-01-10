@@ -1,7 +1,7 @@
 from django import template
 from django.conf import settings
 from django.utils.safestring import mark_safe
-from philo.contrib.navigation.models import Navigation
+from philo.contrib.shipherd.models import Navigation
 from mptt.templatetags.mptt_tags import RecurseTreeNode, cache_tree_children
 
 

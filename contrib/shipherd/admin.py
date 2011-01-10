@@ -1,6 +1,6 @@
 from django.contrib import admin
 from philo.admin import TreeEntityAdmin, COLLAPSE_CLASSES, NodeAdmin
-from philo.contrib.navigation.models import Navigation
+from philo.contrib.shipherd.models import Navigation
 
 
 NAVIGATION_RAW_ID_FIELDS = ('hosting_node', 'parent', 'target_node')

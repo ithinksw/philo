@@ -111,7 +111,7 @@ class NavigationManager(TreeManager):
 		"""
 		if navigation is None:
 			self.__class__._cache.clear()
-		else:
+		elif self.db in self.__class__._cache:
 			cache = self.__class__._cache[self.db]
 			for pk, qs in cache.items():
 				if navigation in qs:

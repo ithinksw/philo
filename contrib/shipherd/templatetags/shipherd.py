@@ -17,9 +17,9 @@ class RecurseNavigationNode(RecurseTreeNode):
 		bits = []
 		context.push()
 		for child in node.get_children():
-			context['node'] = child
+			context['navigation'] = child
 			bits.append(self._render_node(context, child, request))
-		context['node'] = node
+		context['navigation'] = node
 		context['children'] = mark_safe(u''.join(bits))
 		context['active'] = node.is_active(request)
 		rendered = self.template_nodes.render(context)
@@ -41,17 +41,17 @@ class RecurseNavigationNode(RecurseTreeNode):
 @register.tag
 def recursenavigation(parser, token):
 	"""
-	Based on django-mptt's recursetree templatetag. In addition to {{ node }} and {{ children }},
+	Based on django-mptt's recursetree templatetag. In addition to {{ navigation }} and {{ children }},
 	sets {{ active }} in the context.
 	
-	Note that the tag takes one variable, navigation, which is a Navigation instance.
+	Note that the tag takes one variable, which is a Node instance.
 	
 	Usage:
 		<ul>
-			{% recursenavigation navigation %}
+			{% recursenavigation node %}
 				<li{% if active %} class='active'{% endif %}>
-					{{ node.name }}
-					{% if not node.is_leaf_node %}
+					{{ navigation.text }}
+					{% if not navigation.is_leaf_node %}
 						<ul>
 							{{ children }}
 						</ul>
@@ -70,3 +70,8 @@ def recursenavigation(parser, token):
 	parser.delete_first_token()
 	
 	return RecurseNavigationNode(template_nodes, instance_var)
+
+
+@register.filter
+def has_navigation(node):
+	return bool(Navigation.objects.closest_navigation(node).count())

@@ -56,13 +56,13 @@ class NavigationManager(TreeManager):
 			nodes_to_cache = []
 			host_node = None
 			for ancestor in ancestors:
-				if self._is_cached(self.db, ancestor) or ancestor.num_navigation > 0:
+				if self.is_cached(ancestor) or ancestor.num_navigation > 0:
 					host_node = ancestor
 					break
 				else:
 					nodes_to_cache.append(ancestor)
 			
-			if not self._is_cached(self.db, host_node):
+			if not self.is_cached(host_node):
 				self._add_to_cache(self.db, host_node)
 			
 			# Cache the queryset instance for every node that was passed over, as well.
@@ -71,6 +71,9 @@ class NavigationManager(TreeManager):
 				self._add_to_cache(self.db, node, hosted_navigation)
 		
 		return hosted_navigation
+	
+	def is_cached(self, node):
+		return self._is_cached(self.db, node)
 	
 	def _add_to_cache(self, using, node, qs=None):
 		key = getattr(node, 'pk', None)
@@ -192,6 +195,10 @@ class Navigation(TreeEntity):
 		# Always fall back to whether the node has active children.
 		return self.has_active_children(request)
 	
+	def is_cached(self):
+		"""Shortcut method for Navigation.objects.is_cached"""
+		return Navigation.objects.is_cached(self)
+	
 	def has_active_children(self, request):
 		for child in self.get_children():
 			if child.is_active(request):
@@ -205,9 +212,15 @@ class Navigation(TreeEntity):
 	
 	def save(self, *args, **kwargs):
 		super(Navigation, self).save(*args, **kwargs)
+		
 		if self._has_changed():
 			self._initial_data = model_to_dict(self)
-			Navigation.objects.clear_cache(self)
+			if self.is_cached():
+				Navigation.objects.clear_cache(self)
+			else:
+				for navigation in self.get_ancestors():
+					if navigation.hosting_node and navigation.is_cached() and self.get_level() <= (navigation.get_level() + navigation.depth):
+						Navigation.objects.clear_cache(navigation)
 	
 	def delete(self, *args, **kwargs):
 		super(Navigation, self).delete(*args, **kwargs)

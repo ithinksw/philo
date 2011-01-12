@@ -2,6 +2,7 @@ from django import template
 from django.conf import settings
 from django.utils.safestring import mark_safe
 from philo.contrib.shipherd.models import Navigation
+from philo.models import Node
 from mptt.templatetags.mptt_tags import RecurseTreeNode, cache_tree_children
 
 
@@ -33,7 +34,16 @@ class RecurseNavigationNode(RecurseTreeNode):
 			return ''
 		
 		instance = self.instance_var.resolve(context)
-		roots = cache_tree_children(Navigation.objects.closest_navigation(instance))
+		
+		if isinstance(instance, Node):
+			qs = Navigation.objects.closest_navigation(instance)
+		elif hasattr(instance, '__iter__'):
+			# Is this the right way to check?
+			qs = instance
+		else:
+			return settings.TEMPLATE_STRING_IF_INVALID
+		
+		roots = cache_tree_children(qs)
 		bits = [self._render_node(context, node, request) for node in roots]
 		return ''.join(bits)
 
@@ -64,7 +74,7 @@ def recursenavigation(parser, token):
 	if len(bits) != 2:
 		raise template.TemplateSyntaxError(_('%s tag requires an instance') % bits[0])
 	
-	instance_var = template.Variable(bits[1])
+	instance_var = parser.compile_filter(bits[1])
 	
 	template_nodes = parser.parse(('endrecursenavigation',))
 	parser.delete_first_token()
@@ -75,3 +85,8 @@ def recursenavigation(parser, token):
 @register.filter
 def has_navigation(node):
 	return bool(Navigation.objects.closest_navigation(node).count())
+
+
+@register.filter
+def targeting_navigation(node):
+	return Navigation.objects.closest_navigation(node).filter(target_node=node).order_by('level', 'lft')

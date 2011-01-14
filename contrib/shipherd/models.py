@@ -203,14 +203,15 @@ class Navigation(TreeEntity):
 			# match.
 			return True
 		
-		ancestors = node.get_ancestors(ascending=True, include_self=True).annotate(num_navigation=models.Count("hosted_navigation")).filter(num_navigation__gt=0)
-		if ancestors:
-			# If the target node is an ancestor of the requested node, this is
-			# active - unless the target node is the `home` node for this set of
-			# navigation or this navigation points to some other url.
-			host_node = ancestors[0]
-			if self.target_node.is_ancestor_of(node) and self.target_node != host_node and not self.url_or_subpath:
-				return True
+		if self.target_node:
+			ancestors = node.get_ancestors(ascending=True, include_self=True).annotate(num_navigation=models.Count("hosted_navigation")).filter(num_navigation__gt=0)
+			if ancestors:
+				# If the target node is an ancestor of the requested node, this is
+				# active - unless the target node is the `home` node for this set of
+				# navigation or this navigation points to some other url.
+				host_node = ancestors[0]
+				if self.target_node.is_ancestor_of(node) and self.target_node != host_node and not self.url_or_subpath:
+					return True
 		
 		# Always fall back to whether the node has active children.
 		return self.has_active_children(request)

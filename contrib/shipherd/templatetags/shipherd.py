@@ -88,5 +88,13 @@ def has_navigation(node):
 
 
 @register.filter
+def navigation_host(node):
+	try:
+		return Navigation.objects.closest_navigation(node)[0].hosting_node
+	except:
+		return node
+
+
+@register.filter
 def targeting_navigation(node):
 	return Navigation.objects.closest_navigation(node).filter(target_node=node).order_by('level', 'lft')

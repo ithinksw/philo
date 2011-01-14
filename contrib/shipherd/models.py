@@ -71,11 +71,11 @@ class NavigationManager(TreeManager):
 		return hosted_navigation
 	
 	def _add_to_cache(self, using, node, qs=None):
-		if node.pk is None:
-			return
-		
 		if qs is None:
-			roots = node.hosted_navigation.select_related('target_node')
+			try:
+				roots = node.hosted_navigation.select_related('target_node')
+			except AttributeError:
+				roots = []
 			qs = self.none()
 			
 			for root in roots:

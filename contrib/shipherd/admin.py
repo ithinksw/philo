@@ -1,5 +1,6 @@
 from django.contrib import admin
 from philo.admin import TreeEntityAdmin, COLLAPSE_CLASSES, NodeAdmin
+from philo.models import Node
 from philo.contrib.shipherd.models import Navigation
 
 
@@ -34,8 +35,14 @@ class NavigationNavigationInline(NavigationInline):
 	verbose_name_plural = "children"
 
 
-class NodeNavigationInline(NavigationInline):
-	verbose_name_plural = 'navigation'
+class NodeHostedNavigationInline(NavigationInline):
+	verbose_name_plural = 'hosted navigation'
+	fk_name = 'hosting_node'
+
+
+class NodeTargetingNavigationInline(NavigationInline):
+	verbose_name_plural = 'targeting navigation'
+	fk_name = 'target_node'
 
 
 class NavigationAdmin(TreeEntityAdmin):
@@ -60,7 +67,9 @@ class NavigationAdmin(TreeEntityAdmin):
 	inlines = [NavigationNavigationInline] + TreeEntityAdmin.inlines
 
 
-NodeAdmin.inlines = [NodeNavigationInline] + NodeAdmin.inlines
+NodeAdmin.inlines = [NodeHostedNavigationInline, NodeTargetingNavigationInline] + NodeAdmin.inlines
 
 
+admin.site.unregister(Node)
+admin.site.register(Node, NodeAdmin)
 admin.site.register(Navigation, NavigationAdmin)

@@ -84,132 +84,43 @@
 
 <script type="text/javascript">
 (function($) {
-	$(document).ready(function($) {
-		
-		$("#{{ inline_admin_formset.formset.prefix }}-group").inline({
-			prefix: "{{ inline_admin_formset.formset.prefix }}",
-			deleteCssClass: "delete-handler",
-			emptyCssClass: "empty-form",
-			onAdded: tabular_onAdded
-		});
-		
-{% if inline_admin_formset.opts.sortable_field_name %}
-		/**
-		 * sortable inlines
-		 * uses onAdded() and onRemoved() of inline() call above
-		 * uses sortable_updateFormIndex() and is_form_filled() from change_from.html
-		 */
-		
-		// hide sortable_field(_name) from form
-		// hide div.td.{{ field.name }}
-		var position_nodes = $("#{{ inline_admin_formset.formset.prefix }}-group").find("div.td.{{ inline_admin_formset.opts.sortable_field_name }}");
-		position_nodes.hide();
-		
-		// hide its header (div.th) too (hard)
-		// "div.th.{{ inline_admin_formset.opts.sortable_field_name }}" is not correct because
-		// its div.th.<field.label> (and not name, see line#18).
-		
-		// so let's get the "position/idx" the first position div
-		var tabular_row = position_nodes.first().parent().children("div.td");
-		// get the "position" (== i) in the "table"
-		for (var i = 0; i < tabular_row.length; i++) {
-			if ($(tabular_row[i]).hasClass("{{ inline_admin_formset.opts.sortable_field_name }}")) break;
-		}
-		// we have the same order in the header of the "table"
-		// so delete the div at the "position" (== i)
-		var position_header = $("#{{ inline_admin_formset.formset.prefix }}-group").find("div.th")[i];
-		// and hide
-		$(position_header).hide()
-		
-	{% if errors %}
-		// sort inline
-		var container = $("#{{ inline_admin_formset.formset.prefix }}-group > div.table"),
-			dynamic_forms = container.find("div.dynamic-form"),
-			updated = false,
-			curr_form,
-			real_pos;
-		
-		// loop thru all inline forms
-		for (var i = 0; i < dynamic_forms.length; i++) {
-			curr_form = $(dynamic_forms[i]);
-			// the real position according to the sort_field(_name)
-			real_pos = curr_form.find("div.{{ inline_admin_formset.opts.sortable_field_name }}").find("input").val();
-			// if there is none it's an empty inline (=> we are at the end)
-			// TODO: klemens: maybe buggy. try continue?
-			if (!real_pos) continue;
-			
-			real_pos = parseInt(real_pos, 10);
-			
-			// check if real position is not equal to the CURRENT position in the dom
-			if (real_pos != container.find("div.dynamic-form").index(curr_form)) {
-				// move to correct postition
-				curr_form.insertBefore(container.find("div.dynamic-form")[real_pos]);
-				// to update the inline lables
-				updated = true;
-			}
-		}
-		
-	{% endif %}
-		
-		$("#{{ inline_admin_formset.formset.prefix }}-group > div.table").sortable({
-			// drag&drop the inlines with the drag-handler only
-			handle: "a.drag-handler",
-			// very scary magic after drap&drop operations
-			// pretty similar to inline() widget's removeHandler()
-			// but removeHandler() can remove the current form and just reorder the rest
-			// if we would do the same after drag&drop we would loose some form values
-			// because while looping inputs would have the same names and maybe overwrite each other.
-			placeholder: 'ui-sortable-placeholder',
-			forcePlaceholderSize: true,
-			items: "div.dynamic-form",
-			axis: "y",
-			start: function(evt, ui) {
-				ui.item.hide()
-				ui.placeholder.height(ui.placeholder.height()-4);
-				//sadly we have to do this every time we start dragging
-				var template = "<div class='tr'>",
-					// minus 1 because we don't need the "sortable_field_name row"
-					len = ui.item.find("div.tr").children("div.td").length - 1;
-				
-				for (var i = 0; i < len; i++) {
-					template += "<div class='td'></div>"
-				}
-				
-				template += "</div>"
-				ui.placeholder.addClass("tbody module").append(template);
-			},
-			update: function(evt, ui) {
-				ui.item.show();
-			},
-			appendTo: 'body',
-			forceHelperSize: true,
-			containment: '#{{ inline_admin_formset.formset.prefix }}-group > div.table',
-			tolerance: 'pointer',
-			helper: function(evt, elem) {
-				var helper = $("<div class='module table' />");
-				helper.html(elem.clone());
-				return helper;
-			},
-		});
-		
-		// sets the new positions onSubmit (0 - n)
-		$("#{{ opts.module_name }}_form").bind("submit", function(){
-			var forms = $("#{{ inline_admin_formset.formset.prefix }}-group").find("div.dynamic-form"),
-				form,
-				idx = 0;
-			for (var i = 0; i < forms.length; i++) {
-				form = $(forms[i]);
-				
-				if (is_form_filled(form)) {
-					form.find("div.{{ inline_admin_formset.opts.sortable_field_name }}").find("input").val(idx);
-					idx++;
-				}
-			}
-		});
-		
-{% endif %}
-	
-	});	
+    $(document).ready(function($) {
+        
+        $("#{{ inline_admin_formset.formset.prefix }}-group").grp_inline({
+            prefix: "{{ inline_admin_formset.formset.prefix }}",
+            onBeforeAdded: function(inline) {},
+            onAfterAdded: function(form) {
+                grappelli.reinitDateTimeFields(form);
+                grappelli.updateSelectFilter(form);
+                form.find("input.vForeignKeyRawIdAdminField").grp_related_fk({lookup_url:"{% url grp_related_lookup %}"});
+                form.find("input.vManyToManyRawIdAdminField").grp_related_m2m({lookup_url:"{% url grp_m2m_lookup %}"});
+                form.find("input[name*='object_id'][name$='id']").grp_related_generic({lookup_url:"{% url grp_related_lookup %}"});
+            },
+        });
+        
+        {% if inline_admin_formset.opts.sortable_field_name %}
+        $("#{{ inline_admin_formset.formset.prefix }}-group > div.table").sortable({
+            handle: "a.drag-handler",
+            items: "div.dynamic-form",
+            axis: "y",
+            appendTo: 'body',
+            forceHelperSize: true,
+            containment: '#{{ inline_admin_formset.formset.prefix }}-group > div.table',
+            tolerance: 'pointer',
+        });
+        $("#{{ opts.module_name }}_form").bind("submit", function(){
+            var sortable_field_name = "{{ inline_admin_formset.opts.sortable_field_name }}";
+            var i = 0;
+            $("#{{ inline_admin_formset.formset.prefix }}-group").find("div.dynamic-form").each(function(){
+                var fields = $(this).find("div.td :input[value]");
+                if (fields.serialize()) {
+                    $(this).find("input[name$='"+sortable_field_name+"']").val(i);
+                    i++;
+                }
+            });
+        });
+        {% endif %}
+        
+    });
 })(django.jQuery);
 </script>
-

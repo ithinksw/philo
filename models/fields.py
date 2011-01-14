@@ -243,6 +243,11 @@ class JSONField(models.TextField):
 	def contribute_to_class(self, cls, name):
 		super(JSONField, self).contribute_to_class(cls, name)
 		setattr(cls, name, JSONDescriptor(self))
+		models.signals.pre_init.connect(self.fix_init_kwarg, sender=cls)
+	
+	def fix_init_kwarg(self, sender, args, kwargs, **signal_kwargs):
+		if self.name in kwargs:
+			kwargs[self.attname] = json.dumps(kwargs.pop(self.name))
 	
 	def formfield(self, *args, **kwargs):
 		kwargs["form_class"] = JSONFormField

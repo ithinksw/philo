@@ -1,13 +1,53 @@
 from django.contrib import admin
-from philo.admin import TreeEntityAdmin, COLLAPSE_CLASSES, NodeAdmin
+from philo.admin import TreeEntityAdmin, COLLAPSE_CLASSES, NodeAdmin, EntityAdmin
 from philo.models import Node
-from philo.contrib.shipherd.models import Navigation
+from philo.contrib.shipherd.models import NavigationItem, Navigation
 
 
-NAVIGATION_RAW_ID_FIELDS = ('hosting_node', 'parent', 'target_node')
+NAVIGATION_RAW_ID_FIELDS = ('navigation', 'parent', 'target_node')
 
 
-class NavigationInline(admin.StackedInline):
+class NavigationItemInline(admin.StackedInline):
+	raw_id_fields = NAVIGATION_RAW_ID_FIELDS
+	model = NavigationItem
+	extra = 1
+	sortable_field_name = 'order'
+
+
+class NavigationItemChildInline(NavigationItemInline):
+	verbose_name = "child"
+	verbose_name_plural = "children"
+	fieldsets = (
+		(None, {
+			'fields': ('text', 'parent')
+		}),
+		('Target', {
+			'fields': ('target_node', 'url_or_subpath',)
+		}),
+		('Advanced', {
+			'fields': ('reversing_parameters', 'order'),
+			'classes': COLLAPSE_CLASSES
+		})
+	)
+
+
+class NavigationNavigationItemInline(NavigationItemInline):
+	fieldsets = (
+		(None, {
+			'fields': ('text', 'navigation')
+		}),
+		('Target', {
+			'fields': ('target_node', 'url_or_subpath',)
+		}),
+		('Advanced', {
+			'fields': ('reversing_parameters', 'order'),
+			'classes': COLLAPSE_CLASSES
+		})
+	)
+
+
+class NodeNavigationItemInline(NavigationItemInline):
+	verbose_name_plural = 'targeting navigation'
 	fieldsets = (
 		(None, {
 			'fields': ('text',)
@@ -16,46 +56,34 @@ class NavigationInline(admin.StackedInline):
 			'fields': ('target_node', 'url_or_subpath',)
 		}),
 		('Advanced', {
-			'fields': ('reversing_parameters', 'order', 'depth'),
+			'fields': ('reversing_parameters', 'order'),
 			'classes': COLLAPSE_CLASSES
 		}),
 		('Expert', {
-			'fields': ('hosting_node', 'parent'),
-			'classes': COLLAPSE_CLASSES
-		})
+			'fields': ('parent', 'navigation')
+		}),
 	)
-	raw_id_fields = NAVIGATION_RAW_ID_FIELDS
+
+
+class NodeNavigationInline(admin.TabularInline):
 	model = Navigation
 	extra = 1
-	sortable_field_name = 'order'
 
 
-class NavigationNavigationInline(NavigationInline):
-	verbose_name = "child"
-	verbose_name_plural = "children"
+NodeAdmin.inlines = [NodeNavigationInline, NodeNavigationItemInline] + NodeAdmin.inlines
 
 
-class NodeHostedNavigationInline(NavigationInline):
-	verbose_name_plural = 'hosted navigation'
-	fk_name = 'hosting_node'
-
-
-class NodeTargetingNavigationInline(NavigationInline):
-	verbose_name_plural = 'targeting navigation'
-	fk_name = 'target_node'
-
-
-class NavigationAdmin(TreeEntityAdmin):
+class NavigationItemAdmin(TreeEntityAdmin):
 	list_display = ('__unicode__', 'target_node', 'url_or_subpath', 'reversing_parameters')
 	fieldsets = (
 		(None, {
-			'fields': ('text', 'hosting_node',)
+			'fields': ('text', 'navigation',)
 		}),
 		('Target', {
 			'fields': ('target_node', 'url_or_subpath',)
 		}),
 		('Advanced', {
-			'fields': ('reversing_parameters', 'depth'),
+			'fields': ('reversing_parameters',),
 			'classes': COLLAPSE_CLASSES
 		}),
 		('Expert', {
@@ -64,12 +92,15 @@ class NavigationAdmin(TreeEntityAdmin):
 		})
 	)
 	raw_id_fields = NAVIGATION_RAW_ID_FIELDS
-	inlines = [NavigationNavigationInline] + TreeEntityAdmin.inlines
+	inlines = [NavigationItemChildInline] + TreeEntityAdmin.inlines
 
 
-NodeAdmin.inlines = [NodeHostedNavigationInline, NodeTargetingNavigationInline] + NodeAdmin.inlines
+class NavigationAdmin(EntityAdmin):
+	inlines = [NavigationNavigationItemInline]
+	raw_id_fields = ['node']
 
 
 admin.site.unregister(Node)
 admin.site.register(Node, NodeAdmin)
 admin.site.register(Navigation, NavigationAdmin)
+admin.site.register(NavigationItem, NavigationItemAdmin)

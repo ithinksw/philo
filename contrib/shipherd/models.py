@@ -1,158 +1,225 @@
 #encoding: utf-8
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import NoReverseMatch
+from django.core.validators import RegexValidator, MinValueValidator
 from django.db import models
 from django.forms.models import model_to_dict
-from philo.models import TreeEntity, JSONField, Node, TreeManager
+from philo.models import TreeEntity, JSONField, Node, TreeManager, Entity
 from philo.validators import RedirectValidator
+from UserDict import DictMixin
 
 
 DEFAULT_NAVIGATION_DEPTH = 3
 
 
-class NavigationQuerySet(models.query.QuerySet):
+class NavigationQuerySetMapper(object, DictMixin):
+	"""This class exists to prevent setting of items in the navigation cache through node.navigation."""
+	def __init__(self, node):
+		self.node = node
+	
+	def __getitem__(self, key):
+		return Navigation.objects.get_cache_for(self.node)[key]['root_items']
+	
+	def keys(self):
+		return Navigation.objects.get_cache_for(self.node).keys()
+
+
+def navigation(self):
+	if not hasattr(self, '_navigation'):
+		self._navigation = NavigationQuerySetMapper(self)
+	return self._navigation
+
+
+Node.navigation = property(navigation)
+
+
+class NavigationCacheQuerySet(models.query.QuerySet):
 	"""
-	This subclass is necessary to trigger cache clearing for Navigation when a mass update
-	or deletion is performed. For now, either action will trigger a clearing of the entire
-	navigation cache, since there's no convenient way to iterate over the changed or
-	deleted instances.
+	This subclass will trigger general cache clearing for Navigation.objects when a mass
+	update or deletion is performed. As there is no convenient way to iterate over the
+	changed or deleted instances, there's no way to be more precise about what gets cleared.
 	"""
 	def update(self, *args, **kwargs):
-		super(NavigationQuerySet, self).update(*args, **kwargs)
+		super(NavigationCacheQuerySet, self).update(*args, **kwargs)
 		Navigation.objects.clear_cache()
 	
 	def delete(self, *args, **kwargs):
-		super(NavigationQuerySet, self).delete(*args, **kwargs)
+		super(NavigationCacheQuerySet, self).delete(*args, **kwargs)
 		Navigation.objects.clear_cache()
 
 
-class NavigationManager(TreeManager):
-	
-	# Analagous to contenttypes, cache Navigation to avoid repeated lookups all over the place.
-	# Navigation will probably be used frequently.
+class NavigationManager(models.Manager):
+	# Since navigation is going to be hit frequently and changed
+	# relatively infrequently, cache it. Analogous to contenttypes.
+	use_for_related = True
 	_cache = {}
 	
 	def get_queryset(self):
-		return NavigationQuerySet(self.model, using=self._db)
+		return NavigationCacheQuerySet(self.model, using=self._db)
 	
-	def closest_navigation(self, node):
-		"""
-		Returns the set of Navigation objects for a given node's navigation. This
-		will be the most recent set of defined hosted navigation among the node's
-		ancestors. Lookups are cached so that subsequent lookups for the same node
-		don't hit the database.
-		"""
-		try:
-			return self._get_cache_for(self.db, node)
-		except KeyError:
-			# Find the most recent host!
-			ancestors = node.get_ancestors(ascending=True, include_self=True).annotate(num_navigation=models.Count("hosted_navigation"))
-			
-			# Iterate down the ancestors until you find one that:
-			# a) is cached, or
-			# b) has hosted navigation.
-			nodes_to_cache = []
-			host_node = None
-			for ancestor in ancestors:
-				if self.has_cache_for(ancestor) or ancestor.num_navigation > 0:
-					host_node = ancestor
-					break
-				else:
-					nodes_to_cache.append(ancestor)
-			
-			if not self.has_cache_for(host_node):
-				self._add_to_cache(self.db, host_node)
-			
-			# Cache the queryset instance for every node that was passed over, as well.
-			hosted_navigation = self._get_cache_for(self.db, host_node)
-			for node in nodes_to_cache:
-				self._add_to_cache(self.db, node, hosted_navigation)
+	def get_cache_for(self, node, update_targets=True):
+		created = False
+		if not self.has_cache_for(node):
+			self.create_cache_for(node)
+			created = True
 		
-		return hosted_navigation
-	
-	def _add_to_cache(self, using, node, qs=None):
-		if qs is None:
-			try:
-				roots = node.hosted_navigation.select_related('target_node')
-			except AttributeError:
-				roots = []
-			qs = self.none()
-			
-			for root in roots:
-				root_qs = root.get_descendants(include_self=True).complex_filter({'%s__lte' % root._mptt_meta.level_attr: root.get_level() + root.depth}).exclude(depth__isnull=True)
-				qs |= root_qs
+		if update_targets and not created:
+			self.update_targets_for(node)
 		
-		self.__class__._cache.setdefault(using, {})[node] = qs
-	
-	def has_cache(self):
-		return self.db in self.__class__._cache and self.__class__._cache[self.db]
-	
-	def _get_cache_for(self, using, node):
 		return self.__class__._cache[self.db][node]
 	
-	def is_cached(self, navigation):
-		return self._is_cached(self.db, navigation)
-	
-	def _is_cached(self, using, navigation):
-		cache = self.__class__._cache[using]
-		for qs in cache.values():
-			if navigation in qs:
-				return True
-		return False
-	
 	def has_cache_for(self, node):
-		return self._has_cache_for(self.db, node)
+		return self.db in self.__class__._cache and node in self.__class__._cache[self.db]
 	
-	def _has_cache_for(self, using, node):
-		try:
-			self._get_cache_for(using, node)
-		except KeyError:
-			return False
-		return True
+	def create_cache_for(self, node):
+		"This method loops through the nodes ancestors and caches all unique navigation keys."
+		ancestors = node.get_ancestors(ascending=True, include_self=True)
+		
+		nodes_to_cache = []
+		
+		for node in ancestors:
+			if self.has_cache_for(node):
+				cache = self.get_cache_for(node).copy()
+				break
+			else:
+				nodes_to_cache.insert(0, node)
+		else:
+			cache = {}
+		
+		for node in nodes_to_cache:
+			cache = cache.copy()
+			cache.update(self._build_cache_for(node))
+			self.__class__._cache.setdefault(self.db, {})[node] = cache
+	
+	def _build_cache_for(self, node):
+		cache = {}
+		tree_id_attr = NavigationItem._mptt_meta.tree_id_attr
+		level_attr = NavigationItem._mptt_meta.level_attr
+		
+		for navigation in node.navigation_set.all():
+			tree_ids = navigation.roots.values_list(tree_id_attr)
+			items = list(NavigationItem.objects.filter(**{'%s__in' % tree_id_attr: tree_ids, '%s__lt' % level_attr: navigation.depth}).order_by('order', 'lft'))
+			
+			root_items = []
+			
+			for item in items:
+				item._is_cached = True
+				
+				if not hasattr(item, '_cached_children'):
+					item._cached_children = []
+				
+				if item.parent:
+					# alternatively, if I don't want to force it to a list, I could keep track of
+					# instances where the parent hasn't yet been met and do this step later for them.
+					# delayed action.
+					item.parent = items[items.index(item.parent)]
+					if not hasattr(item.parent, '_cached_children'):
+						item.parent._cached_children = []
+					item.parent._cached_children.append(item)
+				else:
+					root_items.append(item)
+			
+			cache[navigation.key] = {
+				'navigation': navigation,
+				'root_items': root_items,
+				'items': items
+			}
+		
+		return cache
 	
 	def clear_cache_for(self, node):
-		"""Clear the cache for a node and all its descendants"""
-		self._clear_cache_for(self.db, node)
-	
-	def _clear_cache_for(self, using, node):
-		# Clear the cache for all descendants of the node. Ideally we would
-		# only clear up to another hosting node, but the complexity is not
-		# necessary and may not be possible.
+		# Clear the cache for this node and all its descendants. The
+		# navigation for this node has probably changed, and for now,
+		# it isn't worth it to only clear the descendants actually
+		# affected by this.
+		if not self.has_cache_for(node):
+			# Already cleared.
+			return
+		
 		descendants = node.get_descendants(include_self=True)
-		cache = self.__class__._cache[using]
+		cache = self.__class__._cache[self.db]
 		for node in descendants:
 			cache.pop(node, None)
 	
-	def clear_cache(self, navigation=None):
-		"""
-		Clear out the navigation cache. This needs to happen during database flushes
-		or if a navigation entry is changed to prevent caching of outdated navigation information.
-		"""
-		if navigation is None:
-			self.__class__._cache.clear()
-		elif self.db in self.__class__._cache:
-			cache = self.__class__._cache[self.db]
-			for node, qs in cache.items():
-				if navigation in qs:
-					cache.pop(node)
+	def update_targets_for(self, node):
+		# Manually update a cache's target nodes in case something's changed there.
+		# This should be a less complex operation than reloading the models each
+		# time. Not as good as selective updates... but not much to be done
+		# about that. TODO: Benchmark it.
+		caches = self.__class__._cache[self.db][node].values()
+		
+		items = []
+		
+		for cache in caches:
+			items += cache['items']
+		
+		# A distinct query is not strictly necessary. TODO: benchmark the efficiency
+		# with/without distinct.
+		targets = list(Node.objects.filter(navigation_items__in=cache['items']).distinct())
+		
+		for cache in caches:
+			for item in cache['items']:
+				item.target_node = targets[targets.index(item.target_node)]
+	
+	def clear_cache(self):
+		self.__class__._cache.pop(self.db, None)
 
 
-class Navigation(TreeEntity):
+class Navigation(Entity):
 	objects = NavigationManager()
-	text = models.CharField(max_length=50)
 	
-	hosting_node = models.ForeignKey(Node, blank=True, null=True, related_name='hosted_navigation', help_text="Be part of this node's root navigation.")
-	
-	target_node = models.ForeignKey(Node, blank=True, null=True, related_name='targeting_navigation', help_text="Point to this node's url.")
-	url_or_subpath = models.CharField(max_length=200, validators=[RedirectValidator()], blank=True, help_text="Point to this url or, if a node is defined and accepts subpaths, this subpath of the node.")
-	reversing_parameters = JSONField(blank=True, help_text="If reversing parameters are defined, url_or_subpath will instead be interpreted as the view name to be reversed.")
-	
-	order = models.PositiveSmallIntegerField(blank=True, null=True)
-	depth = models.PositiveSmallIntegerField(blank=True, null=True, default=DEFAULT_NAVIGATION_DEPTH, help_text="For the root of a hosted tree, defines the depth of the tree. A blank depth will hide this section of navigation. Otherwise, depth is ignored.")
+	node = models.ForeignKey(Node, related_name='navigation_set', help_text="Be available as navigation for this node.")
+	key = models.CharField(max_length=255, validators=[RegexValidator("\w+")], help_text="Must contain one or more alphanumeric characters or underscores.")
+	depth = models.PositiveSmallIntegerField(default=DEFAULT_NAVIGATION_DEPTH, validators=[MinValueValidator(1)], help_text="Defines the maximum display depth of this navigation.")
 	
 	def __init__(self, *args, **kwargs):
 		super(Navigation, self).__init__(*args, **kwargs)
 		self._initial_data = model_to_dict(self)
+	
+	def __unicode__(self):
+		return "%s[%s]" % (self.node, self.key)
+	
+	def _has_changed(self):
+		return self._initial_data != model_to_dict(self)
+	
+	def save(self, *args, **kwargs):
+		super(Navigation, self).save(*args, **kwargs)
+		
+		if self._has_changed():
+			Navigation.objects.clear_cache_for(self.node)
+			self._initial_data = model_to_dict(self)
+	
+	def delete(self, *args, **kwargs):
+		super(Navigation, self).delete(*args, **kwargs)
+		Navigation.objects.clear_cache_for(self.node)
+	
+	class Meta:
+		unique_together = ('node', 'key')
+
+
+class NavigationItemManager(TreeManager):
+	use_for_related = True
+	
+	def get_queryset(self):
+		return NavigationCacheQuerySet(self.model, using=self._db)
+
+
+class NavigationItem(TreeEntity):
+	objects = NavigationItemManager()
+	
+	navigation = models.ForeignKey(Navigation, blank=True, null=True, related_name='roots', help_text="Be a root in this navigation tree.")
+	text = models.CharField(max_length=50)
+	
+	target_node = models.ForeignKey(Node, blank=True, null=True, related_name='navigation_items', help_text="Point to this node's url.")
+	url_or_subpath = models.CharField(max_length=200, validators=[RedirectValidator()], blank=True, help_text="Point to this url or, if a node is defined and accepts subpaths, this subpath of the node.")
+	reversing_parameters = JSONField(blank=True, help_text="If reversing parameters are defined, url_or_subpath will instead be interpreted as the view name to be reversed.")
+	
+	order = models.PositiveSmallIntegerField(default=0)
+	
+	def __init__(self, *args, **kwargs):
+		super(NavigationItem, self).__init__(*args, **kwargs)
+		self._initial_data = model_to_dict(self)
+		self._is_cached = False
 	
 	def __unicode__(self):
 		return self.get_path(field='text', pathsep=u' › ')
@@ -169,6 +236,9 @@ class Navigation(TreeEntity):
 			self.get_target_url()
 		except NoReverseMatch, e:
 			raise ValidationError(e.message)
+		
+		if bool(self.parent) == bool(self.navigation):
+			raise ValidationError("Exactly one of `parent` and `navigation` must be defined.")
 	
 	def get_target_url(self):
 		node = self.target_node
@@ -191,8 +261,6 @@ class Navigation(TreeEntity):
 	target_url = property(get_target_url)
 	
 	def is_active(self, request):
-		node = request.node
-		
 		if self.target_url == request.path:
 			# Handle the `default` case where the target_url and requested path
 			# are identical.
@@ -203,26 +271,24 @@ class Navigation(TreeEntity):
 			# match.
 			return True
 		
-		if self.target_node:
-			ancestors = node.get_ancestors(ascending=True, include_self=True).annotate(num_navigation=models.Count("hosted_navigation")).filter(num_navigation__gt=0)
-			if ancestors:
-				# If the target node is an ancestor of the requested node, this is
-				# active - unless the target node is the `home` node for this set of
-				# navigation or this navigation points to some other url.
-				host_node = ancestors[0]
-				if self.target_node.is_ancestor_of(node) and self.target_node != host_node and not self.url_or_subpath:
+		if self.target_node and not self.url_or_subpath:
+			# If there is a target node and it's targeted simply, but the target URL is not
+			# the same as the request path, check whether the target node is an ancestor
+			# of the requested node. If so, this is active unless the target node
+			# is the same as the ``host node`` for this navigation structure.
+			try:
+				host_node = self.get_root().navigation.node
+			except AttributeError:
+				pass
+			else:
+				if self.target_node != host_node and self.target_node.is_ancestor_of(request.node):
 					return True
 		
-		# Always fall back to whether the node has active children.
-		return self.has_active_children(request)
+		return False
 	
-	def is_cached(self):
-		"""Shortcut method for Navigation.objects.is_cached"""
-		return Navigation.objects.is_cached(self)
-	
-	def has_active_children(self, request):
+	def has_active_descendants(self, request):
 		for child in self.get_children():
-			if child.is_active(request):
+			if child.is_active(request) or child.has_active_descendants(request):
 				return True
 		return False
 	
@@ -231,27 +297,20 @@ class Navigation(TreeEntity):
 			return False
 		return True
 	
+	def _clear_cache(self):
+		try:
+			root = self.get_root()
+			if self.get_level() < root.navigation.depth:
+				Navigation.objects.clear_cache_for(self.get_root().navigation.node)
+		except AttributeError:
+			pass
+	
 	def save(self, *args, **kwargs):
-		super(Navigation, self).save(*args, **kwargs)
+		super(NavigationItem, self).save(*args, **kwargs)
 		
 		if self._has_changed():
-			self._initial_data = model_to_dict(self)
-			if Navigation.objects.has_cache():
-				if self.is_cached():
-					Navigation.objects.clear_cache(self)
-				else:
-					for navigation in self.get_ancestors():
-						if navigation.hosting_node and navigation.is_cached() and self.get_level() <= (navigation.get_level() + navigation.depth):
-							Navigation.objects.clear_cache(navigation)
-					
-					if self.hosting_node and Navigation.objects.has_cache_for(self.hosting_node):
-						Navigation.objects.clear_cache_for(self.hosting_node)
+			self._clear_cache()
 	
 	def delete(self, *args, **kwargs):
-		super(Navigation, self).delete(*args, **kwargs)
-		Navigation.objects.clear_cache(self)
-	
-	class Meta:
-		# Should I even try ordering?
-		ordering = ['order', 'lft']
-		verbose_name_plural = 'navigation'
+		super(NavigationItem, self).delete(*args, **kwargs)
+		self._clear_cache()

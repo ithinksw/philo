@@ -1,14 +1,15 @@
-from django.db import models
 from django.conf import settings
-from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model, TemplateField
-from philo.exceptions import ViewCanNotProvideSubpath
 from django.conf.urls.defaults import url, patterns, include
+from django.db import models
 from django.http import Http404
-from datetime import date, datetime
-from philo.utils import paginate
-from philo.contrib.penfield.validators import validate_pagination_count
+from django.template import loader, Context
 from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
+from datetime import date, datetime
 from philo.contrib.penfield.utils import FeedMultiViewMixin
+from philo.contrib.penfield.validators import validate_pagination_count
+from philo.exceptions import ViewCanNotProvideSubpath
+from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model, TemplateField
+from philo.utils import paginate
 
 
 class Blog(Entity, Titled):
@@ -29,10 +30,15 @@ register_value_model(Blog)
 class BlogEntry(Entity, Titled):
 	blog = models.ForeignKey(Blog, related_name='entries', blank=True, null=True)
 	author = models.ForeignKey(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='blogentries')
-	date = models.DateTimeField(default=datetime.now)
+	date = models.DateTimeField(default=None)
 	content = models.TextField()
 	excerpt = models.TextField(blank=True, null=True)
 	tags = models.ManyToManyField(Tag, related_name='blogentries', blank=True, null=True)
+	
+	def save(self, *args, **kwargs):
+		if self.date is None:
+			self.date = datetime.now()
+		super(BlogEntry, self).save(*args, **kwargs)
 	
 	class Meta:
 		ordering = ['-date']
@@ -195,9 +201,11 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		return entries, context
 	
 	def add_item(self, feed, obj, kwargs=None):
+		title = loader.get_template("penfield/feeds/blog_entry/title.html")
+		description = loader.get_template("penfield/feeds/blog_entry/description.html")
 		defaults = {
-			'title': obj.title,
-			'description': obj.content,
+			'title': title.render(Context({'entry': obj})),
+			'description': description.render(Context({'entry': obj})),
 			'author_name': obj.author.get_full_name(),
 			'pubdate': obj.date
 		}
@@ -253,10 +261,15 @@ register_value_model(Newsletter)
 class NewsletterArticle(Entity, Titled):
 	newsletter = models.ForeignKey(Newsletter, related_name='articles')
 	authors = models.ManyToManyField(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='newsletterarticles')
-	date = models.DateTimeField(default=datetime.now)
+	date = models.DateTimeField(default=None)
 	lede = TemplateField(null=True, blank=True, verbose_name='Summary')
 	full_text = TemplateField(db_index=True)
 	tags = models.ManyToManyField(Tag, related_name='newsletterarticles', blank=True, null=True)
+	
+	def save(self, *args, **kwargs):
+		if self.date is None:
+			self.date = datetime.now()
+		super(NewsletterArticle, self).save(*args, **kwargs)
 	
 	class Meta:
 		get_latest_by = 'date'
@@ -425,11 +438,13 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 		return self.issue_archive_page.render_to_response(request, extra_context=context)
 	
 	def add_item(self, feed, obj, kwargs=None):
+		title = loader.get_template("penfield/feeds/newsletter_article/title.html")
+		description = loader.get_template("penfield/feeds/newsletter_article/description.html")
 		defaults = {
-			'title': obj.title,
+			'title': title.render(Context({'article': obj})),
 			'author_name': ', '.join([author.get_full_name() for author in obj.authors.all()]),
 			'pubdate': obj.date,
-			'description': obj.full_text,
+			'description': description.render(Context({'article': obj})),
 			'categories': [tag.name for tag in obj.tags.all()]
 		}
 		defaults.update(kwargs or {})

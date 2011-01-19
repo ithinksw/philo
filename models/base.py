@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.validators import RegexValidator
 from django.utils import simplejson as json
 from django.utils.encoding import smart_str
 from philo.exceptions import AncestorDoesNotExist
@@ -23,6 +24,7 @@ class Tag(models.Model):
 	
 	class Meta:
 		app_label = 'philo'
+		ordering = ('name',)
 
 
 class Titled(models.Model):
@@ -179,7 +181,7 @@ class Attribute(models.Model):
 	value_object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True)
 	value = generic.GenericForeignKey('value_content_type', 'value_object_id')
 	
-	key = models.CharField(max_length=255)
+	key = models.CharField(max_length=255, validators=[RegexValidator("\w+")], help_text="Must contain one or more alphanumeric characters or underscores.")
 	
 	def __unicode__(self):
 		return u'"%s": %s' % (self.key, self.value)

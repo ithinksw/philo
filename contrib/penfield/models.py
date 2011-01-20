@@ -179,16 +179,17 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		return entries, context
 	
 	def get_entries_by_tag(self, request, tag_slugs, extra_context=None):
-		tags = []
-		for tag_slug in tag_slugs.replace('+', '/').split('/'):
-			if tag_slug: # ignore blank slugs, handles for multiple consecutive separators (+ or /)
-				try:
-					tag = self.blog.entry_tags.get(slug=tag_slug)
-				except:
-					raise Http404
-				tags.append(tag)
-		if len(tags) <= 0:
+		tag_slugs = tag_slugs.replace('+', '/').split('/')
+		tags = self.blog.entry_tags.filter(slug__in=tag_slugs)
+		
+		if not tags:
 			raise Http404
+		
+		# Raise a 404 on an incorrect slug.
+		found_slugs = [tag.slug for tag in tags]
+		for slug in tag_slugs:
+			if slug and slug not in found_slugs:
+				raise Http404
 
 		entries = self.blog.entries.all()
 		for tag in tags:

@@ -379,18 +379,9 @@ class AccountMultiView(LoginMultiView):
 		return self.manage_account_page.render_to_response(request, extra_context=context)
 	
 	def has_valid_account(self, user):
-		user_form, profile_form = self.get_account_forms()
-		forms = []
-		forms.append(user_form(data=get_field_data(user, self.user_fields)))
-		
-		if profile_form is not None:
-			profile = self.account_profile._default_manager.get_or_create(user=user)[0]
-			forms.append(profile_form(data=get_field_data(profile, self.account_profile_fields)))
-		
-		for form in forms:
-			if not form.is_valid():
-				return False
-		return True
+		form = self.account_form(user, {})
+		form.data = form.initial
+		return form.is_valid()
 	
 	def account_required(self, view):
 		def inner(request, *args, **kwargs):

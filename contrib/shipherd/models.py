@@ -155,7 +155,7 @@ class NavigationManager(models.Manager):
 		
 		# A distinct query is not strictly necessary. TODO: benchmark the efficiency
 		# with/without distinct.
-		targets = list(Node.objects.filter(navigation_items__in=cache['items']).distinct())
+		targets = list(Node.objects.filter(navigation_items__in=items).distinct())
 		
 		for cache in caches:
 			for item in cache['items']:

@@ -3,7 +3,6 @@ from django.db import models
 from django.utils import simplejson as json
 from philo.forms.fields import JSONFormField
 from philo.validators import TemplateValidator, json_validator
-from philo.models.fields.attributes import *
 
 
 class TemplateField(models.TextField):

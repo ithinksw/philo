@@ -140,41 +140,48 @@ class ManyToManyValue(AttributeValue):
 	content_type = models.ForeignKey(ContentType, limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
 	values = models.ManyToManyField(ForeignKeyValue, blank=True, null=True)
 	
-	def get_object_id_list(self):
-		if not self.values.count():
-			return []
-		else:
-			return self.values.values_list('object_id', flat=True)
-	
-	def get_value(self):
-		if self.content_type is None:
-			return None
-		
-		return self.content_type.model_class()._default_manager.filter(id__in=self.get_object_id_list())
+	def get_object_ids(self):
+		return self.values.values_list('object_id', flat=True)
+	object_ids = property(get_object_ids)
 	
 	def set_value(self, value):
-		# Value is probably a queryset - but allow any iterable.
+		# Value must be a queryset. Watch out for ModelMultipleChoiceField;
+		# it returns its value as a list if empty.
 		
-		# These lines shouldn't be necessary; however, if value is an EmptyQuerySet,
-		# the code (specifically the object_id__in query) won't work without them. Unclear why...
-		if not value:
-			value = []
+		self.content_type = ContentType.objects.get_for_model(value.model)
 		
 		# Before we can fiddle with the many-to-many to foreignkeyvalues, we need
 		# a pk.
 		if self.pk is None:
 			self.save()
 		
-		if isinstance(value, models.query.QuerySet):
-			value = value.values_list('id', flat=True)
+		object_ids = value.values_list('id', flat=True)
 		
-		self.values.filter(~models.Q(object_id__in=value)).delete()
-		current = self.get_object_id_list()
+		# These lines shouldn't be necessary; however, if object_ids is an EmptyQuerySet,
+		# the code (specifically the object_id__in query) won't work without them. Unclear why...
+		# TODO: is this still the case?
+		if not object_ids:
+			self.values.all().delete()
+		else:
+			self.values.exclude(object_id__in=object_ids, content_type=self.content_type).delete()
+			
+			current_ids = self.object_ids
+			
+			for object_id in object_ids:
+				if object_id in current_ids:
+					continue
+				self.values.create(content_type=self.content_type, object_id=object_id)
+	
+	def get_value(self):
+		if self.content_type is None:
+			return None
 		
-		for v in value:
-			if v in current:
-				continue
-			self.values.create(content_type=self.content_type, object_id=v)
+		# HACK to be safely explicit until http://code.djangoproject.com/ticket/15145 is resolved
+		object_ids = self.object_ids
+		manager = self.content_type.model_class()._default_manager
+		if not object_ids:
+			return manager.none()
+		return manager.filter(id__in=self.object_ids)
 	
 	value = property(get_value, set_value)
 	
@@ -184,7 +191,7 @@ class ManyToManyValue(AttributeValue):
 		
 		if self.content_type:
 			kwargs = {
-				'initial': self.get_object_id_list(),
+				'initial': self.object_ids,
 				'required': False,
 				'queryset': self.content_type.model_class()._default_manager.all()
 			}
@@ -198,7 +205,9 @@ class ManyToManyValue(AttributeValue):
 			self.values.clear()
 			self.content_type = ct
 		else:
-			value = kwargs.get('value', self.content_type.model_class()._default_manager.none())
+			value = kwargs.get('value', None)
+			if not value:
+				value = self.content_type.model_class()._default_manager.none()
 			self.set_value(value)
 	construct_instance.alters_data = True
 	

@@ -24,6 +24,7 @@ from django.db import models
 from django.db.models.fields import NOT_PROVIDED
 from django.utils.text import capfirst
 from philo.signals import entity_class_prepared
+from philo.models import ManyToManyValue, JSONValue, ForeignKeyValue, Attribute, Entity
 
 
 __all__ = ('JSONAttribute', 'ForeignKeyAttribute', 'ManyToManyAttribute')
@@ -43,9 +44,8 @@ class EntityProxyField(object):
 		sender._entity_meta.add_proxy_field(self)
 	
 	def contribute_to_class(self, cls, name):
-		from philo.models.base import Entity
 		if issubclass(cls, Entity):
-			self.name = name
+			self.name = self.attname = name
 			self.model = cls
 			if self.verbose_name is None and name:
 				self.verbose_name = name.replace('_', ' ')
@@ -65,6 +65,8 @@ class EntityProxyField(object):
 		return form_class(**defaults)
 	
 	def value_from_object(self, obj):
+		"""The return value of this method will be used by the EntityForm as
+		this field's initial value."""
 		return getattr(obj, self.name)
 	
 	def has_default(self):
@@ -85,7 +87,7 @@ class AttributeFieldDescriptor(object):
 			return self
 		
 		if self.field.name not in instance.__dict__:
-			instance.__dict__[self.field.name] = instance.attributes[self.field.attribute_key]
+			instance.__dict__[self.field.name] = instance.attributes.get(self.field.attribute_key, None)
 		
 		return instance.__dict__[self.field.name]
 	
@@ -98,13 +100,13 @@ class AttributeFieldDescriptor(object):
 		
 		registry = self.get_registry(instance)
 		registry['added'].add(self.field)
-		registry['removed'].remove(self.field)
+		registry['removed'].discard(self.field)
 	
 	def __delete__(self, instance):
 		del instance.__dict__[self.field.name]
 		
 		registry = self.get_registry(instance)
-		registry['added'].remove(self.field)
+		registry['added'].discard(self.field)
 		registry['removed'].add(self.field)
 
 
@@ -113,16 +115,15 @@ def process_attribute_fields(sender, instance, created, **kwargs):
 		registry = instance.__dict__[ATTRIBUTE_REGISTRY]
 		instance.attribute_set.filter(key__in=[field.attribute_key for field in registry['removed']]).delete()
 		
-		from philo.models import Attribute
 		for field in registry['added']:
 			try:
-				attribute = self.attribute_set.get(key=field.key)
+				attribute = instance.attribute_set.get(key=field.attribute_key)
 			except Attribute.DoesNotExist:
 				attribute = Attribute()
 				attribute.entity = instance
-				attribute.key = field.key
+				attribute.key = field.attribute_key
 			
-			value_class = field.get_value_class()
+			value_class = field.value_class
 			if isinstance(attribute.value, value_class):
 				value = attribute.value
 			else:
@@ -130,7 +131,7 @@ def process_attribute_fields(sender, instance, created, **kwargs):
 					attribute.value.delete()
 				value = value_class()
 			
-			value.set_value(field.value_from_object(instance))
+			value.set_value(getattr(instance, field.name, None))
 			value.save()
 			
 			attribute.value = value
@@ -161,11 +162,14 @@ class AttributeField(EntityProxyField):
 		"Confirm that the value is valid or raise an appropriate error."
 		raise NotImplementedError("validate_value must be implemented by AttributeField subclasses.")
 	
-	def get_value_class(self):
-		raise NotImplementedError("get_value_class must be implemented by AttributeField subclasses.")
+	@property
+	def value_class(self):
+		raise AttributeError("value_class must be defined on AttributeField subclasses.")
 
 
 class JSONAttribute(AttributeField):
+	value_class = JSONValue
+	
 	def __init__(self, field_template=None, **kwargs):
 		super(JSONAttribute, self).__init__(**kwargs)
 		if field_template is None:
@@ -185,20 +189,11 @@ class JSONAttribute(AttributeField):
 			defaults['initial'] = self.default
 		defaults.update(kwargs)
 		return self.field_template.formfield(**defaults)
-	
-	def get_value_class(self):
-		from philo.models import JSONValue
-		return JSONValue
-	
-	# Not sure what this is doing - keep eyes open!
-	#def value_from_object(self, obj):
-	#	try:
-	#		return getattr(obj, self.name)
-	#	except AttributeError:
-	#		return None
 
 
 class ForeignKeyAttribute(AttributeField):
+	value_class = ForeignKeyValue
+	
 	def __init__(self, model, limit_choices_to=None, **kwargs):
 		super(ForeignKeyAttribute, self).__init__(**kwargs)
 		self.model = model
@@ -217,19 +212,14 @@ class ForeignKeyAttribute(AttributeField):
 		defaults.update(kwargs)
 		return super(ForeignKeyAttribute, self).formfield(form_class=form_class, **defaults)
 	
-	def get_value_class(self):
-		from philo.models import ForeignKeyValue
-		return ForeignKeyValue
-	
-	#def value_from_object(self, obj):
-	#	try:
-	#		relobj = super(ForeignKeyAttribute, self).value_from_object(obj)
-	#	except AttributeError:
-	#		return None
-	#	return getattr(relobj, 'pk', None)
+	def value_from_object(self, obj):
+		relobj = super(ForeignKeyAttribute, self).value_from_object(obj)
+		return getattr(relobj, 'pk', None)
 
 
 class ManyToManyAttribute(ForeignKeyAttribute):
+	value_class = ManyToManyValue
+	
 	def validate_value(self, value):
 		if not isinstance(value, models.query.QuerySet) or value.model != self.model:
 			raise TypeError("The '%s' attribute can only be set to a %s QuerySet." % (self.name, self.model.__name__))
@@ -237,6 +227,9 @@ class ManyToManyAttribute(ForeignKeyAttribute):
 	def formfield(self, form_class=forms.ModelMultipleChoiceField, **kwargs):
 		return super(ManyToManyAttribute, self).formfield(form_class=form_class, **kwargs)
 	
-	def get_value_class(self):
-		from philo.models import ManyToManyValue
-		return ManyToManyValue
+	def value_from_object(self, obj):
+		qs = super(ForeignKeyAttribute, self).value_from_object(obj)
+		try:
+			return qs.values_list('pk', flat=True)
+		except:
+			return []

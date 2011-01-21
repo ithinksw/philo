@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.utils.html import escape
 from philo.models import Tag, Attribute
-from philo.forms import AttributeForm, AttributeInlineFormSet
+from philo.forms.entities import AttributeForm, AttributeInlineFormSet
 from philo.admin.widgets import TagFilteredSelectMultiple
 from mptt.admin import MPTTModelAdmin
 

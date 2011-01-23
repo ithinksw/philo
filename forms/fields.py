@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.utils import simplejson as json
 from philo.validators import json_validator
 

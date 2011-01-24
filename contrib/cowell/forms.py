@@ -3,7 +3,7 @@ from django.utils.datastructures import SortedDict
 from philo.utils import fattr
 
 
-__all__ = ('EntityForm',)
+__all__ = ('ProxyFieldForm',)
 
 
 def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widgets=None, formfield_callback=lambda f, **kwargs: f.formfield(**kwargs)):
@@ -37,15 +37,21 @@ def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widge
 
 # BEGIN HACK - This will not be required after http://code.djangoproject.com/ticket/14082 has been resolved
 
-class EntityFormBase(ModelForm):
+class ProxyFieldFormBase(ModelForm):
 	pass
 
 _old_metaclass_new = ModelFormMetaclass.__new__
 
 def _new_metaclass_new(cls, name, bases, attrs):
+	formfield_callback = attrs.get('formfield_callback', lambda f, **kwargs: f.formfield(**kwargs))
 	new_class = _old_metaclass_new(cls, name, bases, attrs)
-	if issubclass(new_class, EntityFormBase) and new_class._meta.model:
-		new_class.base_fields.update(proxy_fields_for_entity_model(new_class._meta.model, new_class._meta.fields, new_class._meta.exclude, new_class._meta.widgets)) # don't pass in formfield_callback
+	opts = new_class._meta
+	if issubclass(new_class, ProxyFieldFormBase) and opts.model:
+		# "override" proxy fields with declared fields by excluding them if there's a name conflict.
+		exclude = (list(opts.exclude or []) + new_class.declared_fields.keys()) or None
+		proxy_fields = proxy_fields_for_entity_model(opts.model, opts.fields, exclude, opts.widgets, formfield_callback) # don't pass in formfield_callback
+		new_class.proxy_fields = proxy_fields
+		new_class.base_fields.update(proxy_fields)
 	return new_class
 
 ModelFormMetaclass.__new__ = staticmethod(_new_metaclass_new)
@@ -53,7 +59,7 @@ ModelFormMetaclass.__new__ = staticmethod(_new_metaclass_new)
 # END HACK
 
 
-class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it weren't for the above HACK
+class ProxyFieldForm(ProxyFieldFormBase): # Would inherit from ModelForm directly if it weren't for the above HACK
 	def __init__(self, *args, **kwargs):
 		initial = kwargs.pop('initial', None)
 		instance = kwargs.get('instance', None)
@@ -70,12 +76,12 @@ class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it 
 		if initial is not None:
 			new_initial.update(initial)
 		kwargs['initial'] = new_initial
-		super(EntityForm, self).__init__(*args, **kwargs)
+		super(ProxyFieldForm, self).__init__(*args, **kwargs)
 	
 	@fattr(alters_data=True)
 	def save(self, commit=True):
 		cleaned_data = self.cleaned_data
-		instance = super(EntityForm, self).save(commit=False)
+		instance = super(ProxyFieldForm, self).save(commit=False)
 		
 		for f in instance._entity_meta.proxy_fields:
 			if not f.editable or not f.name in cleaned_data:
@@ -91,23 +97,3 @@ class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it 
 			self.save_m2m()
 		
 		return instance
-
-	
-	def apply_data(self, cleaned_data):
-		self.value = cleaned_data.get('value', None)
-	
-	def apply_data(self, cleaned_data):
-		if 'value' in cleaned_data and cleaned_data['value'] is not None:
-			self.value = cleaned_data['value']
-		else:
-			self.content_type = cleaned_data.get('content_type', None)
-			# If there is no value set in the cleaned data, clear the stored value.
-			self.object_id = None
-	
-	def apply_data(self, cleaned_data):
-		if 'value' in cleaned_data and cleaned_data['value'] is not None:
-			self.value = cleaned_data['value']
-		else:
-			self.content_type = cleaned_data.get('content_type', None)
-			# If there is no value set in the cleaned data, clear the stored value.
-			self.value = []

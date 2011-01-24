@@ -1,6 +1,6 @@
 """
-The Attributes defined in this file can be assigned as fields on a proxy of
-a subclass of philo.models.Entity. They act like any other model fields,
+The Attributes defined in this file can be assigned as fields on a
+subclass of philo.models.Entity. They act like any other model fields,
 but instead of saving their data to the database, they save it to
 attributes related to a model instance. Additionally, a new attribute will
 be created for an instance if and only if the field's value has been set.
@@ -14,10 +14,8 @@ Example::
 	
 	class ThingProxy(Thing):
 		improvised = JSONAttribute(models.BooleanField)
-		
-		class Meta:
-			proxy = True
 """
+from itertools import tee
 from django import forms
 from django.core.exceptions import FieldError
 from django.db import models
@@ -34,11 +32,12 @@ ATTRIBUTE_REGISTRY = '_attribute_registry'
 
 
 class EntityProxyField(object):
-	def __init__(self, verbose_name=None, help_text=None, default=NOT_PROVIDED, editable=True, *args, **kwargs):
+	def __init__(self, verbose_name=None, help_text=None, default=NOT_PROVIDED, editable=True, choices=None, *args, **kwargs):
 		self.verbose_name = verbose_name
 		self.help_text = help_text
 		self.default = default
 		self.editable = editable
+		self._choices = choices or []
 	
 	def actually_contribute_to_class(self, sender, **kwargs):
 		sender._entity_meta.add_proxy_field(self)
@@ -71,6 +70,14 @@ class EntityProxyField(object):
 	
 	def has_default(self):
 		return self.default is not NOT_PROVIDED
+	
+	def _get_choices(self):
+		if hasattr(self._choices, 'next'):
+			choices, self._choices = tee(self._choices)
+			return choices
+		else:
+			return self._choices
+	choices = property(_get_choices)
 
 
 class AttributeFieldDescriptor(object):
@@ -215,6 +222,15 @@ class ForeignKeyAttribute(AttributeField):
 	def value_from_object(self, obj):
 		relobj = super(ForeignKeyAttribute, self).value_from_object(obj)
 		return getattr(relobj, 'pk', None)
+	
+	@property
+	def to(self):
+		"""Spoof being a rel from a ForeignKey."""
+		return self.model
+	
+	def get_related_field(self):
+		"""Again, spoof being a rel from a ForeignKey."""
+		return self.model._meta.pk
 
 
 class ManyToManyAttribute(ForeignKeyAttribute):

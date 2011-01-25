@@ -93,7 +93,7 @@ class BlogView(MultiView, FeedMultiViewMixin):
 							kwargs.update({'day': str(obj.date.day).zfill(2)})
 				return self.entry_view, [], kwargs
 		elif isinstance(obj, Tag):
-			if obj in self.blog.entry_tags:
+			if obj in self.get_tag_queryset():
 				return 'entries_by_tag', [], {'tag_slugs': obj.slug}
 		elif isinstance(obj, (date, datetime)):
 			kwargs = {
@@ -118,7 +118,7 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		)
 		if self.tag_archive_page:
 			urlpatterns += patterns('',
-				url((r'^(?:%s)/?$' % self.tag_permalink_base), self.basic_view('tag_archive_page'))
+				url((r'^(?:%s)/?$' % self.tag_permalink_base), self.tag_archive_view, 'tag_archive')
 			)
 		
 		if self.entry_archive_page:
@@ -160,16 +160,19 @@ class BlogView(MultiView, FeedMultiViewMixin):
 	def get_context(self):
 		return {'blog': self.blog}
 	
-	def get_item_queryset(self):
+	def get_entry_queryset(self):
 		return self.blog.entries.all()
 	
+	def get_tag_queryset(self):
+		return self.blog.entry_tags
+	
 	def get_all_entries(self, request, extra_context=None):
-		return self.get_item_queryset(), extra_context
+		return self.get_entry_queryset(), extra_context
 	
 	def get_entries_by_ymd(self, request, year=None, month=None, day=None, extra_context=None):
 		if not self.entry_archive_page:
 			raise Http404
-		entries = self.get_item_queryset()
+		entries = self.get_entry_queryset()
 		if year:
 			entries = entries.filter(date__year=year)
 		if month:
@@ -183,7 +186,7 @@ class BlogView(MultiView, FeedMultiViewMixin):
 	
 	def get_entries_by_tag(self, request, tag_slugs, extra_context=None):
 		tag_slugs = tag_slugs.replace('+', '/').split('/')
-		tags = self.blog.entry_tags.filter(slug__in=tag_slugs)
+		tags = self.get_tag_queryset().filter(slug__in=tag_slugs)
 		
 		if not tags:
 			raise Http404
@@ -194,7 +197,7 @@ class BlogView(MultiView, FeedMultiViewMixin):
 			if slug and slug not in found_slugs:
 				raise Http404
 
-		entries = self.get_item_queryset()
+		entries = self.get_entry_queryset()
 		for tag in tags:
 			entries = entries.filter(tags=tag)
 		
@@ -202,6 +205,33 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		context.update({'tags': tags})
 		
 		return entries, context
+	
+	def entry_view(self, request, slug, year=None, month=None, day=None, extra_context=None):
+		entries = self.get_entry_queryset()
+		if year:
+			entries = entries.filter(date__year=year)
+		if month:
+			entries = entries.filter(date__month=month)
+		if day:
+			entries = entries.filter(date__day=day)
+		try:
+			entry = entries.get(slug=slug)
+		except:
+			raise Http404
+		context = self.get_context()
+		context.update(extra_context or {})
+		context.update({'entry': entry})
+		return self.entry_page.render_to_response(request, extra_context=context)
+	
+	def tag_archive_view(self, request, extra_context=None):
+		if not self.tag_archive_page:
+			raise Http404
+		context = self.get_context()
+		context.update(extra_context or {})
+		context.update({
+			'tags': self.get_tag_queryset()
+		})
+		return self.tag_archive_page.render_to_response(request, extra_context=context)
 	
 	def add_item(self, feed, obj, kwargs=None):
 		title = loader.get_template("penfield/feeds/blog_entry/title.html")
@@ -227,23 +257,6 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		}
 		defaults.update(kwargs or {})
 		return super(BlogView, self).get_feed(feed_type, extra_context, defaults)
-	
-	def entry_view(self, request, slug, year=None, month=None, day=None, extra_context=None):
-		entries = self.get_item_queryset()
-		if year:
-			entries = entries.filter(date__year=year)
-		if month:
-			entries = entries.filter(date__month=month)
-		if day:
-			entries = entries.filter(date__day=day)
-		try:
-			entry = entries.get(slug=slug)
-		except:
-			raise Http404
-		context = self.get_context()
-		context.update(extra_context or {})
-		context.update({'entry': entry})
-		return self.entry_page.render_to_response(request, extra_context=context)
 
 
 class Newsletter(Entity, Titled):
@@ -346,7 +359,7 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 		)
 		if self.issue_archive_page:
 			urlpatterns += patterns('',
-				url(r'^(?:%s)/$' % self.issue_permalink_base, self.basic_view('issue_archive_page'))
+				url(r'^(?:%s)/$' % self.issue_permalink_base, self.issue_archive_view, 'issue_archive')
 			)
 		if self.article_archive_page:
 			urlpatterns += patterns('',
@@ -387,14 +400,17 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 	def get_context(self):
 		return {'newsletter': self.newsletter}
 	
-	def get_item_queryset(self):
+	def get_article_queryset(self):
 		return self.newsletter.articles.all()
 	
+	def get_issue_queryset(self):
+		return self.newsletter.issues.all()
+	
 	def get_all_articles(self, request, extra_context=None):
-		return self.get_item_queryset(), extra_context
+		return self.get_article_queryset(), extra_context
 	
 	def get_articles_by_ymd(self, request, year, month=None, day=None, extra_context=None):
-		articles = self.get_item_queryset().filter(date__year=year)
+		articles = self.get_article_queryset().filter(date__year=year)
 		if month:
 			articles = articles.filter(date__month=month)
 		if day:
@@ -403,15 +419,15 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 	
 	def get_articles_by_issue(self, request, numbering, extra_context=None):
 		try:
-			issue = self.newsletter.issues.get(numbering=numbering)
+			issue = self.get_issue_queryset().get(numbering=numbering)
 		except NewsletterIssue.DoesNotExist:
 			raise Http404
 		context = extra_context or {}
 		context.update({'issue': issue})
-		return self.get_item_queryset().filter(issues=issue), context
+		return self.get_article_queryset().filter(issues=issue), context
 	
 	def article_view(self, request, slug, year=None, month=None, day=None, extra_context=None):
-		articles = self.get_item_queryset()
+		articles = self.get_article_queryset()
 		if year:
 			articles = articles.filter(date__year=year)
 		if month:
@@ -426,6 +442,16 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 		context.update(extra_context or {})
 		context.update({'article': article})
 		return self.article_page.render_to_response(request, extra_context=context)
+	
+	def issue_archive_view(self, request, extra_context):
+		if not self.issue_archive_page:
+			raise Http404
+		context = self.get_context()
+		context.update(extra_context or {})
+		context.update({
+			'issues': self.get_issue_queryset()
+		})
+		return self.issue_archive_page.render_to_response(request, extra_context=context)
 	
 	def add_item(self, feed, obj, kwargs=None):
 		title = loader.get_template("penfield/feeds/newsletter_article/title.html")

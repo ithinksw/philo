@@ -90,7 +90,7 @@ class ProxyFieldForm(ProxyFieldFormBase): # Would inherit from ModelForm directl
 				continue
 			if self._meta.exclude and f.name in self._meta.exclude:
 				continue
-			setattr(instance, f.attname, cleaned_data[f.name])
+			setattr(instance, f.attname, f.get_storage_value(cleaned_data[f.name]))
 		
 		if commit:
 			instance.save()

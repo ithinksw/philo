@@ -127,6 +127,28 @@ class MultiView(View):
 			return '/%s/%s/' % (node.get_absolute_url().strip('/'), subpath.strip('/'))
 		return subpath
 	
+	def get_context(self):
+		"""Hook for providing instance-specific context - such as the value of a Field - to all views."""
+		return {}
+	
+	def basic_view(self, view_name):
+		"""
+		Wraps a field name and returns a simple view function that will render that view
+		with a basic context. This assumes that the field name is a ForeignKey to a
+		model with a render_to_response method.
+		"""
+		field = self._meta.get_field(view_name)
+		view = getattr(self, field.name, None)
+		
+		def inner(request, extra_context=None, **kwargs):
+			if not view:
+				raise Http404
+			context = self.get_context()
+			context.update(extra_context or {})
+			return view.render_to_response(request, extra_context=context)
+		
+		return inner
+	
 	class Meta:
 		abstract = True
 

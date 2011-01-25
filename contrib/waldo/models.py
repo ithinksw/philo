@@ -67,10 +67,6 @@ class LoginMultiView(MultiView):
 		}
 		kwargs.update(reverse_kwargs or {})
 		return 'http://%s%s' % (current_site.domain, self.reverse(confirmation_view, kwargs=kwargs, node=node))
-		
-	def get_context(self):
-		"""Hook for providing instance-specific context - such as the value of a Field - to all views."""
-		return {}
 	
 	def display_login_page(self, request, message, extra_context=None):
 		request.session.set_test_cookie()

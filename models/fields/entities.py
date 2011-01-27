@@ -1,11 +1,11 @@
 """
-The Attributes defined in this file can be assigned as fields on a
-subclass of philo.models.Entity. They act like any other model fields,
-but instead of saving their data to the database, they save it to
-attributes related to a model instance. Additionally, a new attribute will
-be created for an instance if and only if the field's value has been set.
-This is relevant i.e. for passthroughs, where the value of the field may
-be defined by some other instance's attributes.
+The EntityProxyFields defined in this file can be assigned as fields on
+a subclass of philo.models.Entity. They act like any other model
+fields, but instead of saving their data to the database, they save it
+to attributes related to a model instance. Additionally, a new
+attribute will be created for an instance if and only if the field's
+value has been set. This is relevant i.e. for passthroughs, where the
+value of the field may be defined by some other instance's attributes.
 
 Example::
 

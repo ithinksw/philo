@@ -3,7 +3,7 @@ from django.utils.datastructures import SortedDict
 from philo.utils import fattr
 
 
-__all__ = ('ProxyFieldForm',)
+__all__ = ('EntityForm',)
 
 
 def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widgets=None, formfield_callback=lambda f, **kwargs: f.formfield(**kwargs)):
@@ -37,7 +37,7 @@ def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widge
 
 # BEGIN HACK - This will not be required after http://code.djangoproject.com/ticket/14082 has been resolved
 
-class ProxyFieldFormBase(ModelForm):
+class EntityFormBase(ModelForm):
 	pass
 
 _old_metaclass_new = ModelFormMetaclass.__new__
@@ -46,7 +46,7 @@ def _new_metaclass_new(cls, name, bases, attrs):
 	formfield_callback = attrs.get('formfield_callback', lambda f, **kwargs: f.formfield(**kwargs))
 	new_class = _old_metaclass_new(cls, name, bases, attrs)
 	opts = new_class._meta
-	if issubclass(new_class, ProxyFieldFormBase) and opts.model:
+	if issubclass(new_class, EntityFormBase) and opts.model:
 		# "override" proxy fields with declared fields by excluding them if there's a name conflict.
 		exclude = (list(opts.exclude or []) + new_class.declared_fields.keys()) or None
 		proxy_fields = proxy_fields_for_entity_model(opts.model, opts.fields, exclude, opts.widgets, formfield_callback) # don't pass in formfield_callback
@@ -59,7 +59,7 @@ ModelFormMetaclass.__new__ = staticmethod(_new_metaclass_new)
 # END HACK
 
 
-class ProxyFieldForm(ProxyFieldFormBase): # Would inherit from ModelForm directly if it weren't for the above HACK
+class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it weren't for the above HACK
 	def __init__(self, *args, **kwargs):
 		initial = kwargs.pop('initial', None)
 		instance = kwargs.get('instance', None)
@@ -76,12 +76,12 @@ class ProxyFieldForm(ProxyFieldFormBase): # Would inherit from ModelForm directl
 		if initial is not None:
 			new_initial.update(initial)
 		kwargs['initial'] = new_initial
-		super(ProxyFieldForm, self).__init__(*args, **kwargs)
+		super(EntityForm, self).__init__(*args, **kwargs)
 	
 	@fattr(alters_data=True)
 	def save(self, commit=True):
 		cleaned_data = self.cleaned_data
-		instance = super(ProxyFieldForm, self).save(commit=False)
+		instance = super(EntityForm, self).save(commit=False)
 		
 		for f in instance._entity_meta.proxy_fields:
 			if not f.editable or not f.name in cleaned_data:

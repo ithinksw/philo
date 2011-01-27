@@ -32,7 +32,7 @@ GILBERT_PLUGINS.push(new (function() {
 									title: 'Change password',
 									iconCls: 'key--pencil',
 									width: 266,
-									height: 170,
+									height: 200,
 									items: change_password_form = new Ext.FormPanel(Ext.applyIf({
 										frame: true,
 										bodyStyle: 'padding: 5px 5px 0',
@@ -82,7 +82,7 @@ GILBERT_PLUGINS.push(new (function() {
 				resizable: false,
 				draggable: false,
 				width: 266,
-				height: 130,
+				height: 135,
 				layout: 'fit',
 				items: login_form = new Ext.FormPanel({
 					frame: true,

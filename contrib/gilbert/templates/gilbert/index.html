@@ -5,8 +5,8 @@
 	<title>{% block title %}{{ gilbert.title }}{% endblock %}</title>
 	
 	{% block css %}
-	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/extjs/resources/css/ext-all.css' %}" />
-	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/extjs/resources/css/xtheme-gray.css' %}" />
+	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/extjs/resources/css/ext-all-notheme.css' %}" />
+	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/murano/murano.css' %}" />
 	<link rel="stylesheet" type="text/css" href="{% url gilbert:css %}" />
 	{% for plugin in gilbert.plugin_registry.values %}{% for css in plugin.css %}
 	<link rel="stylesheet" type="text/css" href="{{ css }}" />

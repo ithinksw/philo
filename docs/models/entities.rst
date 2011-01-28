@@ -1,0 +1,2 @@
+Entities: the base class
+========================

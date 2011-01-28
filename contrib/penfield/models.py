@@ -1,14 +1,15 @@
-from django.db import models
 from django.conf import settings
-from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model, TemplateField
-from philo.exceptions import ViewCanNotProvideSubpath
 from django.conf.urls.defaults import url, patterns, include
+from django.db import models
 from django.http import Http404
-from datetime import date, datetime
-from philo.utils import paginate
-from philo.contrib.penfield.validators import validate_pagination_count
+from django.template import loader, Context
 from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
+from datetime import date, datetime
 from philo.contrib.penfield.utils import FeedMultiViewMixin
+from philo.contrib.penfield.validators import validate_pagination_count
+from philo.exceptions import ViewCanNotProvideSubpath
+from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model, TemplateField
+from philo.utils import paginate
 
 
 class Blog(Entity, Titled):
@@ -29,10 +30,15 @@ register_value_model(Blog)
 class BlogEntry(Entity, Titled):
 	blog = models.ForeignKey(Blog, related_name='entries', blank=True, null=True)
 	author = models.ForeignKey(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='blogentries')
-	date = models.DateTimeField(default=datetime.now)
+	date = models.DateTimeField(default=None)
 	content = models.TextField()
 	excerpt = models.TextField(blank=True, null=True)
 	tags = models.ManyToManyField(Tag, related_name='blogentries', blank=True, null=True)
+	
+	def save(self, *args, **kwargs):
+		if self.date is None:
+			self.date = datetime.now()
+		super(BlogEntry, self).save(*args, **kwargs)
 	
 	class Meta:
 		ordering = ['-date']
@@ -87,7 +93,7 @@ class BlogView(MultiView, FeedMultiViewMixin):
 							kwargs.update({'day': str(obj.date.day).zfill(2)})
 				return self.entry_view, [], kwargs
 		elif isinstance(obj, Tag):
-			if obj in self.blog.entry_tags:
+			if obj in self.get_tag_queryset():
 				return 'entries_by_tag', [], {'tag_slugs': obj.slug}
 		elif isinstance(obj, (date, datetime)):
 			kwargs = {
@@ -97,9 +103,6 @@ class BlogView(MultiView, FeedMultiViewMixin):
 			}
 			return 'entries_by_day', [], kwargs
 		raise ViewCanNotProvideSubpath
-	
-	def get_context(self):
-		return {'blog': self.blog}
 	
 	@property
 	def urlpatterns(self):
@@ -115,7 +118,7 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		)
 		if self.tag_archive_page:
 			urlpatterns += patterns('',
-				url((r'^(?:%s)/?$' % self.tag_permalink_base), self.tag_archive_view)
+				url((r'^(?:%s)/?$' % self.tag_permalink_base), self.tag_archive_view, 'tag_archive')
 			)
 		
 		if self.entry_archive_page:
@@ -154,13 +157,22 @@ class BlogView(MultiView, FeedMultiViewMixin):
 			)
 		return urlpatterns
 	
+	def get_context(self):
+		return {'blog': self.blog}
+	
+	def get_entry_queryset(self):
+		return self.blog.entries.all()
+	
+	def get_tag_queryset(self):
+		return self.blog.entry_tags
+	
 	def get_all_entries(self, request, extra_context=None):
-		return self.blog.entries.all(), extra_context
+		return self.get_entry_queryset(), extra_context
 	
 	def get_entries_by_ymd(self, request, year=None, month=None, day=None, extra_context=None):
 		if not self.entry_archive_page:
 			raise Http404
-		entries = self.blog.entries.all()
+		entries = self.get_entry_queryset()
 		if year:
 			entries = entries.filter(date__year=year)
 		if month:
@@ -173,52 +185,29 @@ class BlogView(MultiView, FeedMultiViewMixin):
 		return entries, context
 	
 	def get_entries_by_tag(self, request, tag_slugs, extra_context=None):
-		tags = []
-		for tag_slug in tag_slugs.replace('+', '/').split('/'):
-			if tag_slug: # ignore blank slugs, handles for multiple consecutive separators (+ or /)
-				try:
-					tag = self.blog.entry_tags.get(slug=tag_slug)
-				except:
-					raise Http404
-				tags.append(tag)
-		if len(tags) <= 0:
+		tag_slugs = tag_slugs.replace('+', '/').split('/')
+		tags = self.get_tag_queryset().filter(slug__in=tag_slugs)
+		
+		if not tags:
 			raise Http404
+		
+		# Raise a 404 on an incorrect slug.
+		found_slugs = [tag.slug for tag in tags]
+		for slug in tag_slugs:
+			if slug and slug not in found_slugs:
+				raise Http404
 
-		entries = self.blog.entries.all()
+		entries = self.get_entry_queryset()
 		for tag in tags:
 			entries = entries.filter(tags=tag)
 		
-		context = self.get_context()
-		context.update(extra_context or {})
+		context = extra_context or {}
 		context.update({'tags': tags})
 		
 		return entries, context
 	
-	def add_item(self, feed, obj, kwargs=None):
-		defaults = {
-			'title': obj.title,
-			'description': obj.content,
-			'author_name': obj.author.get_full_name(),
-			'pubdate': obj.date
-		}
-		defaults.update(kwargs or {})
-		super(BlogView, self).add_item(feed, obj, defaults)
-	
-	def get_feed(self, feed_type, extra_context, kwargs=None):
-		tags = (extra_context or {}).get('tags', None)
-		title = self.blog.title
-		
-		if tags is not None:
-			title += " - %s" % ', '.join([tag.name for tag in tags])
-		
-		defaults = {
-			'title': title
-		}
-		defaults.update(kwargs or {})
-		return super(BlogView, self).get_feed(feed_type, extra_context, defaults)
-	
 	def entry_view(self, request, slug, year=None, month=None, day=None, extra_context=None):
-		entries = self.blog.entries.all()
+		entries = self.get_entry_queryset()
 		if year:
 			entries = entries.filter(date__year=year)
 		if month:
@@ -237,10 +226,37 @@ class BlogView(MultiView, FeedMultiViewMixin):
 	def tag_archive_view(self, request, extra_context=None):
 		if not self.tag_archive_page:
 			raise Http404
-		context = {}
+		context = self.get_context()
 		context.update(extra_context or {})
-		context.update({'blog': self.blog})
+		context.update({
+			'tags': self.get_tag_queryset()
+		})
 		return self.tag_archive_page.render_to_response(request, extra_context=context)
+	
+	def add_item(self, feed, obj, kwargs=None):
+		title = loader.get_template("penfield/feeds/blog_entry/title.html")
+		description = loader.get_template("penfield/feeds/blog_entry/description.html")
+		defaults = {
+			'title': title.render(Context({'entry': obj})),
+			'description': description.render(Context({'entry': obj})),
+			'author_name': obj.author.get_full_name(),
+			'pubdate': obj.date
+		}
+		defaults.update(kwargs or {})
+		super(BlogView, self).add_item(feed, obj, defaults)
+	
+	def get_feed(self, feed_type, extra_context, kwargs=None):
+		tags = (extra_context or {}).get('tags', None)
+		title = self.blog.title
+		
+		if tags is not None:
+			title += " - %s" % ', '.join([tag.name for tag in tags])
+		
+		defaults = {
+			'title': title
+		}
+		defaults.update(kwargs or {})
+		return super(BlogView, self).get_feed(feed_type, extra_context, defaults)
 
 
 class Newsletter(Entity, Titled):
@@ -253,10 +269,15 @@ register_value_model(Newsletter)
 class NewsletterArticle(Entity, Titled):
 	newsletter = models.ForeignKey(Newsletter, related_name='articles')
 	authors = models.ManyToManyField(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='newsletterarticles')
-	date = models.DateTimeField(default=datetime.now)
+	date = models.DateTimeField(default=None)
 	lede = TemplateField(null=True, blank=True, verbose_name='Summary')
 	full_text = TemplateField(db_index=True)
 	tags = models.ManyToManyField(Tag, related_name='newsletterarticles', blank=True, null=True)
+	
+	def save(self, *args, **kwargs):
+		if self.date is None:
+			self.date = datetime.now()
+		super(NewsletterArticle, self).save(*args, **kwargs)
 	
 	class Meta:
 		get_latest_by = 'date'
@@ -338,7 +359,7 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 		)
 		if self.issue_archive_page:
 			urlpatterns += patterns('',
-				url(r'^(?:%s)/$' % self.issue_permalink_base, self.issue_archive_view)
+				url(r'^(?:%s)/$' % self.issue_permalink_base, self.issue_archive_view, 'issue_archive')
 			)
 		if self.article_archive_page:
 			urlpatterns += patterns('',
@@ -379,28 +400,34 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 	def get_context(self):
 		return {'newsletter': self.newsletter}
 	
+	def get_article_queryset(self):
+		return self.newsletter.articles.all()
+	
+	def get_issue_queryset(self):
+		return self.newsletter.issues.all()
+	
 	def get_all_articles(self, request, extra_context=None):
-		return self.newsletter.articles.all(), extra_context
+		return self.get_article_queryset(), extra_context
 	
 	def get_articles_by_ymd(self, request, year, month=None, day=None, extra_context=None):
-		articles = self.newsletter.articles.filter(dat__year=year)
+		articles = self.get_article_queryset().filter(date__year=year)
 		if month:
 			articles = articles.filter(date__month=month)
 		if day:
 			articles = articles.filter(date__day=day)
-		return articles
+		return articles, extra_context
 	
 	def get_articles_by_issue(self, request, numbering, extra_context=None):
 		try:
-			issue = self.newsletter.issues.get(numbering=numbering)
+			issue = self.get_issue_queryset().get(numbering=numbering)
 		except NewsletterIssue.DoesNotExist:
 			raise Http404
 		context = extra_context or {}
 		context.update({'issue': issue})
-		return issue.articles.all(), context
+		return self.get_article_queryset().filter(issues=issue), context
 	
 	def article_view(self, request, slug, year=None, month=None, day=None, extra_context=None):
-		articles = self.newsletter.articles.all()
+		articles = self.get_article_queryset()
 		if year:
 			articles = articles.filter(date__year=year)
 		if month:
@@ -416,20 +443,24 @@ class NewsletterView(MultiView, FeedMultiViewMixin):
 		context.update({'article': article})
 		return self.article_page.render_to_response(request, extra_context=context)
 	
-	def issue_archive_view(self, request, extra_context=None):
+	def issue_archive_view(self, request, extra_context):
 		if not self.issue_archive_page:
 			raise Http404
-		context = {}
+		context = self.get_context()
 		context.update(extra_context or {})
-		context.update({'newsletter': self.newsletter})
+		context.update({
+			'issues': self.get_issue_queryset()
+		})
 		return self.issue_archive_page.render_to_response(request, extra_context=context)
 	
 	def add_item(self, feed, obj, kwargs=None):
+		title = loader.get_template("penfield/feeds/newsletter_article/title.html")
+		description = loader.get_template("penfield/feeds/newsletter_article/description.html")
 		defaults = {
-			'title': obj.title,
+			'title': title.render(Context({'article': obj})),
 			'author_name': ', '.join([author.get_full_name() for author in obj.authors.all()]),
 			'pubdate': obj.date,
-			'description': obj.full_text,
+			'description': description.render(Context({'article': obj})),
 			'categories': [tag.name for tag in obj.tags.all()]
 		}
 		defaults.update(kwargs or {})

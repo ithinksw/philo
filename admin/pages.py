@@ -4,7 +4,7 @@ from django import forms
 from philo.admin.base import COLLAPSE_CLASSES, TreeAdmin
 from philo.admin.nodes import ViewAdmin
 from philo.models.pages import Page, Template, Contentlet, ContentReference
-from philo.forms import ContentletInlineFormSet, ContentReferenceInlineFormSet, ContentletForm, ContentReferenceForm
+from philo.admin.forms.containers import *
 
 
 class ContentletInline(admin.StackedInline):

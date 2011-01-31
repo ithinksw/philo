@@ -47,9 +47,13 @@ class EntityAdminMetaclass(admin.ModelAdmin.__metaclass__):
 			opts = form._meta
 			if issubclass(form, EntityForm) and opts.model:
 				proxy_fields = proxy_fields_for_entity_model(opts.model).keys()
+				
+				# Store readonly fields iff they have been declared.
+				if 'readonly_fields' in attrs or not hasattr(new_class, '_real_readonly_fields'):
+					new_class._real_readonly_fields = new_class.readonly_fields
+				
 				readonly_fields = new_class.readonly_fields
-				new_class._real_readonly_fields = readonly_fields
-				new_class.readonly_fields = list(readonly_fields) + proxy_fields
+				new_class.readonly_fields = list(set(readonly_fields) | set(proxy_fields))
 				
 				# Additional HACKS to handle raw_id_fields and other attributes that the admin
 				# uses model._meta.get_field to validate.

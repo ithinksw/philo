@@ -89,7 +89,7 @@ class View(Entity):
 		return response
 	
 	def actually_render_to_response(self, request, extra_context=None):
-		raise NotImplementedError('View subclasses must implement render_to_response.')
+		raise NotImplementedError('View subclasses must implement actually_render_to_response.')
 	
 	class Meta:
 		abstract = True
@@ -102,7 +102,7 @@ class MultiView(View):
 	accepts_subpath = True
 	
 	@property
-	def urlpatterns(self, obj):
+	def urlpatterns(self):
 		raise NotImplementedError("MultiView subclasses must implement urlpatterns.")
 	
 	def actually_render_to_response(self, request, extra_context=None):
@@ -131,13 +131,16 @@ class MultiView(View):
 		"""Hook for providing instance-specific context - such as the value of a Field - to all views."""
 		return {}
 	
-	def basic_view(self, view_name):
+	def basic_view(self, field_name):
 		"""
-		Wraps a field name and returns a simple view function that will render that view
-		with a basic context. This assumes that the field name is a ForeignKey to a
-		model with a render_to_response method.
+		Given the name of a field on ``self``, accesses the value of
+		that field and treats it as a ``View`` instance. Creates a
+		basic context based on self.get_context() and any extra_context
+		that was passed in, then calls the ``View`` instance's
+		render_to_response() method. This method is meant to be called
+		to return a view function appropriate for urlpatterns.
 		"""
-		field = self._meta.get_field(view_name)
+		field = self._meta.get_field(field_name)
 		view = getattr(self, field.name, None)
 		
 		def inner(request, extra_context=None, **kwargs):
@@ -170,7 +173,6 @@ class Redirect(View):
 		app_label = 'philo'
 
 
-# Why does this exist?
 class File(View):
 	""" For storing arbitrary files """
 	

@@ -121,6 +121,6 @@ try:
 except ImportError:
 	pass
 else:
-	add_introspection_rules([], ["^philo\.models\.fields\.SlugListField"])
+	add_introspection_rules([], ["^philo\.models\.fields\.SlugMultipleChoiceField"])
 	add_introspection_rules([], ["^philo\.models\.fields\.TemplateField"])
 	add_introspection_rules([], ["^philo\.models\.fields\.JSONField"])

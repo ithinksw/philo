@@ -45,6 +45,9 @@ def register_value_model(model):
 	value_content_type_limiter.register_class(model)
 
 
+register_value_model(Tag)
+
+
 def unregister_value_model(model):
 	value_content_type_limiter.unregister_class(model)
 

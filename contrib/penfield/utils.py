@@ -1,7 +1,5 @@
 from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
 from django.conf.urls.defaults import url, patterns
-from django.contrib.sites.models import Site
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from philo.utils import paginate
 
@@ -53,8 +51,6 @@ class FeedMultiViewMixin(object):
 			else:
 				feed_type = 'atom'
 			
-			current_site = Site.objects.get_current()
-			#Could this be done with request.path instead somehow?
 			feed_kwargs = {
 				'link': request.node.construct_url(subpath=self.reverse(reverse_name, kwargs=kwargs), request=request, with_domain=True)
 			}

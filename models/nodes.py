@@ -1,9 +1,8 @@
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
-from django.contrib.sites.models import Site
-from django.http import HttpResponse, HttpResponseServerError, HttpResponseRedirect
-from django.core.exceptions import ViewDoesNotExist
+from django.contrib.sites.models import Site, RequestSite
+from django.http import HttpResponse, HttpResponseServerError, HttpResponseRedirect, Http404
 from django.core.servers.basehttp import FileWrapper
 from django.core.urlresolvers import resolve, clear_url_caches, reverse, NoReverseMatch
 from django.template import add_to_builtins as register_templatetags
@@ -30,23 +29,53 @@ class Node(TreeEntity):
 			return self.view.accepts_subpath
 		return False
 	
+	def handles_subpath(self, subpath):
+		return self.view.handles_subpath(subpath)
+	
 	def render_to_response(self, request, extra_context=None):
 		return self.view.render_to_response(request, extra_context)
 	
-	def get_absolute_url(self):
-		try:
-			root = Site.objects.get_current().root_node
-		except Site.DoesNotExist:
-			root = None
+	def get_absolute_url(self, request=None, with_domain=False, secure=False):
+		return self.construct_url(request=request, with_domain=with_domain, secure=secure)
+	
+	def construct_url(self, subpath=None, request=None, with_domain=False, secure=False):
+		"""
+		This method will construct a URL based on the Node's location.
+		If a request is passed in, that will be used as a backup in case
+		the Site lookup fails. The Site lookup takes precedence because
+		it's what's used to find the root node. This will raise:
+		- NoReverseMatch if philo-root is not reverseable
+		- Site.DoesNotExist if a domain is requested but not buildable.
+		- AncestorDoesNotExist if the root node of the site isn't an
+		  ancestor of this instance.
+		"""
+		# Try reversing philo-root first, since we can't do anything if that fails.
+		root_url = reverse('philo-root')
 		
 		try:
-			path = self.get_path(root=root)
-			if path:
-				path += '/'
-			root_url = reverse('philo-root')
-			return '%s%s' % (root_url, path)
-		except AncestorDoesNotExist, ViewDoesNotExist:
-			return None
+			current_site = Site.objects.get_current()
+		except Site.DoesNotExist:
+			if request is not None:
+				current_site = RequestSite(request)
+			elif with_domain:
+				# If they want a domain and we can't figure one out,
+				# best to reraise the error to let them know.
+				raise
+			else:
+				current_site = None
+		
+		root = getattr(current_site, 'root_node', None)
+		path = self.get_path(root=root)
+		
+		if current_site and with_domain:
+			domain = "http%s://%s" % (secure and "s" or "", current_site.domain)
+		else:
+			domain = ""
+		
+		if not path:
+			subpath = subpath[1:]
+		
+		return '%s%s%s%s' % (domain, root_url, path, subpath or "")
 	
 	class Meta:
 		app_label = 'philo'
@@ -61,15 +90,34 @@ class View(Entity):
 	
 	accepts_subpath = False
 	
-	def get_subpath(self, obj):
+	def handles_subpath(self, subpath):
+		if not self.accepts_subpath and subpath != "/":
+			return False
+		return True
+	
+	def reverse(self, view_name=None, args=None, kwargs=None, node=None, obj=None):
+		"""Shortcut method to handle the common pattern of getting the
+		absolute url for a view's subpaths."""
 		if not self.accepts_subpath:
 			raise ViewDoesNotProvideSubpaths
 		
-		view_name, args, kwargs = self.get_reverse_params(obj)
+		if obj is not None:
+			# Perhaps just override instead of combining?
+			obj_view_name, obj_args, obj_kwargs = self.get_reverse_params(obj)
+			if view_name is None:
+				view_name = obj_view_name
+			args = list(obj_args) + list(args or [])
+			obj_kwargs.update(kwargs or {})
+			kwargs = obj_kwargs
+		
 		try:
-			return reverse(view_name, args=args, kwargs=kwargs, urlconf=self)
+			subpath = reverse(view_name, urlconf=self, args=args or [], kwargs=kwargs or {})
 		except NoReverseMatch:
 			raise ViewCanNotProvideSubpath
+		
+		if node is not None:
+			return node.construct_url(subpath)
+		return subpath
 	
 	def get_reverse_params(self, obj):
 		"""This method should return a view_name, args, kwargs tuple suitable for reversing a url for the given obj using self as the urlconf."""
@@ -105,12 +153,18 @@ class MultiView(View):
 	def urlpatterns(self):
 		raise NotImplementedError("MultiView subclasses must implement urlpatterns.")
 	
+	def handles_subpath(self, subpath):
+		if not super(MultiView, self).handles_subpath(subpath):
+			return False
+		try:
+			resolve(subpath, urlconf=self)
+		except Http404:
+			return False
+		return True
+	
 	def actually_render_to_response(self, request, extra_context=None):
 		clear_url_caches()
 		subpath = request.node.subpath
-		if not subpath:
-			subpath = ""
-		subpath = "/" + subpath
 		view, args, kwargs = resolve(subpath, urlconf=self)
 		view_args = getargspec(view)
 		if extra_context is not None and ('extra_context' in view_args[0] or view_args[2] is not None):
@@ -118,14 +172,6 @@ class MultiView(View):
 				extra_context.update(kwargs['extra_context'])
 			kwargs['extra_context'] = extra_context
 		return view(request, *args, **kwargs)
-	
-	def reverse(self, view_name, args=None, kwargs=None, node=None):
-		"""Shortcut method to handle the common pattern of getting the absolute url for a multiview's
-		subpaths."""
-		subpath = reverse(view_name, urlconf=self, args=args or [], kwargs=kwargs or {})
-		if node is not None:
-			return '/%s/%s/' % (node.get_absolute_url().strip('/'), subpath.strip('/'))
-		return subpath
 	
 	def get_context(self):
 		"""Hook for providing instance-specific context - such as the value of a Field - to all views."""

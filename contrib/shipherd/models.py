@@ -248,12 +248,12 @@ class NavigationItem(TreeEntity):
 				params = self.reversing_parameters
 				args = isinstance(params, list) and params or None
 				kwargs = isinstance(params, dict) and params or None
-				return node.view.reverse(view_name, args=args, kwargs=kwargs, node=node)
+				subpath = node.view.reverse(view_name, args=args, kwargs=kwargs)
 			else:
 				subpath = self.url_or_subpath
-				while subpath and subpath[0] == '/':
-					subpath = subpath[1:]
-				return '%s%s' % (node.get_absolute_url(), subpath)
+				if subpath[0] != '/':
+					subpath = '/' + subpath
+			return node.construct_url(subpath)
 		elif node is not None:
 			return node.get_absolute_url()
 		else:

@@ -41,32 +41,31 @@ class LoginMultiView(MultiView):
 	@property
 	def urlpatterns(self):
 		urlpatterns = patterns('',
-			url(r'^login/$', self.login, name='login'),
-			url(r'^logout/$', self.logout, name='logout'),
+			url(r'^login$', self.login, name='login'),
+			url(r'^logout$', self.logout, name='logout'),
 			
-			url(r'^password/reset/$', csrf_protect(self.password_reset), name='password_reset'),
-			url(r'^password/reset/(?P<uidb36>\w+)/(?P<token>[^/]+)/$', self.password_reset_confirm, name='password_reset_confirm'),
+			url(r'^password/reset$', csrf_protect(self.password_reset), name='password_reset'),
+			url(r'^password/reset/(?P<uidb36>\w+)/(?P<token>[^/]+)$', self.password_reset_confirm, name='password_reset_confirm'),
 			
-			url(r'^register/$', csrf_protect(self.register), name='register'),
-			url(r'^register/(?P<uidb36>\w+)/(?P<token>[^/]+)/$', self.register_confirm, name='register_confirm')
+			url(r'^register$', csrf_protect(self.register), name='register'),
+			url(r'^register/(?P<uidb36>\w+)/(?P<token>[^/]+)$', self.register_confirm, name='register_confirm')
 		)
 		
 		if self.password_change_page:
 			urlpatterns += patterns('',
-				url(r'^password/change/$', csrf_protect(self.login_required(self.password_change)), name='password_change'),
+				url(r'^password/change$', csrf_protect(self.login_required(self.password_change)), name='password_change'),
 			)
 		
 		return urlpatterns
 	
 	def make_confirmation_link(self, confirmation_view, token_generator, user, node, token_args=None, reverse_kwargs=None):
-		current_site = Site.objects.get_current()
 		token = token_generator.make_token(user, *(token_args or []))
 		kwargs = {
 			'uidb36': int_to_base36(user.id),
 			'token': token
 		}
 		kwargs.update(reverse_kwargs or {})
-		return 'http://%s%s' % (current_site.domain, self.reverse(confirmation_view, kwargs=kwargs, node=node))
+		return node.construct_url(subpath=self.reverse(confirmation_view, kwargs=kwargs), with_domain=True)
 	
 	def display_login_page(self, request, message, extra_context=None):
 		request.session.set_test_cookie()
@@ -336,8 +335,8 @@ class AccountMultiView(LoginMultiView):
 	def urlpatterns(self):
 		urlpatterns = super(AccountMultiView, self).urlpatterns
 		urlpatterns += patterns('',
-			url(r'^account/$', self.login_required(self.account_view), name='account'),
-			url(r'^account/email/(?P<uidb36>\w+)/(?P<email>[\w.]+[+][\w.]+)/(?P<token>[^/]+)/$', self.email_change_confirm, name='email_change_confirm')
+			url(r'^account$', self.login_required(self.account_view), name='account'),
+			url(r'^account/email/(?P<uidb36>\w+)/(?P<email>[\w.]+[+][\w.]+)/(?P<token>[^/]+)$', self.email_change_confirm, name='email_change_confirm')
 		)
 		return urlpatterns
 	

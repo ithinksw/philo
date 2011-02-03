@@ -315,11 +315,6 @@ class TreeManager(models.Manager):
 		# tree structure won't be that deep.
 		segments = path.split(pathsep)
 		
-		# Check for a trailing pathsep so we can restore it later.
-		trailing_pathsep = False
-		if segments[-1] == '':
-			trailing_pathsep = True
-		
 		# Clean out blank segments. Handles multiple consecutive pathseps.
 		while True:
 			try:
@@ -351,12 +346,6 @@ class TreeManager(models.Manager):
 			
 			return kwargs
 		
-		def build_path(segments):
-			path = pathsep.join(segments)
-			if trailing_pathsep and segments and segments[-1] != '':
-				path += pathsep
-			return path
-		
 		def find_obj(segments, depth, deepest_found=None):
 			if deepest_found is None:
 				deepest_level = 0
@@ -377,7 +366,7 @@ class TreeManager(models.Manager):
 				if deepest_level == depth:
 					# This should happen if nothing is found with any part of the given path.
 					if root is not None and deepest_found is None:
-						return root, build_path(segments)
+						return root, pathsep.join(segments)
 					raise
 				
 				return find_obj(segments, depth, deepest_found)
@@ -390,7 +379,7 @@ class TreeManager(models.Manager):
 				
 				# Could there be a deeper one?
 				if obj.is_leaf_node():
-					return obj, build_path(segments[deepest_level:]) or None
+					return obj, pathsep.join(segments[deepest_level:]) or None
 				
 				depth += (len(segments) - depth)/2 or len(segments) - depth
 				
@@ -398,13 +387,13 @@ class TreeManager(models.Manager):
 					depth = deepest_level + obj.get_descendant_count()
 				
 				if deepest_level == depth:
-					return obj, build_path(segments[deepest_level:]) or None
+					return obj, pathsep.join(segments[deepest_level:]) or None
 				
 				try:
 					return find_obj(segments, depth, obj)
 				except self.model.DoesNotExist:
 					# Then this was the deepest.
-					return obj, build_path(segments[deepest_level:])
+					return obj, pathsep.join(segments[deepest_level:])
 		
 		if absolute_result:
 			return self.get(**make_query_kwargs(segments, root))

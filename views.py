@@ -11,10 +11,25 @@ def node_view(request, path=None, **kwargs):
 		raise MIDDLEWARE_NOT_CONFIGURED
 	
 	if not request.node:
+		if settings.APPEND_SLASH and request.path != "/":
+			path = request.path
+			
+			if path[-1] == "/":
+				path = path[:-1]
+			else:
+				path += "/"
+			
+			view, args, kwargs = resolve(path)
+			if view != node_view:
+				return HttpResponseRedirect(path)
 		raise Http404
 	
 	node = request.node
 	subpath = request.node.subpath
+	
+	# Explicitly disallow trailing slashes if we are otherwise at a node's url.
+	if request.path and request.path != "/" and request.path[-1] == "/" and subpath == "/":
+		return HttpResponseRedirect(node.get_absolute_url())
 	
 	if not node.handles_subpath(subpath):
 		# If the subpath isn't handled, check settings.APPEND_SLASH. If

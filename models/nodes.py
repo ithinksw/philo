@@ -73,7 +73,7 @@ class Node(TreeEntity):
 		else:
 			domain = ""
 		
-		if not path:
+		if not path or subpath == "/":
 			subpath = subpath[1:]
 		
 		return '%s%s%s%s' % (domain, root_url, path, subpath)

@@ -9,6 +9,7 @@ from django.template import add_to_builtins as register_templatetags
 from inspect import getargspec
 from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED
 from philo.models.base import TreeEntity, Entity, QuerySetMapper, register_value_model
+from philo.models.fields import JSONField
 from philo.utils import ContentTypeSubclassLimiter
 from philo.validators import RedirectValidator
 from philo.exceptions import ViewCanNotProvideSubpath, ViewDoesNotProvideSubpaths, AncestorDoesNotExist
@@ -38,7 +39,7 @@ class Node(TreeEntity):
 	def get_absolute_url(self, request=None, with_domain=False, secure=False):
 		return self.construct_url(request=request, with_domain=with_domain, secure=secure)
 	
-	def construct_url(self, subpath=None, request=None, with_domain=False, secure=False):
+	def construct_url(self, subpath="/", request=None, with_domain=False, secure=False):
 		"""
 		This method will construct a URL based on the Node's location.
 		If a request is passed in, that will be used as a backup in case
@@ -75,7 +76,7 @@ class Node(TreeEntity):
 		if not path:
 			subpath = subpath[1:]
 		
-		return '%s%s%s%s' % (domain, root_url, path, subpath or "")
+		return '%s%s%s%s' % (domain, root_url, path, subpath)
 	
 	class Meta:
 		app_label = 'philo'
@@ -202,16 +203,65 @@ class MultiView(View):
 		abstract = True
 
 
-class Redirect(View):
+class TargetURLModel(models.Model):
+	target_node = models.ForeignKey(Node, blank=True, null=True, related_name="%(app_label)s_%(class)s_related")
+	url_or_subpath = models.CharField(max_length=200, validators=[RedirectValidator()], blank=True, help_text="Point to this url or, if a node is defined and accepts subpaths, this subpath of the node.")
+	reversing_parameters = JSONField(blank=True, help_text="If reversing parameters are defined, url_or_subpath will instead be interpreted as the view name to be reversed.")
+	
+	def clean(self):
+		# Should this be enforced? Not enforcing it would allow creation of "headers" in the navbar.
+		if not self.target_node and not self.url_or_subpath:
+			raise ValidationError("Either a target node or a url must be defined.")
+		
+		if self.reversing_parameters and not (self.url_or_subpath or self.target_node):
+			raise ValidationError("Reversing parameters require either a view name or a target node.")
+		
+		try:
+			self.get_target_url()
+		except NoReverseMatch, e:
+			raise ValidationError(e.message)
+		
+		super(TargetURLModel, self).clean()
+	
+	def get_reverse_params(self):
+		params = self.reversing_parameters
+		args = isinstance(params, list) and params or None
+		kwargs = isinstance(params, dict) and params or None
+		return self.url_or_subpath, args, kwargs
+	
+	def get_target_url(self):
+		node = self.target_node
+		if node is not None and node.accepts_subpath and self.url_or_subpath:
+			if self.reversing_parameters is not None:
+				view_name, args, kwargs = self.get_reversing_params()
+				subpath = node.view.reverse(view_name, args=args, kwargs=kwargs)
+			else:
+				subpath = self.url_or_subpath
+				if subpath[0] != '/':
+					subpath = '/' + subpath
+			return node.construct_url(subpath)
+		elif node is not None:
+			return node.get_absolute_url()
+		else:
+			if self.reversing_parameters is not None:
+				view_name, args, kwargs = self.get_reversing_params()
+				return reverse(view_name, args=args, kwargs=kwargs)
+			return self.url_or_subpath
+	target_url = property(get_target_url)
+	
+	class Meta:
+		abstract = True
+
+
+class Redirect(View, TargetURLModel):
 	STATUS_CODES = (
 		(302, 'Temporary'),
 		(301, 'Permanent'),
 	)
-	target = models.CharField(max_length=200, validators=[RedirectValidator()])
 	status_code = models.IntegerField(choices=STATUS_CODES, default=302, verbose_name='redirect type')
 	
 	def actually_render_to_response(self, request, extra_context=None):
-		response = HttpResponseRedirect(self.target)
+		response = HttpResponseRedirect(self.target_url)
 		response.status_code = self.status_code
 		return response
 	

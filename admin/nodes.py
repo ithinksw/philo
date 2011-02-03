@@ -1,5 +1,5 @@
 from django.contrib import admin
-from philo.admin.base import EntityAdmin, TreeEntityAdmin
+from philo.admin.base import EntityAdmin, TreeEntityAdmin, COLLAPSE_CLASSES
 from philo.models import Node, Redirect, File
 
 
@@ -18,11 +18,19 @@ class ViewAdmin(EntityAdmin):
 class RedirectAdmin(ViewAdmin):
 	fieldsets = (
 		(None, {
-			'fields': ('target', 'status_code')
+			'fields': ('target_node', 'url_or_subpath', 'status_code')
 		}),
+		('Advanced', {
+			'fields': ('reversing_parameters',),
+			'classes': COLLAPSE_CLASSES
+		})
 	)
-	list_display = ('target', 'status_code')
+	list_display = ('target_url', 'status_code', 'target_node', 'url_or_subpath')
 	list_filter = ('status_code',)
+	raw_id_fields = ['target_node']
+	related_field_lookups = {
+		'fk': ['target_node']
+	}
 
 
 class FileAdmin(ViewAdmin):

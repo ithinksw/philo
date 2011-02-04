@@ -3,6 +3,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.contrib.sites.models import Site, RequestSite
 from django.http import HttpResponse, HttpResponseServerError, HttpResponseRedirect, Http404
+from django.core.exceptions import ValidationError
 from django.core.servers.basehttp import FileWrapper
 from django.core.urlresolvers import resolve, clear_url_caches, reverse, NoReverseMatch
 from django.template import add_to_builtins as register_templatetags

@@ -219,15 +219,15 @@ class ManyToManyValue(AttributeValue):
 
 
 class Attribute(models.Model):
-	entity_content_type = models.ForeignKey(ContentType, related_name='attribute_entity_set', verbose_name='Entity type')
-	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID')
+	entity_content_type = models.ForeignKey(ContentType, related_name='attribute_entity_set', verbose_name='Entity type', db_index=True)
+	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID', db_index=True)
 	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
 	
-	value_content_type = models.ForeignKey(ContentType, related_name='attribute_value_set', limit_choices_to=attribute_value_limiter, verbose_name='Value type', null=True, blank=True)
-	value_object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True)
+	value_content_type = models.ForeignKey(ContentType, related_name='attribute_value_set', limit_choices_to=attribute_value_limiter, verbose_name='Value type', null=True, blank=True, db_index=True)
+	value_object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True, db_index=True)
 	value = generic.GenericForeignKey('value_content_type', 'value_object_id')
 	
-	key = models.CharField(max_length=255, validators=[RegexValidator("\w+")], help_text="Must contain one or more alphanumeric characters or underscores.")
+	key = models.CharField(max_length=255, validators=[RegexValidator("\w+")], help_text="Must contain one or more alphanumeric characters or underscores.", db_index=True)
 	
 	def __unicode__(self):
 		return u'"%s": %s' % (self.key, self.value)

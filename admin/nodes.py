@@ -5,6 +5,11 @@ from philo.models import Node, Redirect, File
 
 class NodeAdmin(TreeEntityAdmin):
 	list_display = ('slug', 'view', 'accepts_subpath')
+	related_field_lookups = {
+		'fk': [],
+		'm2m': [],
+		'generic': [['view_content_type', 'view_object_id']]
+	}
 	
 	def accepts_subpath(self, obj):
 		return obj.accepts_subpath

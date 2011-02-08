@@ -1,7 +1,9 @@
 from django.conf import settings
 from django.conf.urls.defaults import url, patterns, include
+from django.contrib.sites.models import Site, RequestSite
+from django.contrib.syndication.views import add_domain
 from django.db import models
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.template import RequestContext, Template as DjangoTemplate
 from django.utils import feedgenerator, tzinfo
 from django.utils.datastructures import SortedDict
@@ -79,6 +81,7 @@ class FeedView(MultiView):
 			obj = self.get_object(request, *args, **kwargs)
 			feed = self.get_feed(obj, request, reverse_name)
 			items, xxx = get_items(request, extra_context=extra_context, *args, **kwargs)
+			self.populate_feed(feed, items, request)
 			
 			response = HttpResponse(mimetype=feed.mime_type)
 			feed.write(response, 'utf-8')
@@ -138,6 +141,11 @@ class FeedView(MultiView):
 		"""
 		Returns an unpopulated feedgenerator.DefaultFeed object for this object.
 		"""
+		try:
+			current_site = Site.objects.get_current()
+		except Site.DoesNotExist:
+			current_site = RequestSite(request)
+		
 		feed_type = self.get_feed_type(request)
 		node = request.node
 		link = node.get_absolute_url(with_domain=True, request=request, secure=request.is_secure())
@@ -148,7 +156,11 @@ class FeedView(MultiView):
 			link = link,
 			description = self.__get_dynamic_attr('description', obj),
 			language = settings.LANGUAGE_CODE.decode(),
-			feed_url = node.construct_url(self.reverse(reverse_name), with_domain=True, request=request, secure=request.is_secure()),
+			feed_url = add_domain(
+				current_site.domain,
+				self.__get_dynamic_attr('feed_url', obj) or node.construct_url(node.subpath, with_domain=True, request=request, secure=request.is_secure()),
+				request.is_secure()
+			),
 			author_name = self.__get_dynamic_attr('author_name', obj),
 			author_link = self.__get_dynamic_attr('author_link', obj),
 			author_email = self.__get_dynamic_attr('author_email', obj),
@@ -162,15 +174,19 @@ class FeedView(MultiView):
 	
 	def populate_feed(self, feed, items, request):
 		if self.item_title_template:
-			title_template = Template(self.item_title_template.code)
+			title_template = DjangoTemplate(self.item_title_template.code)
 		else:
 			title_template = None
 		if self.item_description_template:
-			description_template = Template(self.item_description_template.code)
+			description_template = DjangoTemplate(self.item_description_template.code)
 		else:
 			description_template = None
 		
 		node = request.node
+		try:
+			current_site = Site.objects.get_current()
+		except Site.DoesNotExist:
+			current_site = RequestSite(request)
 		
 		for item in items:
 			if title_template is not None:
@@ -188,7 +204,11 @@ class FeedView(MultiView):
 			enc_url = self.__get_dynamic_attr('item_enclosure_url', item)
 			if enc_url:
 				enc = feedgenerator.Enclosure(
-					url = smart_unicode(enc_url),
+					url = smart_unicode(add_domain(
+							current_site.domain,
+							enc_url,
+							request.is_secure()
+					)),
 					length = smart_unicode(self.__get_dynamic_attr('item_enclosure_length', item)),
 					mime_type = smart_unicode(self.__get_dynamic_attr('item_enclosure_mime_type', item))
 				)
@@ -490,6 +510,7 @@ class BlogView(FeedView):
 			obj = self.get_object(request, *args, **kwargs)
 			feed = self.get_feed(obj, request, reverse_name)
 			items, extra_context = get_items(request, extra_context=extra_context, *args, **kwargs)
+			self.populate_feed(feed, items, request)
 			
 			if 'tags' in extra_context:
 				tags = extra_context['tags']

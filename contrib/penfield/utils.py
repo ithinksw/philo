@@ -1,7 +1,5 @@
 from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
 from django.conf.urls.defaults import url, patterns
-from django.contrib.sites.models import Site
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from philo.utils import paginate
 
@@ -53,16 +51,14 @@ class FeedMultiViewMixin(object):
 			else:
 				feed_type = 'atom'
 			
-			current_site = Site.objects.get_current()
-			#Could this be done with request.path instead somehow?
 			feed_kwargs = {
-				'link': 'http://%s/%s/%s/' % (current_site.domain, request.node.get_absolute_url().strip('/'), reverse(reverse_name, urlconf=self, kwargs=kwargs).strip('/'))
+				'link': request.node.construct_url(subpath=self.reverse(reverse_name, kwargs=kwargs), request=request, with_domain=True)
 			}
 			feed = self.get_feed(feed_type, extra_context, feed_kwargs)
 			
 			for obj in objects:
 				kwargs = {
-					'link': 'http://%s/%s/%s/' % (current_site.domain, request.node.get_absolute_url().strip('/'), self.get_subpath(obj).strip('/'))
+					'link': request.node.construct_url(subpath=self.reverse(obj=obj), request=request, with_domain=True)
 				}
 				self.add_item(feed, obj, kwargs=kwargs)
 	
@@ -93,7 +89,7 @@ class FeedMultiViewMixin(object):
 		if self.feeds_enabled:
 			feed_name = '%s_feed' % base_name
 			urlpatterns = patterns('',
-				url(r'^%s/$' % self.feed_suffix, self.feed_view(object_fetcher, feed_name), name=feed_name),
+				url(r'^%s$' % self.feed_suffix, self.feed_view(object_fetcher, feed_name), name=feed_name),
 			) + urlpatterns
 		return urlpatterns
 	

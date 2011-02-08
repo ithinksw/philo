@@ -83,7 +83,13 @@ def recursenavigation(parser, token):
 
 
 @register.filter
-def has_navigation(node): # optional arg for a key?
+def has_navigation(node, key=None):
+	nav = node.navigation
+	if key is not None:
+		if key in nav and bool(node.navigation[key]):
+			return True
+		elif key not in node.navigation:
+			return False
 	return bool(node.navigation)
 
 

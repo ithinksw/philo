@@ -55,10 +55,7 @@ class NodeURLNode(template.Node):
 						raise
 					return settings.TEMPLATE_STRING_IF_INVALID
 			else:
-				if subpath[0] == '/':
-					subpath = subpath[1:]
-				
-				url = node.get_absolute_url() + subpath
+				url = node.construct_url(subpath)
 		
 		if self.as_var:
 			context[self.as_var] = url

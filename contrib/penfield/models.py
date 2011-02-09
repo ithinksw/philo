@@ -533,7 +533,7 @@ class BlogView(FeedView):
 			item_context = {
 				'paginator': paginator,
 				'paginated_page': paginated_page,
-				self.item_context_var: objects
+				self.item_context_var: items
 			}
 		else:
 			item_context = {

@@ -5,7 +5,7 @@ from philo.models import Node, Redirect, File
 
 class NodeAdmin(TreeEntityAdmin):
 	list_display = ('slug', 'view', 'accepts_subpath')
-	related_field_lookups = {
+	related_lookup_fields = {
 		'fk': [],
 		'm2m': [],
 		'generic': [['view_content_type', 'view_object_id']]
@@ -33,8 +33,8 @@ class RedirectAdmin(ViewAdmin):
 	list_display = ('target_url', 'status_code', 'target_node', 'url_or_subpath')
 	list_filter = ('status_code',)
 	raw_id_fields = ['target_node']
-	related_field_lookups = {
-		'fk': ['target_node']
+	related_lookup_fields = {
+		'fk': raw_id_fields
 	}
 
 

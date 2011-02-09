@@ -234,7 +234,7 @@ class TargetURLModel(models.Model):
 		node = self.target_node
 		if node is not None and node.accepts_subpath and self.url_or_subpath:
 			if self.reversing_parameters is not None:
-				view_name, args, kwargs = self.get_reversing_params()
+				view_name, args, kwargs = self.get_reverse_params()
 				subpath = node.view.reverse(view_name, args=args, kwargs=kwargs)
 			else:
 				subpath = self.url_or_subpath
@@ -245,7 +245,7 @@ class TargetURLModel(models.Model):
 			return node.get_absolute_url()
 		else:
 			if self.reversing_parameters is not None:
-				view_name, args, kwargs = self.get_reversing_params()
+				view_name, args, kwargs = self.get_reverse_params()
 				return reverse(view_name, args=args, kwargs=kwargs)
 			return self.url_or_subpath
 	target_url = property(get_target_url)

@@ -169,7 +169,7 @@ class Navigation(Entity):
 	objects = NavigationManager()
 	
 	node = models.ForeignKey(Node, related_name='navigation_set', help_text="Be available as navigation for this node.")
-	key = models.CharField(max_length=255, validators=[RegexValidator("\w+")], help_text="Must contain one or more alphanumeric characters or underscores.")
+	key = models.CharField(max_length=255, validators=[RegexValidator("\w+")], help_text="Must contain one or more alphanumeric characters or underscores.", db_index=True)
 	depth = models.PositiveSmallIntegerField(default=DEFAULT_NAVIGATION_DEPTH, validators=[MinValueValidator(1)], help_text="Defines the maximum display depth of this navigation.")
 	
 	def __init__(self, *args, **kwargs):

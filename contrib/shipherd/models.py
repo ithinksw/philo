@@ -148,18 +148,19 @@ class NavigationManager(models.Manager):
 		# about that. TODO: Benchmark it.
 		caches = self.__class__._cache[self.db][node].values()
 		
-		items = []
+		target_pks = set()
 		
 		for cache in caches:
-			items += cache['items']
+			target_pks |= set([item.target_node_id for item in cache['items']])
 		
 		# A distinct query is not strictly necessary. TODO: benchmark the efficiency
 		# with/without distinct.
-		targets = list(Node.objects.filter(shipherd_navigationitem_related__in=items).distinct())
+		targets = list(Node.objects.filter(pk__in=target_pks).distinct())
 		
 		for cache in caches:
 			for item in cache['items']:
-				item.target_node = targets[targets.index(item.target_node)]
+				if item.target_node_id:
+					item.target_node = targets[targets.index(item.target_node)]
 	
 	def clear_cache(self):
 		self.__class__._cache.pop(self.db, None)

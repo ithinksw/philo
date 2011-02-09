@@ -146,7 +146,6 @@ class ConstantEmbedNode(template.Node):
 			self.template = None
 	
 	def compile_instance(self, object_pk):
-		self.object_pk = object_pk
 		model = self.content_type.model_class()
 		try:
 			return model.objects.get(pk=object_pk)
@@ -275,15 +274,15 @@ def get_embedded(self):
 setattr(ConstantEmbedNode, LOADED_TEMPLATE_ATTR, property(get_embedded))
 
 
-def get_content_type(bit):
+def parse_content_type(bit, tagname):
 	try:
 		app_label, model = bit.split('.')
 	except ValueError:
-		raise template.TemplateSyntaxError('"%s" template tag expects the first argument to be of the form app_label.model' % tag)
+		raise template.TemplateSyntaxError('"%s" template tag expects the first argument to be of the form app_label.model' % tagname)
 	try:
 		ct = ContentType.objects.get(app_label=app_label, model=model)
 	except ContentType.DoesNotExist:
-		raise template.TemplateSyntaxError('"%s" template tag requires an argument of the form app_label.model which refers to an installed content type (see django.contrib.contenttypes)' % tag)
+		raise template.TemplateSyntaxError('"%s" template tag requires an argument of the form app_label.model which refers to an installed content type (see django.contrib.contenttypes)' % tagname)
 	return ct
 
 
@@ -300,7 +299,7 @@ def do_embed(parser, token):
 		raise template.TemplateSyntaxError('"%s" template tag must have at least two arguments.' % tag)
 	
 	if len(bits) == 3 and bits[-2] == 'with':
-		ct = get_content_type(bits[0])
+		ct = parse_content_type(bits[0], tag)
 		
 		if bits[2][0] in ['"', "'"] and bits[2][0] == bits[2][-1]:
 			return ConstantEmbedNode(ct, template_name=bits[2])
@@ -323,7 +322,7 @@ def do_embed(parser, token):
 		return InstanceEmbedNode(instance, kwargs)
 	elif len(bits) > 2:
 		raise template.TemplateSyntaxError('"%s" template tag expects at most 2 non-keyword arguments when embedding instances.')
-	ct = get_content_type(bits[0])
+	ct = parse_content_type(bits[0], tag)
 	pk = bits[1]
 	
 	try:

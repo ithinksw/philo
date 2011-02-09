@@ -15,12 +15,24 @@ class LazyNode(object):
 			except Site.DoesNotExist:
 				current_site = None
 			
+			path = request._cached_node_path
+			trailing_slash = False
+			if path[-1] == '/':
+				trailing_slash = True
+			
 			try:
-				node, subpath = Node.objects.get_with_path(request._cached_node_path, root=getattr(current_site, 'root_node', None), absolute_result=False)
+				node, subpath = Node.objects.get_with_path(path, root=getattr(current_site, 'root_node', None), absolute_result=False)
 			except Node.DoesNotExist:
 				node = None
 			
 			if node:
+				if subpath is None:
+					subpath = ""
+				subpath = "/" + subpath
+				
+				if trailing_slash and subpath[-1] != "/":
+					subpath += "/"
+				
 				node.subpath = subpath
 			
 			request._found_node = node

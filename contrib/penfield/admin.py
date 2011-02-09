@@ -41,6 +41,7 @@ class BlogEntryAdmin(TitledAdmin, AddTagAdmin):
 			'classes': COLLAPSE_CLASSES
 		})
 	)
+	related_lookup_fields = {'fk': raw_id_fields}
 
 
 class BlogViewAdmin(EntityAdmin):
@@ -54,16 +55,17 @@ class BlogViewAdmin(EntityAdmin):
 		('Archive Pages', {
 			'fields': ('entry_archive_page', 'tag_archive_page')
 		}),
-		('Permalinks', {
-			'fields': ('entry_permalink_style', 'entry_permalink_base', 'tag_permalink_base'),
+		('General Settings', {
+			'fields': ('entry_permalink_style', 'entry_permalink_base', 'tag_permalink_base', 'entries_per_page'),
 			'classes': COLLAPSE_CLASSES
 		}),
-		('Feeds', {
-			'fields': ('feed_suffix', 'feeds_enabled'),
+		('Feed Settings', {
+			'fields': ( 'feeds_enabled', 'feed_suffix', 'feed_type', 'item_title_template', 'item_description_template',),
 			'classes': COLLAPSE_CLASSES
 		})
 	)
-	raw_id_fields = ('index_page', 'entry_page', 'tag_page', 'entry_archive_page', 'tag_archive_page',)
+	raw_id_fields = ('index_page', 'entry_page', 'tag_page', 'entry_archive_page', 'tag_archive_page', 'item_title_template', 'item_description_template',)
+	related_lookup_fields = {'fk': raw_id_fields}
 
 
 class NewsletterAdmin(TitledAdmin):
@@ -115,11 +117,12 @@ class NewsletterViewAdmin(EntityAdmin):
 			'classes': COLLAPSE_CLASSES
 		}),
 		('Feeds', {
-			'fields': ('feed_suffix', 'feeds_enabled'),
+			'fields': ( 'feeds_enabled', 'feed_suffix', 'feed_type', 'item_title_template', 'item_description_template',),
 			'classes': COLLAPSE_CLASSES
 		})
 	)
-	raw_id_fields = ('index_page', 'article_page', 'issue_page', 'article_archive_page', 'issue_archive_page',)
+	raw_id_fields = ('index_page', 'article_page', 'issue_page', 'article_archive_page', 'issue_archive_page', 'item_title_template', 'item_description_template',)
+	related_lookup_fields = {'fk': raw_id_fields}
 
 
 admin.site.register(Blog, BlogAdmin)

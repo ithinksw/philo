@@ -108,7 +108,7 @@ class Page(View):
 
 class Contentlet(models.Model):
 	page = models.ForeignKey(Page, related_name='contentlets')
-	name = models.CharField(max_length=255)
+	name = models.CharField(max_length=255, db_index=True)
 	content = TemplateField()
 	
 	def __unicode__(self):
@@ -120,7 +120,7 @@ class Contentlet(models.Model):
 
 class ContentReference(models.Model):
 	page = models.ForeignKey(Page, related_name='contentreferences')
-	name = models.CharField(max_length=255)
+	name = models.CharField(max_length=255, db_index=True)
 	content_type = models.ForeignKey(ContentType, verbose_name='Content type')
 	content_id = models.PositiveIntegerField(verbose_name='Content ID', blank=True, null=True)
 	content = generic.GenericForeignKey('content_type', 'content_id')

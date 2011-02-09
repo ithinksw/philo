@@ -81,7 +81,7 @@ attribute_value_limiter = ContentTypeSubclassLimiter(AttributeValue)
 
 
 class JSONValue(AttributeValue):
-	value = JSONField(verbose_name='Value (JSON)', help_text='This value must be valid JSON.', default='null')
+	value = JSONField(verbose_name='Value (JSON)', help_text='This value must be valid JSON.', default='null', db_index=True)
 	
 	def __unicode__(self):
 		return smart_str(self.value)
@@ -104,7 +104,7 @@ class JSONValue(AttributeValue):
 
 class ForeignKeyValue(AttributeValue):
 	content_type = models.ForeignKey(ContentType, limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
-	object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True)
+	object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True, db_index=True)
 	value = generic.GenericForeignKey()
 	
 	def value_formfields(self):
@@ -219,11 +219,11 @@ class ManyToManyValue(AttributeValue):
 
 
 class Attribute(models.Model):
-	entity_content_type = models.ForeignKey(ContentType, related_name='attribute_entity_set', verbose_name='Entity type', db_index=True)
+	entity_content_type = models.ForeignKey(ContentType, related_name='attribute_entity_set', verbose_name='Entity type')
 	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID', db_index=True)
 	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
 	
-	value_content_type = models.ForeignKey(ContentType, related_name='attribute_value_set', limit_choices_to=attribute_value_limiter, verbose_name='Value type', null=True, blank=True, db_index=True)
+	value_content_type = models.ForeignKey(ContentType, related_name='attribute_value_set', limit_choices_to=attribute_value_limiter, verbose_name='Value type', null=True, blank=True)
 	value_object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True, db_index=True)
 	value = generic.GenericForeignKey('value_content_type', 'value_object_id')
 	

@@ -1,15 +1,12 @@
 from django.conf import settings
-from django.contrib.localflavor.us.models import USStateField
-from django.contrib.contenttypes.generic import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.generic import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
+from django.core.validators import RegexValidator
 from django.db import models
-from philo.contrib.julian.fields import USZipCodeField
-from philo.models.base import Tag, Entity, Titled
+from philo.models.base import Tag, Entity
 from philo.models.fields import TemplateField
-from philo.utils import ContentTypeSubclassLimiter
-import datetime
+from philo.utils import ContentTypeRegistryLimiter
 import re
 
 
@@ -18,53 +15,25 @@ import re
 FPI_REGEX = re.compile(r"(|\+//|-//)[^/]+//[^/]+//[A-Z]{2}")
 
 
+location_content_type_limiter = ContentTypeRegistryLimiter()
+
+
+def register_location_model(model):
+	location_content_type_limiter.register_class(model)
+
+
+def unregister_location_model(model):
+	location_content_type_limiter.unregister_class(model)
+
+
 class Location(Entity):
-	name = models.CharField(max_length=150, blank=True)
-	description = models.TextField(blank=True)
+	name = models.CharField(max_length=255)
 	
-	longitude = models.FloatField(blank=True, validators=[MinValueValidator(-180), MaxValueValidator(180)])
-	latitude = models.FloatField(blank=True, validators=[MinValueValidator(-90), MaxValueValidator(90)])
-	
-	events = GenericRelation('Event')
-	
-	def clean(self):
-		if not (self.name or self.description) or (self.longitude is None and self.latitude is None):
-			raise ValidationError("Either a name and description or a latitude and longitude must be defined.")
-	
-	class Meta:
-		abstract = True
+	def __unicode__(self):
+		return self.name
 
 
-_location_content_type_limiter = ContentTypeSubclassLimiter(Location)
-
-
-# TODO: Can we track when a building is open? Hmm...
-class Building(Location):
-	"""A building is a location with a street address."""
-	address = models.CharField(max_length=255)
-	city = models.CharField(max_length=150)
-	
-	class Meta:
-		abstract = True
-
-
-_building_content_type_limiter = ContentTypeSubclassLimiter(Building)
-
-
-class USBuilding(Building):
-	state = USStateField()
-	zipcode = USZipCodeField()
-	
-	class Meta:
-		verbose_name = "Building (US)"
-		verbose_name_plural = "Buildings (US)"
-
-
-class Venue(Location):
-	"""A venue is a location inside a building"""
-	building_content_type = models.ForeignKey(ContentType, limit_choices_to=_building_content_type_limiter)
-	building_pk = models.TextField()
-	building = GenericForeignKey('building_content_type', 'building_pk')
+register_location_model(Location)
 
 
 class TimedModel(models.Model):
@@ -76,12 +45,22 @@ class TimedModel(models.Model):
 	def is_all_day(self):
 		return self.start_time is None and self.end_time is None
 	
+	def clean(self):
+		if bool(self.start_time) != bool(self.end_time):
+			raise ValidationError("A %s must have either a start time and an end time or neither.")
+		
+		if self.start_date > self.end_date or self.start_date == self.end_date and self.start_time > self.end_time:
+			raise ValidationError("A %s cannot end before it starts." % self.__class__.__name__)
+	
 	class Meta:
 		abstract = True
 
 
-class Event(Entity, Titled, TimedModel):
-	location_content_type = models.ForeignKey(ContentType, limit_choices_to=_location_content_type_limiter)
+class Event(Entity, TimedModel):
+	name = models.CharField(max_length=255)
+	slug = models.SlugField(max_length=255)
+	
+	location_content_type = models.ForeignKey(ContentType, limit_choices_to=location_content_type_limiter)
 	location_pk = models.TextField()
 	location = GenericForeignKey('location_content_type', 'location_pk')
 	
@@ -92,6 +71,8 @@ class Event(Entity, Titled, TimedModel):
 	parent_event = models.ForeignKey('self', blank=True, null=True)
 	
 	owner = models.ForeignKey(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'))
+	
+	# TODO: Add uid - use as pk?
 
 
 class Calendar(Entity):

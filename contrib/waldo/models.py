@@ -416,7 +416,7 @@ class AccountMultiView(LoginMultiView):
 			user.email = email
 			user.save()
 			messages.add_message(request, messages.SUCCESS, 'Email changed successfully.')
-			return HttpReponseRedirect(self.reverse('account', node=request.node))
+			return HttpResponseRedirect(self.reverse('account', node=request.node))
 		
 		raise Http404
 	

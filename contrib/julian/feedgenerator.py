@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.utils.feedgenerator import SyndicationFeed
 import vobject
 
@@ -75,3 +76,9 @@ class ICalendarFeed(SyndicationFeed):
 					event.add(ITEM_ICAL_MAP[key]).value = val
 		
 		cal.serialize(outfile)
+		
+		# Some special handling for HttpResponses. See link above.
+		if isinstance(outfile, HttpResponse):
+			filename = self.feed.get('filename', 'filename.ics')
+			outfile['Filename'] = filename
+			response['Content-Disposition'] = 'attachment; filename=%s' % filename

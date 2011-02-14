@@ -9,7 +9,7 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         
         # Adding field 'NewsletterView.feed_type'
-        db.add_column('penfield_newsletterview', 'feed_type', self.gf('django.db.models.fields.CharField')(default='atom', max_length=50), keep_default=False)
+        db.add_column('penfield_newsletterview', 'feed_type', self.gf('django.db.models.fields.CharField')(default='application/atom+xml', max_length=50), keep_default=False)
 
         # Adding field 'NewsletterView.item_title_template'
         db.add_column('penfield_newsletterview', 'item_title_template', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='penfield_newsletterview_title_related', null=True, to=orm['philo.Template']), keep_default=False)

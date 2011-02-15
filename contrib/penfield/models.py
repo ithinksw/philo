@@ -64,7 +64,9 @@ class FeedView(MultiView):
 		if self.feeds_enabled:
 			feed_reverse_name = "%s_feed" % reverse_name
 			urlpatterns += patterns('',
-				url(r'^%s$' % self.feed_suffix, self.feed_view(get_items_attr, feed_reverse_name), name=feed_reverse_name),
+				# include an optional slash at the beginning in case someone uses an include
+				# with a base that doesn't include a slash.
+				url(r'^/?%s$' % self.feed_suffix, self.feed_view(get_items_attr, feed_reverse_name), name=feed_reverse_name),
 			)
 		return urlpatterns
 	
@@ -333,6 +335,7 @@ class BlogView(FeedView):
 	
 	index_page = models.ForeignKey(Page, related_name='blog_index_related')
 	entry_page = models.ForeignKey(Page, related_name='blog_entry_related')
+	# TODO: entry_archive is misleading. Rename to ymd_page or timespan_page.
 	entry_archive_page = models.ForeignKey(Page, related_name='blog_entry_archive_related', null=True, blank=True)
 	tag_page = models.ForeignKey(Page, related_name='blog_tag_related')
 	tag_archive_page = models.ForeignKey(Page, related_name='blog_tag_archive_related', null=True, blank=True)
@@ -359,7 +362,7 @@ class BlogView(FeedView):
 						if self.entry_permalink_style == 'D':
 							kwargs.update({'day': str(obj.date.day).zfill(2)})
 				return self.entry_view, [], kwargs
-		elif isinstance(obj, Tag) or (isinstance(obj, models.QuerySet) and obj.model == Tag and obj):
+		elif isinstance(obj, Tag) or (isinstance(obj, models.query.QuerySet) and obj.model == Tag and obj):
 			if isinstance(obj, Tag):
 				obj = [obj]
 			slugs = [tag.slug for tag in obj if tag in self.get_tag_queryset()]
@@ -514,7 +517,7 @@ class BlogView(FeedView):
 			
 			if 'tags' in extra_context:
 				tags = extra_context['tags']
-				feed.feed['link'] = request.node.construct_url(self.reverse(tags), with_domain=True, request=request, secure=request.is_secure())
+				feed.feed['link'] = request.node.construct_url(self.reverse(obj=tags), with_domain=True, request=request, secure=request.is_secure())
 			else:
 				tags = obj.entry_tags
 			

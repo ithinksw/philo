@@ -75,7 +75,7 @@ class TimedModel(models.Model):
 
 class Event(Entity, TimedModel):
 	name = models.CharField(max_length=255)
-	slug = models.SlugField(max_length=255, unique_for_date='created')
+	slug = models.SlugField(max_length=255, unique_for_date='start_date')
 	
 	location_content_type = models.ForeignKey(ContentType, limit_choices_to=location_content_type_limiter, blank=True, null=True)
 	location_pk = models.TextField(blank=True)
@@ -88,7 +88,7 @@ class Event(Entity, TimedModel):
 	parent_event = models.ForeignKey('self', blank=True, null=True)
 	
 	# TODO: "User module"
-	owner = models.ForeignKey(User)
+	owner = models.ForeignKey(User, related_name='owned_events')
 	
 	created = models.DateTimeField(auto_now_add=True)
 	last_modified = models.DateTimeField(auto_now=True)
@@ -105,25 +105,30 @@ class Calendar(Entity):
 	events = models.ManyToManyField(Event, related_name='calendars')
 	
 	# TODO: Can we auto-generate this on save based on site id and calendar name and settings language?
-	uuid = models.TextField("Calendar UUID", unique=True, help_text="Should conform to Formal Public Identifier format. See &lt;http://en.wikipedia.org/wiki/Formal_Public_Identifier&gt;", validators=[RegexValidator(FPI_REGEX)])
+	uuid = models.TextField("Calendar UUID", unique=True, help_text="Should conform to Formal Public Identifier format. See <a href='http://en.wikipedia.org/wiki/Formal_Public_Identifier'>Wikipedia</a>.", validators=[RegexValidator(FPI_REGEX)])
+	
+	def __unicode__(self):
+		return self.name
 
 
 class CalendarView(FeedView):
 	calendar = models.ForeignKey(Calendar)
 	index_page = models.ForeignKey(Page, related_name="calendar_index_related")
-	timespan_page = models.ForeignKey(Page, related_name="calendar_timespan_related")
 	event_detail_page = models.ForeignKey(Page, related_name="calendar_detail_related")
-	tag_page = models.ForeignKey(Page, related_name="calendar_tag_related")
-	location_page = models.ForeignKey(Page, related_name="calendar_location_related")
-	owner_page = models.ForeignKey(Page, related_name="calendar_owner_related")
+	
+	timespan_page = models.ForeignKey(Page, related_name="calendar_timespan_related", blank=True, null=True)
+	tag_page = models.ForeignKey(Page, related_name="calendar_tag_related", blank=True, null=True)
+	location_page = models.ForeignKey(Page, related_name="calendar_location_related", blank=True, null=True)
+	owner_page = models.ForeignKey(Page, related_name="calendar_owner_related", blank=True, null=True)
 	
 	tag_archive_page = models.ForeignKey(Page, related_name="calendar_tag_archive_related", blank=True, null=True)
 	location_archive_page = models.ForeignKey(Page, related_name="calendar_location_archive_related", blank=True, null=True)
 	owner_archive_page = models.ForeignKey(Page, related_name="calendar_owner_archive_related", blank=True, null=True)
 	
 	tag_permalink_base = models.CharField(max_length=30, default='tags')
-	owner_permalink_base = models.CharField(max_length=30, default='owner')
-	location_permalink_base = models.CharField(max_length=30, default='location')
+	owner_permalink_base = models.CharField(max_length=30, default='owners')
+	location_permalink_base = models.CharField(max_length=30, default='locations')
+	events_per_page = models.PositiveIntegerField(blank=True, null=True)
 	
 	item_context_var = "events"
 	object_attr = "calendar"
@@ -133,9 +138,9 @@ class CalendarView(FeedView):
 			return 'events_for_user', [], {'username': obj.username}
 		elif isinstance(obj, Event):
 			return 'event_detail', [], {
-				'year': obj.start_date.year,
-				'month': obj.start_date.month,
-				'day': obj.start_date.day,
+				'year': str(obj.start_date.year).zfill(4),
+				'month': str(obj.start_date.month).zfill(2),
+				'day': str(obj.start_date.day).zfill(2),
 				'slug': obj.slug
 			}
 		elif isinstance(obj, Tag) or isinstance(obj, models.query.QuerySet) and obj.model == Tag:
@@ -145,9 +150,7 @@ class CalendarView(FeedView):
 		raise ViewCanNotProvideSubpath
 	
 	def timespan_patterns(self, timespan_name):
-		urlpatterns = patterns('',
-		) + self.feed_patterns('get_events_by_timespan', 'timespan_page', "events_by_%s" % timespan_name)
-		return urlpatterns
+		return self.feed_patterns('get_events_by_timespan', 'timespan_page', "events_by_%s" % timespan_name)
 	
 	@property
 	def urlpatterns(self):
@@ -160,7 +163,7 @@ class CalendarView(FeedView):
 			#url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/(?P<hour>\d{1,2})', include(self.timespan_patterns('hour'))),
 			url(r'(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/(?P<slug>[\w-]+)', self.event_detail_view, name="event_detail"),
 			
-			url(r'^%s/(?P<username>[^/]+)' % self.owner_permalink_base, include(self.feed_patterns('get_events_by_user', 'owner_page', 'events_by_user'))),
+			url(r'^%s/(?P<username>[^/]+)' % self.owner_permalink_base, include(self.feed_patterns('get_events_by_owner', 'owner_page', 'events_by_user'))),
 			
 			# Some sort of shortcut for a location would be useful. This could be on a per-calendar
 			# or per-calendar-view basis.
@@ -186,12 +189,13 @@ class CalendarView(FeedView):
 				url(r'^%s$' % self.owner_permalink_base, self.owner_archive_view, name='owner_archive')
 			)
 		
-		if self.owner_archive_page:
+		if self.location_archive_page:
 			urlpatterns += patterns('',
 				url(r'^%s$' % self.location_permalink_base, self.location_archive_view, name='location_archive')
 			)
 		return urlpatterns
 	
+	# Basic QuerySet fetchers.
 	def get_event_queryset(self):
 		return self.calendar.events.all()
 	
@@ -199,21 +203,44 @@ class CalendarView(FeedView):
 		qs = self.get_event_queryset()
 		# See python documentation for the min/max values.
 		if year and month and day:
+			year, month, day = int(year), int(month), int(day)
 			start_datetime = datetime.datetime(year, month, day, 0, 0)
 			end_datetime = datetime.datetime(year, month, day, 23, 59)
 		elif year and month:
+			year, month = int(year), int(month)
 			start_datetime = datetime.datetime(year, month, 1, 0, 0)
 			end_datetime = datetime.datetime(year, month, calendar.monthrange(year, month)[1], 23, 59)
 		else:
+			year = int(year)
 			start_datetime = datetime.datetime(year, 1, 1, 0, 0)
 			end_datetime = datetime.datetime(year, 12, 31, 23, 59)
 		
-		return qs.exclude(end_date__lt=start_datetime, end_time__lt=start_datetime.time()).exclude(start_date__gt=end_datetime, start_time__gt=end_datetime.time(), start_time__isnull=False).exclude(start_time__isnull=True, start_date__gt=end_datetime.time())
+		return qs.exclude(end_date__lt=start_datetime, end_time__lt=start_datetime).exclude(start_date__gt=end_datetime, start_time__gt=end_datetime, start_time__isnull=False).exclude(start_time__isnull=True, start_date__gt=end_datetime)
 	
 	def get_tag_queryset(self):
-		return Tag.objects.filter(events__calendar=self.calendar).distinct()
+		return Tag.objects.filter(events__calendars=self.calendar).distinct()
 	
-	# Event fetchers.
+	def get_location_querysets(self):
+		# Potential bottleneck?
+		location_map = {}
+		locations = Event.objects.values_list('location_content_type', 'location_pk')
+		
+		for ct, pk in locations:
+			location_map.setdefault(ct, []).append(pk)
+		
+		location_cts = ContentType.objects.in_bulk(location_map.keys())
+		location_querysets = {}
+		
+		for ct_pk, pks in location_map.items():
+			ct = location_cts[ct_pk]
+			location_querysets[ct] = ct.model_class()._default_manager.filter(pk__in=pks)
+		
+		return location_querysets
+	
+	def get_owner_queryset(self):
+		return User.objects.filter(owned_events__calendars=self.calendar).distinct()
+	
+	# Event QuerySet parsers for a request/args/kwargs
 	def get_all_events(self, request, extra_context=None):
 		return self.get_event_queryset(), extra_context
 	
@@ -226,16 +253,16 @@ class CalendarView(FeedView):
 		})
 		return self.get_timespan_queryset(year, month, day), context
 	
-	def get_events_by_user(self, request, username, extra_context=None):
+	def get_events_by_owner(self, request, username, extra_context=None):
 		try:
-			user = User.objects.get(username)
+			owner = self.get_owner_queryset().get(username=username)
 		except User.DoesNotExist:
 			raise Http404
 		
-		qs = self.event_queryset().filter(owner=user)
+		qs = self.get_event_queryset().filter(owner=owner)
 		context = extra_context or {}
 		context.update({
-			'user': user
+			'owner': owner
 		})
 		return qs, context
 	
@@ -276,19 +303,64 @@ class CalendarView(FeedView):
 		})
 		return events, context
 	
-	# Detail View. TODO: fill this out.
+	# Detail View.
 	def event_detail_view(self, request, year, month, day, slug, extra_context=None):
-		pass
+		try:
+			event = Event.objects.select_related('parent_event').get(start_date__year=year, start_date__month=month, start_date__day=day, slug=slug)
+		except Event.DoesNotExist:
+			raise Http404
+		
+		context = self.get_context()
+		context.update(extra_context or {})
+		context.update({
+			'event': event
+		})
+		return self.event_detail_page.render_to_response(request, extra_context=context)
 	
-	# Archive Views. TODO: fill these out.
+	# Archive Views.
 	def tag_archive_view(self, request, extra_context=None):
-		pass
+		tags = self.get_tag_queryset()
+		context = self.get_context()
+		context.update(extra_context or {})
+		context.update({
+			'tags': tags
+		})
+		return self.tag_archive_page.render_to_response(request, extra_context=context)
 	
 	def location_archive_view(self, request, extra_context=None):
-		pass
+		# What datastructure should locations be?
+		locations = self.get_location_querysets()
+		context = self.get_context()
+		context.update(extra_context or {})
+		context.update({
+			'locations': locations
+		})
+		return self.location_archive_page.render_to_response(request, extra_context=context)
 	
 	def owner_archive_view(self, request, extra_context=None):
-		pass
+		owners = self.get_owner_queryset()
+		context = self.get_context()
+		context.update(extra_context or {})
+		context.update({
+			'owners': owners
+		})
+		return self.owner_archive_page.render_to_response(request, extra_context=context)
+	
+	# Process page items
+	def process_page_items(self, request, items):
+		if self.events_per_page:
+			page_num = request.GET.get('page', 1)
+			paginator, paginated_page, items = paginate(items, self.events_per_page, page_num)
+			item_context = {
+				'paginator': paginator,
+				'paginated_page': paginated_page,
+				self.item_context_var: items
+			}
+		else:
+			item_context = {
+				self.item_context_var: items
+			}
+		return items, item_context
 	
 	# Feed information hooks
 	def title(self, obj):

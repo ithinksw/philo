@@ -81,4 +81,4 @@ class ICalendarFeed(SyndicationFeed):
 		if isinstance(outfile, HttpResponse):
 			filename = self.feed.get('filename', 'filename.ics')
 			outfile['Filename'] = filename
-			response['Content-Disposition'] = 'attachment; filename=%s' % filename
+			outfile['Content-Disposition'] = 'attachment; filename=%s' % filename

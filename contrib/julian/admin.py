@@ -1,6 +1,6 @@
 from django.contrib import admin
 from philo.admin import EntityAdmin, COLLAPSE_CLASSES
-from philo.contrib.julian.models import Location, Event, Calendar, ICalendarFeedView
+from philo.contrib.julian.models import Location, Event, Calendar, CalendarView
 
 
 class LocationAdmin(EntityAdmin):
@@ -23,22 +23,56 @@ class EventAdmin(EntityAdmin):
 			'classes': COLLAPSE_CLASSES
 		})
 	)
-	related_lookup_fields = {
-		'generic': [["location_content_type", "location_pk"]]
-	}
 	filter_horizontal = ['tags']
 	raw_id_fields = ['parent_event']
+	related_lookup_fields = {
+		'fk': raw_id_fields,
+		'generic': [["location_content_type", "location_pk"]]
+	}
+	prepopulated_fields = {'slug': ('name',)}
 
 
 class CalendarAdmin(EntityAdmin):
-	pass
+	prepopulated_fields = {'slug': ('name',)}
+	filter_horizontal = ['events']
+	fieldsets = (
+		(None, {
+			'fields': ('name', 'description', 'events')
+		}),
+		('Advanced', {
+			'fields': ('slug', 'uuid'),
+			'classes': COLLAPSE_CLASSES
+		})
+	)
 
 
-class ICalendarFeedViewAdmin(EntityAdmin):
-	pass
+class CalendarViewAdmin(EntityAdmin):
+	fieldsets = (
+		(None, {
+			'fields': ('calendar',)
+		}),
+		('Pages', {
+			'fields': ('index_page', 'event_detail_page')
+		}),
+		('General Settings', {
+			'fields': ('tag_permalink_base', 'owner_permalink_base', 'location_permalink_base', 'events_per_page')
+		}),
+		('Event List Pages', {
+			'fields': ('timespan_page', 'tag_page', 'location_page', 'owner_page'),
+			'classes': COLLAPSE_CLASSES
+		}),
+		('Archive Pages', {
+			'fields': ('location_archive_page', 'tag_archive_page', 'owner_archive_page'),
+			'classes': COLLAPSE_CLASSES
+		}),
+		('Feed Settings', {
+			'fields': ( 'feeds_enabled', 'feed_suffix', 'feed_type', 'item_title_template', 'item_description_template',),
+			'classes': COLLAPSE_CLASSES
+		})
+	)
 
 
 admin.site.register(Location, LocationAdmin)
 admin.site.register(Event, EventAdmin)
 admin.site.register(Calendar, CalendarAdmin)
-admin.site.register(ICalendarFeedView, ICalendarFeedViewAdmin)
+admin.site.register(CalendarView, CalendarViewAdmin)

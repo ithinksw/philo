@@ -382,7 +382,8 @@ body{
 		padding-right: 5px !important;
 	}
 	.x-btn-arrow{
-		background: transparent url(images/btn/menu) right center no-repeat !important;
+		background: transparent url(images/btn/menu.png) right center no-repeat !important;
+		padding-right:12px !important;
 	}
 	/* pressed and over state */
 	/* Commented out because the selectors are so specific they're overriding the click state. What to do? I don't want to use !important... Figure out later. */

@@ -1,5 +1,6 @@
 from datetime import date
 from django import forms
+from django.conf import settings
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -19,6 +20,13 @@ class EmailInput(forms.TextInput):
 
 class RegistrationForm(UserCreationForm):
 	email = forms.EmailField(widget=EmailInput)
+	try:
+		from recaptcha_django import ReCaptchaField
+	except ImportError:
+		pass
+	else:
+		if 'recaptcha_django.middleware.ReCaptchaMiddleware' in settings.MIDDLEWARE_CLASSES:
+			recaptcha = ReCaptchaField()
 	
 	def clean_username(self):
 		username = self.cleaned_data['username']
@@ -49,3 +57,17 @@ class RegistrationForm(UserCreationForm):
 		new_user.is_active = False
 		new_user.save()
 		return new_user
+
+
+class UserAccountForm(forms.ModelForm):
+	first_name = User._meta.get_field('first_name').formfield(required=True)
+	last_name = User._meta.get_field('last_name').formfield(required=True)
+	email = User._meta.get_field('email').formfield(required=True, widget=EmailInput)
+	
+	def __init__(self, user, *args, **kwargs):
+		kwargs['instance'] = user
+		super(UserAccountForm, self).__init__(*args, **kwargs)
+	
+	class Meta:
+		model = User
+		fields = ('first_name', 'last_name', 'email')

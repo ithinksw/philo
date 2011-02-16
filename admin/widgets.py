@@ -1,5 +1,6 @@
 from django import forms
 from django.conf import settings
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
 from django.utils.text import truncate_words
@@ -31,3 +32,34 @@ class ModelLookupWidget(forms.TextInput):
 			except value_class.DoesNotExist:
 				pass
 		return mark_safe(output)
+
+
+class TagFilteredSelectMultiple(FilteredSelectMultiple):
+	"""
+	A SelectMultiple with a JavaScript filter interface.
+
+	Note that the resulting JavaScript assumes that the jsi18n
+	catalog has been loaded in the page
+	"""
+	class Media:
+		js = (settings.ADMIN_MEDIA_PREFIX + "js/core.js",
+			  settings.ADMIN_MEDIA_PREFIX + "js/SelectBox.js",
+			  settings.ADMIN_MEDIA_PREFIX + "js/SelectFilter2.js")
+		
+		if 'staticmedia' in settings.INSTALLED_APPS:
+			import staticmedia
+			js += (staticmedia.url('admin/js/TagCreation.js'),)
+		else:
+			js += (settings.ADMIN_MEDIA_PREFIX + "js/TagCreation.js",)
+
+	def render(self, name, value, attrs=None, choices=()):
+		if attrs is None: attrs = {}
+		attrs['class'] = 'selectfilter'
+		if self.is_stacked: attrs['class'] += 'stacked'
+		output = [super(FilteredSelectMultiple, self).render(name, value, attrs, choices)]
+		output.append(u'<script type="text/javascript">addEvent(window, "load", function(e) {')
+		# TODO: "id_" is hard-coded here. This should instead use the correct
+		# API to determine the ID dynamically.
+		output.append(u'SelectFilter.init("id_%s", "%s", %s, "%s"); tagCreation.init("id_%s"); });</script>\n' % \
+			(name, self.verbose_name.replace('"', '\\"'), int(self.is_stacked), settings.ADMIN_MEDIA_PREFIX, name))
+		return mark_safe(u''.join(output))

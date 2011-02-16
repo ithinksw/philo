@@ -1,11 +1,10 @@
+from django.conf import settings
 from django.contrib import admin
 from django import forms
-from django.template import Template as DjangoTemplate
-from philo.admin import widgets
-from philo.admin.base import COLLAPSE_CLASSES
+from philo.admin.base import COLLAPSE_CLASSES, TreeAdmin
 from philo.admin.nodes import ViewAdmin
 from philo.models.pages import Page, Template, Contentlet, ContentReference
-from philo.forms import TemplateForm, ContentletInlineFormSet, ContentReferenceInlineFormSet, ContentletForm, ContentReferenceForm
+from philo.admin.forms.containers import *
 
 
 class ContentletInline(admin.StackedInline):
@@ -15,7 +14,11 @@ class ContentletInline(admin.StackedInline):
 	formset = ContentletInlineFormSet
 	form = ContentletForm
 	can_delete = False
-	template = 'admin/philo/edit_inline/tabular_container.html'
+	classes = ('collapse-open', 'collapse','open')
+	if 'grappelli' in settings.INSTALLED_APPS:
+		template = 'admin/philo/edit_inline/grappelli_tabular_container.html'
+	else:
+		template = 'admin/philo/edit_inline/tabular_container.html'
 
 
 class ContentReferenceInline(admin.StackedInline):
@@ -25,7 +28,11 @@ class ContentReferenceInline(admin.StackedInline):
 	formset = ContentReferenceInlineFormSet
 	form = ContentReferenceForm
 	can_delete = False
-	template = 'admin/philo/edit_inline/tabular_container.html'
+	classes = ('collapse-open', 'collapse','open')
+	if 'grappelli' in settings.INSTALLED_APPS:
+		template = 'admin/philo/edit_inline/grappelli_tabular_container.html'
+	else:
+		template = 'admin/philo/edit_inline/tabular_container.html'
 
 
 class PageAdmin(ViewAdmin):
@@ -41,7 +48,7 @@ class PageAdmin(ViewAdmin):
 	inlines = [ContentletInline, ContentReferenceInline] + ViewAdmin.inlines
 
 
-class TemplateAdmin(admin.ModelAdmin):
+class TemplateAdmin(TreeAdmin):
 	prepopulated_fields = {'slug': ('name',)}
 	fieldsets = (
 		(None, {
@@ -62,7 +69,6 @@ class TemplateAdmin(admin.ModelAdmin):
 	save_on_top = True
 	save_as = True
 	list_display = ('__unicode__', 'slug', 'get_path',)
-	form = TemplateForm
 
 
 admin.site.register(Page, PageAdmin)

@@ -1,0 +1,1428 @@
+[
+    {
+        "pk": 1, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 144, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "redirect"
+            ], 
+            "parent": null, 
+            "level": 0, 
+            "lft": 1, 
+            "tree_id": 1, 
+            "slug": "root"
+        }
+    }, 
+    {
+        "pk": 2, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 9, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 1, 
+            "level": 1, 
+            "lft": 2, 
+            "tree_id": 1, 
+            "slug": "second"
+        }
+    }, 
+    {
+        "pk": 3, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 8, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 2, 
+            "level": 2, 
+            "lft": 3, 
+            "tree_id": 1, 
+            "slug": "third"
+        }
+    }, 
+    {
+        "pk": 4, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 7, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 3, 
+            "level": 3, 
+            "lft": 4, 
+            "tree_id": 1, 
+            "slug": "fourth"
+        }
+    }, 
+    {
+        "pk": 5, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 6, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 4, 
+            "level": 4, 
+            "lft": 5, 
+            "tree_id": 1, 
+            "slug": "fifth"
+        }
+    }, 
+    {
+        "pk": 6, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 143, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "penfield", 
+                "blogview"
+            ], 
+            "parent": 1, 
+            "level": 1, 
+            "lft": 10, 
+            "tree_id": 1, 
+            "slug": "second2"
+        }
+    }, 
+    {
+        "pk": 7, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 124, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 6, 
+            "level": 2, 
+            "lft": 11, 
+            "tree_id": 1, 
+            "slug": "third2"
+        }
+    }, 
+    {
+        "pk": 8, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 123, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 7, 
+            "level": 3, 
+            "lft": 12, 
+            "tree_id": 1, 
+            "slug": "fourth2"
+        }
+    }, 
+    {
+        "pk": 9, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 122, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 8, 
+            "level": 4, 
+            "lft": 13, 
+            "tree_id": 1, 
+            "slug": "fifth2"
+        }
+    }, 
+    {
+        "pk": 10, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 121, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 9, 
+            "level": 5, 
+            "lft": 14, 
+            "tree_id": 1, 
+            "slug": "0"
+        }
+    }, 
+    {
+        "pk": 11, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 120, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 10, 
+            "level": 6, 
+            "lft": 15, 
+            "tree_id": 1, 
+            "slug": "1"
+        }
+    }, 
+    {
+        "pk": 12, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 119, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 11, 
+            "level": 7, 
+            "lft": 16, 
+            "tree_id": 1, 
+            "slug": "2"
+        }
+    }, 
+    {
+        "pk": 13, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 118, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 12, 
+            "level": 8, 
+            "lft": 17, 
+            "tree_id": 1, 
+            "slug": "3"
+        }
+    }, 
+    {
+        "pk": 14, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 117, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 13, 
+            "level": 9, 
+            "lft": 18, 
+            "tree_id": 1, 
+            "slug": "4"
+        }
+    }, 
+    {
+        "pk": 15, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 116, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 14, 
+            "level": 10, 
+            "lft": 19, 
+            "tree_id": 1, 
+            "slug": "5"
+        }
+    }, 
+    {
+        "pk": 16, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 115, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 15, 
+            "level": 11, 
+            "lft": 20, 
+            "tree_id": 1, 
+            "slug": "6"
+        }
+    }, 
+    {
+        "pk": 17, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 114, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 16, 
+            "level": 12, 
+            "lft": 21, 
+            "tree_id": 1, 
+            "slug": "7"
+        }
+    }, 
+    {
+        "pk": 18, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 113, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 17, 
+            "level": 13, 
+            "lft": 22, 
+            "tree_id": 1, 
+            "slug": "8"
+        }
+    }, 
+    {
+        "pk": 19, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 112, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 18, 
+            "level": 14, 
+            "lft": 23, 
+            "tree_id": 1, 
+            "slug": "9"
+        }
+    }, 
+    {
+        "pk": 20, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 111, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 19, 
+            "level": 15, 
+            "lft": 24, 
+            "tree_id": 1, 
+            "slug": "10"
+        }
+    }, 
+    {
+        "pk": 21, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 110, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 20, 
+            "level": 16, 
+            "lft": 25, 
+            "tree_id": 1, 
+            "slug": "11"
+        }
+    }, 
+    {
+        "pk": 22, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 109, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 21, 
+            "level": 17, 
+            "lft": 26, 
+            "tree_id": 1, 
+            "slug": "12"
+        }
+    }, 
+    {
+        "pk": 23, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 108, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 22, 
+            "level": 18, 
+            "lft": 27, 
+            "tree_id": 1, 
+            "slug": "13"
+        }
+    }, 
+    {
+        "pk": 24, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 107, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 23, 
+            "level": 19, 
+            "lft": 28, 
+            "tree_id": 1, 
+            "slug": "14"
+        }
+    }, 
+    {
+        "pk": 25, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 106, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 24, 
+            "level": 20, 
+            "lft": 29, 
+            "tree_id": 1, 
+            "slug": "15"
+        }
+    }, 
+    {
+        "pk": 26, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 105, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 25, 
+            "level": 21, 
+            "lft": 30, 
+            "tree_id": 1, 
+            "slug": "16"
+        }
+    }, 
+    {
+        "pk": 27, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 104, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 26, 
+            "level": 22, 
+            "lft": 31, 
+            "tree_id": 1, 
+            "slug": "17"
+        }
+    }, 
+    {
+        "pk": 28, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 73, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 27, 
+            "level": 23, 
+            "lft": 32, 
+            "tree_id": 1, 
+            "slug": "18"
+        }
+    }, 
+    {
+        "pk": 29, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 72, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 28, 
+            "level": 24, 
+            "lft": 33, 
+            "tree_id": 1, 
+            "slug": "19"
+        }
+    }, 
+    {
+        "pk": 30, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 71, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 29, 
+            "level": 25, 
+            "lft": 34, 
+            "tree_id": 1, 
+            "slug": "20"
+        }
+    }, 
+    {
+        "pk": 31, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 70, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 30, 
+            "level": 26, 
+            "lft": 35, 
+            "tree_id": 1, 
+            "slug": "21"
+        }
+    }, 
+    {
+        "pk": 32, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 69, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 31, 
+            "level": 27, 
+            "lft": 36, 
+            "tree_id": 1, 
+            "slug": "22"
+        }
+    }, 
+    {
+        "pk": 33, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 68, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 32, 
+            "level": 28, 
+            "lft": 37, 
+            "tree_id": 1, 
+            "slug": "23"
+        }
+    }, 
+    {
+        "pk": 34, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 67, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 33, 
+            "level": 29, 
+            "lft": 38, 
+            "tree_id": 1, 
+            "slug": "24"
+        }
+    }, 
+    {
+        "pk": 35, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 66, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 34, 
+            "level": 30, 
+            "lft": 39, 
+            "tree_id": 1, 
+            "slug": "25"
+        }
+    }, 
+    {
+        "pk": 36, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 65, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 35, 
+            "level": 31, 
+            "lft": 40, 
+            "tree_id": 1, 
+            "slug": "26"
+        }
+    }, 
+    {
+        "pk": 37, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 64, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 36, 
+            "level": 32, 
+            "lft": 41, 
+            "tree_id": 1, 
+            "slug": "27"
+        }
+    }, 
+    {
+        "pk": 38, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 63, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 37, 
+            "level": 33, 
+            "lft": 42, 
+            "tree_id": 1, 
+            "slug": "28"
+        }
+    }, 
+    {
+        "pk": 39, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 62, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 38, 
+            "level": 34, 
+            "lft": 43, 
+            "tree_id": 1, 
+            "slug": "29"
+        }
+    }, 
+    {
+        "pk": 40, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 61, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 39, 
+            "level": 35, 
+            "lft": 44, 
+            "tree_id": 1, 
+            "slug": "30"
+        }
+    }, 
+    {
+        "pk": 41, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 60, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 40, 
+            "level": 36, 
+            "lft": 45, 
+            "tree_id": 1, 
+            "slug": "31"
+        }
+    }, 
+    {
+        "pk": 42, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 59, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 41, 
+            "level": 37, 
+            "lft": 46, 
+            "tree_id": 1, 
+            "slug": "32"
+        }
+    }, 
+    {
+        "pk": 43, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 58, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 42, 
+            "level": 38, 
+            "lft": 47, 
+            "tree_id": 1, 
+            "slug": "33"
+        }
+    }, 
+    {
+        "pk": 44, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 57, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 43, 
+            "level": 39, 
+            "lft": 48, 
+            "tree_id": 1, 
+            "slug": "34"
+        }
+    }, 
+    {
+        "pk": 45, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 56, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 44, 
+            "level": 40, 
+            "lft": 49, 
+            "tree_id": 1, 
+            "slug": "35"
+        }
+    }, 
+    {
+        "pk": 46, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 55, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 45, 
+            "level": 41, 
+            "lft": 50, 
+            "tree_id": 1, 
+            "slug": "36"
+        }
+    }, 
+    {
+        "pk": 47, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 54, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 46, 
+            "level": 42, 
+            "lft": 51, 
+            "tree_id": 1, 
+            "slug": "37"
+        }
+    }, 
+    {
+        "pk": 48, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 53, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 47, 
+            "level": 43, 
+            "lft": 52, 
+            "tree_id": 1, 
+            "slug": "38"
+        }
+    }, 
+    {
+        "pk": 49, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 103, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 27, 
+            "level": 23, 
+            "lft": 74, 
+            "tree_id": 1, 
+            "slug": "39"
+        }
+    }, 
+    {
+        "pk": 50, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 102, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 49, 
+            "level": 24, 
+            "lft": 75, 
+            "tree_id": 1, 
+            "slug": "40"
+        }
+    }, 
+    {
+        "pk": 51, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 101, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 50, 
+            "level": 25, 
+            "lft": 76, 
+            "tree_id": 1, 
+            "slug": "41"
+        }
+    }, 
+    {
+        "pk": 52, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 100, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 51, 
+            "level": 26, 
+            "lft": 77, 
+            "tree_id": 1, 
+            "slug": "42"
+        }
+    }, 
+    {
+        "pk": 53, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 99, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 52, 
+            "level": 27, 
+            "lft": 78, 
+            "tree_id": 1, 
+            "slug": "43"
+        }
+    }, 
+    {
+        "pk": 54, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 98, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 53, 
+            "level": 28, 
+            "lft": 79, 
+            "tree_id": 1, 
+            "slug": "44"
+        }
+    }, 
+    {
+        "pk": 55, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 97, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 54, 
+            "level": 29, 
+            "lft": 80, 
+            "tree_id": 1, 
+            "slug": "45"
+        }
+    }, 
+    {
+        "pk": 56, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 96, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 55, 
+            "level": 30, 
+            "lft": 81, 
+            "tree_id": 1, 
+            "slug": "46"
+        }
+    }, 
+    {
+        "pk": 57, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 95, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 56, 
+            "level": 31, 
+            "lft": 82, 
+            "tree_id": 1, 
+            "slug": "47"
+        }
+    }, 
+    {
+        "pk": 58, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 94, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 57, 
+            "level": 32, 
+            "lft": 83, 
+            "tree_id": 1, 
+            "slug": "48"
+        }
+    }, 
+    {
+        "pk": 59, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 93, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 58, 
+            "level": 33, 
+            "lft": 84, 
+            "tree_id": 1, 
+            "slug": "49"
+        }
+    }, 
+    {
+        "pk": 60, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 92, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 59, 
+            "level": 34, 
+            "lft": 85, 
+            "tree_id": 1, 
+            "slug": "50"
+        }
+    }, 
+    {
+        "pk": 61, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 91, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 60, 
+            "level": 35, 
+            "lft": 86, 
+            "tree_id": 1, 
+            "slug": "51"
+        }
+    }, 
+    {
+        "pk": 62, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 90, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 61, 
+            "level": 36, 
+            "lft": 87, 
+            "tree_id": 1, 
+            "slug": "52"
+        }
+    }, 
+    {
+        "pk": 63, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 89, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 62, 
+            "level": 37, 
+            "lft": 88, 
+            "tree_id": 1, 
+            "slug": "53"
+        }
+    }, 
+    {
+        "pk": 64, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 142, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 6, 
+            "level": 2, 
+            "lft": 125, 
+            "tree_id": 1, 
+            "slug": "54"
+        }
+    }, 
+    {
+        "pk": 65, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 141, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 64, 
+            "level": 3, 
+            "lft": 126, 
+            "tree_id": 1, 
+            "slug": "55"
+        }
+    }, 
+    {
+        "pk": 66, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 140, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 65, 
+            "level": 4, 
+            "lft": 127, 
+            "tree_id": 1, 
+            "slug": "56"
+        }
+    }, 
+    {
+        "pk": 67, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 139, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 66, 
+            "level": 5, 
+            "lft": 128, 
+            "tree_id": 1, 
+            "slug": "57"
+        }
+    }, 
+    {
+        "pk": 68, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 138, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 67, 
+            "level": 6, 
+            "lft": 129, 
+            "tree_id": 1, 
+            "slug": "58"
+        }
+    }, 
+    {
+        "pk": 69, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 137, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 68, 
+            "level": 7, 
+            "lft": 130, 
+            "tree_id": 1, 
+            "slug": "59"
+        }
+    }, 
+    {
+        "pk": 70, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 136, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 69, 
+            "level": 8, 
+            "lft": 131, 
+            "tree_id": 1, 
+            "slug": "60"
+        }
+    }, 
+    {
+        "pk": 71, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 135, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 70, 
+            "level": 9, 
+            "lft": 132, 
+            "tree_id": 1, 
+            "slug": "61"
+        }
+    }, 
+    {
+        "pk": 72, 
+        "model": "philo.node", 
+        "fields": {
+            "rght": 134, 
+            "view_object_id": 1, 
+            "view_content_type": [
+                "philo", 
+                "page"
+            ], 
+            "parent": 71, 
+            "level": 10, 
+            "lft": 133, 
+            "tree_id": 1, 
+            "slug": "62"
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "philo.tag", 
+        "fields": {
+            "name": "Test tag", 
+            "slug": "test-tag"
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "philo.redirect", 
+        "fields": {
+            "status_code": 302, 
+            "target": "second"
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "philo.template", 
+        "fields": {
+            "mimetype": "text/html", 
+            "rght": 2, 
+            "code": "Never is working!\r\n{% node_url %}", 
+            "name": "Never", 
+            "parent": null, 
+            "level": 0, 
+            "documentation": "", 
+            "lft": 1, 
+            "tree_id": 1, 
+            "slug": "never"
+        }
+    }, 
+    {
+        "pk": 2, 
+        "model": "philo.template", 
+        "fields": {
+            "mimetype": "text/html", 
+            "rght": 2, 
+            "code": "An index page!\r\n{% node_url %}\r\n{% for entry in entries %}\r\n<h4><a href='{% node_url with entry %}'>{{ entry.title }}</a></h4>\r\n<div class='post content'>\r\n{{ entry.content }}\r\n</div>\r\n{% endfor %}", 
+            "name": "Index", 
+            "parent": null, 
+            "level": 0, 
+            "documentation": "", 
+            "lft": 1, 
+            "tree_id": 2, 
+            "slug": "index"
+        }
+    }, 
+    {
+        "pk": 3, 
+        "model": "philo.template", 
+        "fields": {
+            "mimetype": "text/html", 
+            "rght": 2, 
+            "code": "Entry detail page.", 
+            "name": "Entry Detail Page", 
+            "parent": null, 
+            "level": 0, 
+            "documentation": "", 
+            "lft": 1, 
+            "tree_id": 3, 
+            "slug": "entry"
+        }
+    }, 
+    {
+        "pk": 4, 
+        "model": "philo.template", 
+        "fields": {
+            "mimetype": "text/html", 
+            "rght": 2, 
+            "code": "Tag page!", 
+            "name": "Tag", 
+            "parent": null, 
+            "level": 0, 
+            "documentation": "", 
+            "lft": 1, 
+            "tree_id": 4, 
+            "slug": "tag"
+        }
+    }, 
+    {
+        "pk": 5, 
+        "model": "philo.template", 
+        "fields": {
+            "mimetype": "text/html", 
+            "rght": 2, 
+            "code": "Entry archive page!", 
+            "name": "Entry Archives!", 
+            "parent": null, 
+            "level": 0, 
+            "documentation": "", 
+            "lft": 1, 
+            "tree_id": 5, 
+            "slug": "entry-archives"
+        }
+    }, 
+    {
+        "pk": 6, 
+        "model": "philo.template", 
+        "fields": {
+            "mimetype": "text/html", 
+            "rght": 2, 
+            "code": "tag archives...", 
+            "name": "Tag Archives", 
+            "parent": null, 
+            "level": 0, 
+            "documentation": "", 
+            "lft": 1, 
+            "tree_id": 6, 
+            "slug": "tag-archives"
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "philo.page", 
+        "fields": {
+            "template": 1, 
+            "title": "Never"
+        }
+    }, 
+    {
+        "pk": 2, 
+        "model": "philo.page", 
+        "fields": {
+            "template": 2, 
+            "title": "Index"
+        }
+    }, 
+    {
+        "pk": 3, 
+        "model": "philo.page", 
+        "fields": {
+            "template": 3, 
+            "title": "Entry"
+        }
+    }, 
+    {
+        "pk": 4, 
+        "model": "philo.page", 
+        "fields": {
+            "template": 4, 
+            "title": "Tag"
+        }
+    }, 
+    {
+        "pk": 5, 
+        "model": "philo.page", 
+        "fields": {
+            "template": 5, 
+            "title": "Entry Archive"
+        }
+    }, 
+    {
+        "pk": 6, 
+        "model": "philo.page", 
+        "fields": {
+            "template": 6, 
+            "title": "Tag Archive Page"
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "penfield.blog", 
+        "fields": {
+            "slug": "free-lovin", 
+            "title": "Free lovin'"
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "penfield.blogentry", 
+        "fields": {
+            "content": "Lorem ipsum.\r\n\r\nDolor sit amet.", 
+            "author": 1, 
+            "title": "First Entry", 
+            "excerpt": "", 
+            "blog": 1, 
+            "date": "2010-10-20 10:38:58", 
+            "slug": "first-entry", 
+            "tags": [
+                1
+            ]
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "penfield.blogview", 
+        "fields": {
+            "entry_archive_page": 5, 
+            "tag_page": 4, 
+            "feed_suffix": "feed", 
+            "entry_permalink_style": "D", 
+            "tag_permalink_base": "tags", 
+            "feeds_enabled": true, 
+            "entries_per_page": null, 
+            "tag_archive_page": 6, 
+            "blog": 1, 
+            "entry_permalink_base": "entries", 
+            "index_page": 2, 
+            "entry_page": 3
+        }
+    }
+]

@@ -96,7 +96,7 @@ class WaldoAuthenticationForm(AuthenticationForm):
 	
 	def check_for_test_cookie(self):
 		# This method duplicates the Django 1.3 AuthenticationForm method.
-		if self.request and not self.request.session.test_cookie_worked(): 
-			raise forms.ValidationError( 
-				_("Your Web browser doesn't appear to have cookies enabled. " 
-				  "Cookies are required for logging in.")) 
+		if self.request and not self.request.session.test_cookie_worked():
+			raise forms.ValidationError(
+				_("Your Web browser doesn't appear to have cookies enabled. "
+				  "Cookies are required for logging in."))

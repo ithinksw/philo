@@ -23,9 +23,7 @@ import urlparse
 
 class LoginMultiView(MultiView):
 	"""
-	Handles login, registration, and forgotten passwords. In other words, this
-	multiview provides exclusively view and methods related to usernames and
-	passwords.
+	Handles exclusively methods and views related to logging users in and out.
 	"""
 	login_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_login_related')
 	login_form = WaldoAuthenticationForm
@@ -129,6 +127,7 @@ class LoginMultiView(MultiView):
 
 
 class PasswordMultiView(LoginMultiView):
+	"Adds on views for password-related functions."
 	password_reset_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_reset_related', blank=True, null=True)
 	password_reset_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_reset_confirmation_email_related', blank=True, null=True)
 	password_set_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_set_related', blank=True, null=True)
@@ -251,8 +250,10 @@ class PasswordMultiView(LoginMultiView):
 
 
 class RegistrationMultiView(PasswordMultiView):
+	"""Adds on the pages necessary for letting new users register."""
 	register_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_related', blank=True, null=True)
 	register_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_confirmation_email_related', blank=True, null=True)
+	registration_form = RegistrationForm
 	
 	@property
 	def urlpatterns(self):
@@ -269,7 +270,7 @@ class RegistrationMultiView(PasswordMultiView):
 			return HttpResponseRedirect(request.node.get_absolute_url())
 		
 		if request.method == 'POST':
-			form = RegistrationForm(request.POST)
+			form = self.registration_form(request.POST)
 			if form.is_valid():
 				user = form.save()
 				context = {
@@ -280,7 +281,7 @@ class RegistrationMultiView(PasswordMultiView):
 				messages.add_message(request, messages.SUCCESS, 'An email has been sent to %s with details on activating your account.' % user.email, fail_silently=True)
 				return HttpResponseRedirect(request.node.get_absolute_url())
 		else:
-			form = RegistrationForm()
+			form = self.registration_form()
 		
 		context = self.get_context()
 		context.update(extra_context or {})

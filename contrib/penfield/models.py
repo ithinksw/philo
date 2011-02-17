@@ -19,6 +19,7 @@ try:
 except:
 	mimeparse = None
 
+
 ATOM = feedgenerator.Atom1Feed.mime_type
 RSS = feedgenerator.Rss201rev2Feed.mime_type
 FEEDS = SortedDict([
@@ -52,22 +53,23 @@ class FeedView(MultiView):
 	
 	description = ""
 	
-	def feed_patterns(self, get_items_attr, page_attr, reverse_name):
+	def feed_patterns(self, base, get_items_attr, page_attr, reverse_name):
 		"""
 		Given the name to be used to reverse this view and the names of
 		the attributes for the function that fetches the objects, returns
 		patterns suitable for inclusion in urlpatterns.
 		"""
-		urlpatterns = patterns('',
-			url(r'^$', self.page_view(get_items_attr, page_attr), name=reverse_name)
-		)
+		urlpatterns = patterns('')
 		if self.feeds_enabled:
 			feed_reverse_name = "%s_feed" % reverse_name
+			feed_view = self.feed_view(get_items_attr, feed_reverse_name)
+			feed_pattern = r'%s%s%s$' % (base, (base and base[-1] != "^") and "/" or "", self.feed_suffix)
 			urlpatterns += patterns('',
-				# include an optional slash at the beginning in case someone uses an include
-				# with a base that doesn't include a slash.
-				url(r'^/?%s$' % self.feed_suffix, self.feed_view(get_items_attr, feed_reverse_name), name=feed_reverse_name),
+				url(feed_pattern, feed_view, name=feed_reverse_name),
 			)
+		urlpatterns += patterns('',
+			url(r"%s$" % base, self.page_view(get_items_attr, page_attr), name=reverse_name)
+		)
 		return urlpatterns
 	
 	def get_object(self, request, **kwargs):
@@ -123,6 +125,8 @@ class FeedView(MultiView):
 	
 	def get_feed_type(self, request):
 		feed_type = self.feed_type
+		if feed_type not in FEEDS:
+			feed_type = FEEDS.keys()[0]
 		accept = request.META.get('HTTP_ACCEPT')
 		if accept and feed_type not in accept and "*/*" not in accept and "%s/*" % feed_type.split("/")[0] not in accept:
 			# Wups! They aren't accepting the chosen format. Is there another format we can use?
@@ -379,16 +383,11 @@ class BlogView(FeedView):
 	
 	@property
 	def urlpatterns(self):
-		urlpatterns = patterns('',
-			url(r'^', include(self.feed_patterns('get_all_entries', 'index_page', 'index'))),
-		)
+		urlpatterns = self.feed_patterns(r'^', 'get_all_entries', 'index_page', 'index')
+		
 		if self.feeds_enabled:
-			urlpatterns += patterns('',
-				url(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)/%s$' % (self.tag_permalink_base, self.feed_suffix), self.feed_view('get_entries_by_tag', 'entries_by_tag_feed'), name='entries_by_tag_feed'),
-			)
-		urlpatterns += patterns('',
-			url(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)$' % self.tag_permalink_base, self.page_view('get_entries_by_tag', 'tag_page'), name='entries_by_tag')
-		)
+			urlpatterns += self.feed_patterns(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)$' % self.tag_permalink_base, 'get_entries_by_tag', 'tag_page', 'get_entries_by_tag')
+		
 		if self.tag_archive_page:
 			urlpatterns += patterns('',
 				url((r'^%s$' % self.tag_permalink_base), self.tag_archive_view, name='tag_archive')
@@ -396,17 +395,11 @@ class BlogView(FeedView):
 		
 		if self.entry_archive_page:
 			if self.entry_permalink_style in 'DMY':
-				urlpatterns += patterns('',
-					url(r'^(?P<year>\d{4})', include(self.feed_patterns('get_entries_by_ymd', 'entry_archive_page', 'entries_by_year')))
-				)
+				urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})', 'get_entries_by_ymd', 'entry_archive_page', 'entries_by_year')
 				if self.entry_permalink_style in 'DM':
-					urlpatterns += patterns('',
-						url(r'^(?P<year>\d{4})/(?P<month>\d{2})$', include(self.feed_patterns('get_entries_by_ymd', 'entry_archive_page', 'entries_by_month'))),
-					)
+					urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})/(?P<month>\d{2})', 'get_entries_by_ymd', 'entry_archive_page', 'entries_by_month')
 					if self.entry_permalink_style == 'D':
-						urlpatterns += patterns('',
-							url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})$', include(self.feed_patterns('get_entries_by_ymd', 'entry_archive_page', 'entries_by_day')))
-						)
+						urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})', 'get_entries_by_ymd', 'entry_archive_page', 'entries_by_day')
 		
 		if self.entry_permalink_style == 'D':
 			urlpatterns += patterns('',
@@ -656,9 +649,8 @@ class NewsletterView(FeedView):
 	
 	@property
 	def urlpatterns(self):
-		urlpatterns = patterns('',
-			url(r'^', include(self.feed_patterns('get_all_articles', 'index_page', 'index'))),
-			url(r'^%s/(?P<numbering>.+)' % self.issue_permalink_base, include(self.feed_patterns('get_articles_by_issue', 'issue_page', 'issue')))
+		urlpatterns = self.feed_patterns(r'^', 'get_all_articles', 'index_page', 'index') + patterns('',
+			url(r'^%s/(?P<numbering>.+)$' % self.issue_permalink_base, self.page_view('get_articles_by_issue', 'issue_page'), name='issue')
 		)
 		if self.issue_archive_page:
 			urlpatterns += patterns('',
@@ -669,17 +661,11 @@ class NewsletterView(FeedView):
 				url(r'^%s' % self.article_permalink_base, include(self.feed_patterns('get_all_articles', 'article_archive_page', 'articles')))
 			)
 			if self.article_permalink_style in 'DMY':
-				urlpatterns += patterns('',
-					url(r'^%s/(?P<year>\d{4})' % self.article_permalink_base, include(self.feed_patterns('get_articles_by_ymd', 'article_archive_page', 'articles_by_year')))
-				)
+				urlpatterns += self.feed_patterns(r'^%s/(?P<year>\d{4})' % self.article_permalink_base, 'get_articles_by_ymd', 'article_archive_page', 'articles_by_year')
 				if self.article_permalink_style in 'DM':
-					urlpatterns += patterns('',
-						url(r'^%s/(?P<year>\d{4})/(?P<month>\d{2})' % self.article_permalink_base, include(self.feed_patterns('get_articles_by_ymd', 'article_archive_page', 'articles_by_month')))
-					)
+					urlpatterns += self.feed_patterns(r'^%s/(?P<year>\d{4})/(?P<month>\d{2})' % self.article_permalink_base, 'get_articles_by_ymd', 'article_archive_page', 'articles_by_month')
 					if self.article_permalink_style == 'D':
-						urlpatterns += patterns('',
-							url(r'^%s/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})' % self.article_permalink_base, include(self.feed_patterns('get_articles_by_ymd', 'article_archive_page', 'articles_by_day')))
-						)
+						urlpatterns += self.feed_patterns(r'^%s/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})' % self.article_permalink_base, 'get_articles_by_ymd', 'article_archive_page', 'articles_by_day')
 		
 		if self.article_permalink_style == 'Y':
 			urlpatterns += patterns('',

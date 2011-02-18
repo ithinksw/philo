@@ -12,50 +12,141 @@ from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.defaultfilters import striptags
 from django.utils.http import int_to_base36, base36_to_int
-from django.utils.translation import ugettext_lazy, ugettext as _
+from django.utils.translation import ugettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from philo.models import MultiView, Page
-from philo.contrib.waldo.forms import LOGIN_FORM_KEY, LoginForm, RegistrationForm, UserAccountForm
+from philo.contrib.waldo.forms import WaldoAuthenticationForm, RegistrationForm, UserAccountForm
 from philo.contrib.waldo.tokens import registration_token_generator, email_token_generator
 import urlparse
 
 
-ERROR_MESSAGE = ugettext_lazy("Please enter a correct username and password. Note that both fields are case-sensitive.")
-
-
 class LoginMultiView(MultiView):
 	"""
-	Handles login, registration, and forgotten passwords. In other words, this
-	multiview provides exclusively view and methods related to usernames and
-	passwords.
+	Handles exclusively methods and views related to logging users in and out.
 	"""
 	login_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_login_related')
-	password_reset_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_reset_related')
-	password_reset_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_reset_confirmation_email_related')
-	password_set_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_set_related')
-	password_change_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_change_related', blank=True, null=True)
-	register_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_related')
-	register_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_confirmation_email_related')
+	login_form = WaldoAuthenticationForm
 	
 	@property
 	def urlpatterns(self):
-		urlpatterns = patterns('',
+		return patterns('',
 			url(r'^login$', self.login, name='login'),
 			url(r'^logout$', self.logout, name='logout'),
-			
-			url(r'^password/reset$', csrf_protect(self.password_reset), name='password_reset'),
-			url(r'^password/reset/(?P<uidb36>\w+)/(?P<token>[^/]+)$', self.password_reset_confirm, name='password_reset_confirm'),
-			
-			url(r'^register$', csrf_protect(self.register), name='register'),
-			url(r'^register/(?P<uidb36>\w+)/(?P<token>[^/]+)$', self.register_confirm, name='register_confirm')
 		)
+	
+	def set_requirement_redirect(self, request, redirect=None):
+		"Figure out where someone should end up after landing on a `requirement` page like the login page."
+		if redirect is not None:
+			pass
+		elif 'requirement_redirect' in request.session:
+			return
+		else:
+			referrer = request.META.get('HTTP_REFERER', None)
+		
+			if referrer is not None:
+				referrer = urlparse.urlparse(referrer)
+				host = referrer[1]
+				if host != request.get_host():
+					referrer = None
+				else:
+					redirect = '%s?%s' % (referrer[2], referrer[4])
+		
+			path = request.get_full_path()
+			if referrer is None or redirect == path:
+				# Default to the index page if we can't find a referrer or
+				# if we'd otherwise redirect to where we already are.
+				redirect = request.node.get_absolute_url()
+		
+		request.session['requirement_redirect'] = redirect
+	
+	def get_requirement_redirect(self, request, default=None):
+		redirect = request.session.pop('requirement_redirect', None)
+		# Security checks a la django.contrib.auth.views.login
+		if not redirect or ' ' in redirect:
+			redirect = default
+		else:
+			netloc = urlparse.urlparse(redirect)[1]
+			if netloc and netloc != request.get_host():
+				redirect = default
+		if redirect is None:
+			redirect = request.node.get_absolute_url()
+		return redirect
+	
+	@never_cache
+	def login(self, request, extra_context=None):
+		"""
+		Displays the login form for the given HttpRequest.
+		"""
+		self.set_requirement_redirect(request)
+		
+		# Redirect already-authenticated users to the index page.
+		if request.user.is_authenticated():
+			messages.add_message(request, messages.INFO, "You are already authenticated. Please log out if you wish to log in as a different user.")
+			return HttpResponseRedirect(self.get_requirement_redirect(request))
+		
+		if request.method == 'POST':
+			form = self.login_form(request=request, data=request.POST)
+			if form.is_valid():
+				redirect = self.get_requirement_redirect(request)
+				login(request, form.get_user())
+				
+				if request.session.test_cookie_worked():
+					request.session.delete_test_cookie()
+				
+				return HttpResponseRedirect(redirect)
+		else:
+			form = self.login_form()
+		
+		request.session.set_test_cookie()
+		
+		context = self.get_context()
+		context.update(extra_context or {})
+		context.update({
+			'form': form
+		})
+		return self.login_page.render_to_response(request, extra_context=context)
+	
+	@never_cache
+	def logout(self, request, extra_context=None):
+		return auth_views.logout(request, request.META.get('HTTP_REFERER', request.node.get_absolute_url()))
+	
+	def login_required(self, view):
+		def inner(request, *args, **kwargs):
+			if not request.user.is_authenticated():
+				self.set_requirement_redirect(request, redirect=request.path)
+				if request.POST:
+					messages.add_message(request, messages.ERROR, "Please log in again, because your session has expired.")
+				return HttpResponseRedirect(self.reverse('login', node=request.node))
+			return view(request, *args, **kwargs)
+		
+		return inner
+	
+	class Meta:
+		abstract = True
+
+
+class PasswordMultiView(LoginMultiView):
+	"Adds on views for password-related functions."
+	password_reset_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_reset_related', blank=True, null=True)
+	password_reset_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_reset_confirmation_email_related', blank=True, null=True)
+	password_set_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_set_related', blank=True, null=True)
+	password_change_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_change_related', blank=True, null=True)
+	
+	@property
+	def urlpatterns(self):
+		urlpatterns = super(PasswordMultiView, self).urlpatterns
+		
+		if self.password_reset_page and self.password_reset_confirmation_email and self.password_set_page:
+			urlpatterns += patterns('',
+				url(r'^password/reset$', csrf_protect(self.password_reset), name='password_reset'),
+				url(r'^password/reset/(?P<uidb36>\w+)/(?P<token>[^/]+)$', self.password_reset_confirm, name='password_reset_confirm'),
+			)
 		
 		if self.password_change_page:
 			urlpatterns += patterns('',
 				url(r'^password/change$', csrf_protect(self.login_required(self.password_change)), name='password_change'),
 			)
-		
 		return urlpatterns
 	
 	def make_confirmation_link(self, confirmation_view, token_generator, user, node, token_args=None, reverse_kwargs=None):
@@ -66,111 +157,6 @@ class LoginMultiView(MultiView):
 		}
 		kwargs.update(reverse_kwargs or {})
 		return node.construct_url(subpath=self.reverse(confirmation_view, kwargs=kwargs), with_domain=True)
-	
-	def display_login_page(self, request, message, extra_context=None):
-		request.session.set_test_cookie()
-		
-		referrer = request.META.get('HTTP_REFERER', None)
-		
-		if referrer is not None:
-			referrer = urlparse.urlparse(referrer)
-			host = referrer[1]
-			if host != request.get_host():
-				referrer = None
-			else:
-				redirect = '%s?%s' % (referrer[2], referrer[4])
-		
-		if referrer is None:
-			redirect = request.node.get_absolute_url()
-		
-		path = request.get_full_path()
-		if redirect != path:
-			if redirect is None:
-				redirect = '/'.join(path.split('/')[:-2])
-			request.session['redirect'] = redirect
-		
-		if request.POST:
-			form = LoginForm(request.POST)
-		else:
-			form = LoginForm()
-		context = self.get_context()
-		context.update(extra_context or {})
-		context.update({
-			'message': message,
-			'form': form
-		})
-		return self.login_page.render_to_response(request, extra_context=context)
-	
-	def login(self, request, extra_context=None):
-		"""
-		Displays the login form for the given HttpRequest.
-		"""
-		if request.user.is_authenticated():
-			return HttpResponseRedirect(request.node.get_absolute_url())
-		
-		context = self.get_context()
-		context.update(extra_context or {})
-		
-		from django.contrib.auth.models import User
-		
-		# If this isn't already the login page, display it.
-		if not request.POST.has_key(LOGIN_FORM_KEY):
-			if request.POST:
-				message = _("Please log in again, because your session has expired.")
-			else:
-				message = ""
-			return self.display_login_page(request, message, context)
-
-		# Check that the user accepts cookies.
-		if not request.session.test_cookie_worked():
-			message = _("Looks like your browser isn't configured to accept cookies. Please enable cookies, reload this page, and try again.")
-			return self.display_login_page(request, message, context)
-		else:
-			request.session.delete_test_cookie()
-		
-		# Check the password.
-		username = request.POST.get('username', None)
-		password = request.POST.get('password', None)
-		user = authenticate(username=username, password=password)
-		if user is None:
-			message = ERROR_MESSAGE
-			if username is not None and u'@' in username:
-				# Mistakenly entered e-mail address instead of username? Look it up.
-				try:
-					user = User.objects.get(email=username)
-				except (User.DoesNotExist, User.MultipleObjectsReturned):
-					message = _("Usernames cannot contain the '@' character.")
-				else:
-					if user.check_password(password):
-						message = _("Your e-mail address is not your username."
-									" Try '%s' instead.") % user.username
-					else:
-						message = _("Usernames cannot contain the '@' character.")
-			return self.display_login_page(request, message, context)
-
-		# The user data is correct; log in the user in and continue.
-		else:
-			if user.is_active:
-				login(request, user)
-				try:
-					redirect = request.session.pop('redirect')
-				except KeyError:
-					redirect = request.node.get_absolute_url()
-				return HttpResponseRedirect(redirect)
-			else:
-				return self.display_login_page(request, ERROR_MESSAGE, context)
-	login = never_cache(login)
-	
-	def logout(self, request):
-		return auth_views.logout(request, request.META.get('HTTP_REFERER', request.node.get_absolute_url()))
-	
-	def login_required(self, view):
-		def inner(request, *args, **kwargs):
-			if not request.user.is_authenticated():
-				return HttpResponseRedirect(self.reverse('login', node=request.node))
-			return view(request, *args, **kwargs)
-		
-		return inner
 	
 	def send_confirmation_email(self, subject, email, page, extra_context):
 		text_content = page.render_to_string(extra_context=extra_context)
@@ -259,12 +245,32 @@ class LoginMultiView(MultiView):
 		})
 		return self.password_change_page.render_to_response(request, extra_context=context)
 	
+	class Meta:
+		abstract = True
+
+
+class RegistrationMultiView(PasswordMultiView):
+	"""Adds on the pages necessary for letting new users register."""
+	register_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_related', blank=True, null=True)
+	register_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_confirmation_email_related', blank=True, null=True)
+	registration_form = RegistrationForm
+	
+	@property
+	def urlpatterns(self):
+		urlpatterns = super(RegistrationMultiView, self).urlpatterns
+		if self.register_page and self.register_confirmation_email:
+			urlpatterns += patterns('',
+				url(r'^register$', csrf_protect(self.register), name='register'),
+				url(r'^register/(?P<uidb36>\w+)/(?P<token>[^/]+)$', self.register_confirm, name='register_confirm')
+			)
+		return urlpatterns
+	
 	def register(self, request, extra_context=None, token_generator=registration_token_generator):
 		if request.user.is_authenticated():
 			return HttpResponseRedirect(request.node.get_absolute_url())
 		
 		if request.method == 'POST':
-			form = RegistrationForm(request.POST)
+			form = self.registration_form(request.POST)
 			if form.is_valid():
 				user = form.save()
 				context = {
@@ -275,7 +281,7 @@ class LoginMultiView(MultiView):
 				messages.add_message(request, messages.SUCCESS, 'An email has been sent to %s with details on activating your account.' % user.email, fail_silently=True)
 				return HttpResponseRedirect(request.node.get_absolute_url())
 		else:
-			form = RegistrationForm()
+			form = self.registration_form()
 		
 		context = self.get_context()
 		context.update(extra_context or {})
@@ -307,7 +313,7 @@ class LoginMultiView(MultiView):
 				authenticated_user = authenticate(username=user.username, password=temp_password)
 				login(request, authenticated_user)
 			finally:
-				# if anything goes wrong, ABSOLUTELY make sure that the true password is restored.
+				# if anything goes wrong, do our best make sure that the true password is restored.
 				user.password = true_password
 				user.save()
 			return self.post_register_confirm_redirect(request)
@@ -321,23 +327,28 @@ class LoginMultiView(MultiView):
 		abstract = True
 
 
-class AccountMultiView(LoginMultiView):
+class AccountMultiView(RegistrationMultiView):
 	"""
 	By default, the `account` consists of the first_name, last_name, and email fields
 	of the User model. Using a different account model is as simple as writing a form that
 	accepts a User instance as the first argument.
 	"""
-	manage_account_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_manage_account_related')
-	email_change_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_email_change_confirmation_email_related')
+	manage_account_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_manage_account_related', blank=True, null=True)
+	email_change_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_email_change_confirmation_email_related', blank=True, null=True, help_text="If this is left blank, email changes will be performed without confirmation.")
+	
 	account_form = UserAccountForm
 	
 	@property
 	def urlpatterns(self):
 		urlpatterns = super(AccountMultiView, self).urlpatterns
-		urlpatterns += patterns('',
-			url(r'^account$', self.login_required(self.account_view), name='account'),
-			url(r'^account/email/(?P<uidb36>\w+)/(?P<email>[\w.]+[+][\w.]+)/(?P<token>[^/]+)$', self.email_change_confirm, name='email_change_confirm')
-		)
+		if self.manage_account_page:
+			urlpatterns += patterns('',
+				url(r'^account$', self.login_required(self.account_view), name='account'),
+			)
+		if self.email_change_confirmation_email:
+			urlpatterns += patterns('',
+				url(r'^account/email/(?P<uidb36>\w+)/(?P<email>[\w.]+[+][\w.]+)/(?P<token>[^/]+)$', self.email_change_confirm, name='email_change_confirm')
+			)
 		return urlpatterns
 	
 	def account_view(self, request, extra_context=None, token_generator=email_token_generator, *args, **kwargs):
@@ -345,10 +356,14 @@ class AccountMultiView(LoginMultiView):
 			form = self.account_form(request.user, request.POST, request.FILES)
 			
 			if form.is_valid():
-				if 'email' in form.changed_data:
-					# ModelForms modify their instances in-place during validation,
-					# so reset the instance's email to its previous value here,
-					# then remove the new value from cleaned_data.
+				message = "Account information saved."
+				redirect = self.get_requirement_redirect(request, default='')
+				if 'email' in form.changed_data and self.email_change_confirmation_email:
+					# ModelForms modify their instances in-place during
+					# validation, so reset the instance's email to its
+					# previous value here, then remove the new value
+					# from cleaned_data. We only do this if an email
+					# change confirmation email is available.
 					request.user.email = form.initial['email']
 					
 					email = form.cleaned_data.pop('email')
@@ -358,11 +373,19 @@ class AccountMultiView(LoginMultiView):
 					}
 					current_site = Site.objects.get_current()
 					self.send_confirmation_email('Confirm account email change at %s' % current_site.domain, email, self.email_change_confirmation_email, context)
-					messages.add_message(request, messages.SUCCESS, "An email has be sent to %s to confirm the email change." % email)
+					
+					message = "An email has be sent to %s to confirm the email%s." % (email, bool(request.user.email) and " change" or "")
+					if not request.user.email:
+						message += " You will need to confirm the email before accessing pages that require a valid account."
+						redirect = ''
 				
 				form.save()
-				messages.add_message(request, messages.SUCCESS, "Account information saved.", fail_silently=True)
-				return HttpResponseRedirect('')
+				
+				if redirect != '':
+					message += " Here you go!"
+				
+				messages.add_message(request, messages.SUCCESS, message, fail_silently=True)
+				return HttpResponseRedirect(redirect)
 		else:
 			form = self.account_form(request.user)
 		
@@ -381,17 +404,23 @@ class AccountMultiView(LoginMultiView):
 	def account_required(self, view):
 		def inner(request, *args, **kwargs):
 			if not self.has_valid_account(request.user):
-				if not request.method == "POST":
-					messages.add_message(request, messages.ERROR, "You need to add some account information before you can access this page.", fail_silently=True)
-				return self.account_view(request, *args, **kwargs)
+				messages.add_message(request, messages.ERROR, "You need to add some account information before you can access that page.", fail_silently=True)
+				if self.manage_account_page:
+					self.set_requirement_redirect(request, redirect=request.path)
+					redirect = self.reverse('account', node=request.node)
+				else:
+					redirect = node.get_absolute_url()
+				return HttpResponseRedirect(redirect)
 			return view(request, *args, **kwargs)
 		
 		inner = self.login_required(inner)
 		return inner
 	
 	def post_register_confirm_redirect(self, request):
-		messages.add_message(request, messages.INFO, 'Welcome! Please fill in some more information.', fail_silently=True)
-		return HttpResponseRedirect(self.reverse('account', node=request.node))
+		if self.manage_account_page:
+			messages.add_message(request, messages.INFO, 'Welcome! Please fill in some more information.', fail_silently=True)
+			return HttpResponseRedirect(self.reverse('account', node=request.node))
+		return super(AccountMultiView, self).post_register_confirm_redirect(request)
 	
 	def email_change_confirm(self, request, extra_context=None, uidb36=None, token=None, email=None, token_generator=email_token_generator):
 		"""
@@ -416,7 +445,11 @@ class AccountMultiView(LoginMultiView):
 			user.email = email
 			user.save()
 			messages.add_message(request, messages.SUCCESS, 'Email changed successfully.')
-			return HttpReponseRedirect(self.reverse('account', node=request.node))
+			if self.manage_account_page:
+				redirect = self.reverse('account', node=request.node)
+			else:
+				redirect = request.node.get_absolute_url()
+			return HttpResponseRedirect(redirect)
 		
 		raise Http404
 	

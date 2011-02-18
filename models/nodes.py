@@ -114,8 +114,8 @@ class View(Entity):
 		
 		try:
 			subpath = reverse(view_name, urlconf=self, args=args or [], kwargs=kwargs or {})
-		except NoReverseMatch:
-			raise ViewCanNotProvideSubpath
+		except NoReverseMatch, e:
+			raise ViewCanNotProvideSubpath(e.message)
 		
 		if node is not None:
 			return node.construct_url(subpath)
@@ -219,7 +219,7 @@ class TargetURLModel(models.Model):
 		
 		try:
 			self.get_target_url()
-		except NoReverseMatch, e:
+		except (NoReverseMatch, ViewCanNotProvideSubpath), e:
 			raise ValidationError(e.message)
 		
 		super(TargetURLModel, self).clean()

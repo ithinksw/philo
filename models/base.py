@@ -55,10 +55,6 @@ def unregister_value_model(model):
 class AttributeValue(models.Model):
 	attribute_set = generic.GenericRelation('Attribute', content_type_field='value_content_type', object_id_field='value_object_id')
 	
-	@property
-	def attribute(self):
-		return self.attribute_set.all()[0]
-	
 	def set_value(self, value):
 		raise NotImplementedError
 	

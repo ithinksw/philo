@@ -226,8 +226,17 @@ class TargetURLModel(models.Model):
 	
 	def get_reverse_params(self):
 		params = self.reversing_parameters
-		args = isinstance(params, list) and params or None
-		kwargs = isinstance(params, dict) and params or None
+		args = kwargs = None
+		if isinstance(params, list):
+			args = params
+		elif isinstance(params, dict):
+			# Convert unicode keys to strings for Python < 2.6.5. Compare
+			# http://stackoverflow.com/questions/4598604/how-to-pass-unicode-keywords-to-kwargs
+			kwargs = {}
+			for key, val in params.items():
+				if isinstance(key, unicode):
+					key = str(key)
+				kwargs[key] = val
 		return self.url_or_subpath, args, kwargs
 	
 	def get_target_url(self):

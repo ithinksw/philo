@@ -23,9 +23,21 @@ Nodes
 
       This is a shortcut method for :meth:`View.render_to_response`
 
-   .. method:: get_absolute_url()
+   .. method:: get_absolute_url([request=None, with_domain=False, secure=False])
 
-      As long as :mod:`philo.urls` is included somewhere in the urlpatterns, this will return the URL of this node. The returned value will always start and end with a slash.
+      This is essentially a shortcut for calling :meth:`construct_url` without a subpath - which will return the URL of the Node.
+
+   .. method:: construct_url([subpath="/", request=None, with_domain=False, secure=False])
+
+      This method will do its best to construct a URL based on the Node's location. If with_domain is True, that URL will include a domain and a protocol; if secure is True as well, the protocol will be https. The request will be used to construct a domain in cases where a call to :meth:`Site.objects.get_current` fails.
+
+      Node urls will not contain a trailing slash unless a subpath is provided which ends with a trailing slash. Subpaths are expected to begin with a slash, as if returned by :func:`django.core.urlresolvers.reverse`.
+
+      :meth:`construct_url` may raise the following exceptions:
+
+      - :class:`NoReverseMatch` if "philo-root" is not reversable -- for example, if :mod:`philo.urls` is not included anywhere in your urlpatterns.
+      - :class:`Site.DoesNotExist <ObjectDoesNotExist>` if with_domain is True but no :class:`Site` or :class:`RequestSite` can be built.
+      - :class:`AncestorDoesNotExist` if the root node of the site isn't an ancestor of the node constructing the URL.
 
 Views
 -----
@@ -38,19 +50,30 @@ Abstract View Models
 
    .. attribute:: accepts_subpath
 
-      Defines whether this View class can handle subpaths. Default: ``False``
+      Defines whether this :class:`View` can handle subpaths. Default: ``False``
+
+   .. method:: handles_subpath(subpath)
+
+      Returns True if the the :class:`View` handles the given subpath, and False otherwise.
 
    .. attribute:: nodes
 
       A generic relation back to nodes.
 
-   .. method:: get_subpath(obj)
+   .. method:: reverse([view_name=None, args=None, kwargs=None, node=None, obj=None])
 
-      If the view :attr:`accepts subpaths <.accepts_subpath>`, try to find a reversal for the given object using ``self`` as the urlconf. This method calls :meth:`~.get_reverse_params` with ``obj`` as the argument to find out the reversing parameters for that object.
+      If :attr:`accepts_subpath` is True, try to reverse a URL using the given parameters using ``self`` as the urlconf.
+
+      If ``obj`` is provided, :meth:`get_reverse_params` will be called and the results will be combined with any ``view_name``, ``args``, and ``kwargs`` that may have been passed in.
+
+      This method will raise the following exceptions:
+
+      - :class:`ViewDoesNotProvideSubpaths` if :attr:`accepts_subpath` is False.
+      - :class:`ViewCanNotProvideSubpath` if a reversal is not possible.
 
    .. method:: get_reverse_params(obj)
 
-      This method should return a ``view_name``, ``args``, ``kwargs`` tuple suitable for reversing a url for the given ``obj`` using ``self`` as the urlconf.
+      This method is not implemented on the base class. It should return a ``view_name``, ``args``, ``kwargs`` tuple suitable for reversing a url for the given ``obj`` using ``self`` as the urlconf. If a reversal will not be possible, this method should raise :class:`ViewCanNotProvideSubpath`.
 
    .. method:: attributes_with_node(node)
 
@@ -101,13 +124,25 @@ Concrete View Subclasses
 
       A choices tuple of redirect status codes (temporary or permanent).
 
-   .. attribute:: target
-
-      A :class:`CharField` which may contain an absolute or relative URL. This will be validated with :class:`philo.validators.RedirectValidator`.
-
    .. attribute:: status_code
 
       An :class:`IntegerField` which uses :attr:`STATUS_CODES` as its choices. Determines whether the redirect is considered temporary or permanent.
+
+   .. attribute:: target_node
+
+      An optional :class:`ForeignKey` to a :class:`Node`. If provided, that node will be used as the basis for the redirect.
+
+   .. attribute:: url_or_subpath
+
+      A :class:`CharField` which may contain an absolute or relative URL. This will be validated with :class:`philo.validators.RedirectValidator`.
+
+   .. attribute:: reversing_parameters
+
+      A :class:`~philo.models.fields.JSONField` instance. If the value of :attr:`reversing_parameters` is not None, the :attr:`url_or_subpath` will be treated as the name of a view to be reversed. The value of :attr:`reversing_parameters` will be passed into the reversal as args if it is a list or as kwargs if it is a dictionary.
+
+   .. attribute:: target_url
+
+      Calculates and returns the target url based on the :attr:`target_node`, :attr:`url_or_subpath`, and :attr:`reversing_parameters`.
 
    .. method:: actually_render_to_response(request[, extra_context=None])
 

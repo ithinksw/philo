@@ -72,8 +72,8 @@ class WaldoAuthenticationForm(AuthenticationForm):
 	ERROR_MESSAGE = _("Please enter a correct username and password. Note that both fields are case-sensitive.")
 	
 	def clean(self):
-		username = self.cleaned_data['username']
-		password = self.cleaned_data['password']
+		username = self.cleaned_data.get('username')
+		password = self.cleaned_data.get('password')
 		message = self.ERROR_MESSAGE
 		
 		if username and password:

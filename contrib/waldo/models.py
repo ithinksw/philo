@@ -133,6 +133,10 @@ class PasswordMultiView(LoginMultiView):
 	password_set_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_set_related', blank=True, null=True)
 	password_change_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_change_related', blank=True, null=True)
 	
+	password_change_form = PasswordChangeForm
+	password_set_form = SetPasswordForm
+	password_reset_form = PasswordResetForm
+	
 	@property
 	def urlpatterns(self):
 		urlpatterns = super(PasswordMultiView, self).urlpatterns
@@ -149,14 +153,14 @@ class PasswordMultiView(LoginMultiView):
 			)
 		return urlpatterns
 	
-	def make_confirmation_link(self, confirmation_view, token_generator, user, node, token_args=None, reverse_kwargs=None):
+	def make_confirmation_link(self, confirmation_view, token_generator, user, node, token_args=None, reverse_kwargs=None, secure=False):
 		token = token_generator.make_token(user, *(token_args or []))
 		kwargs = {
 			'uidb36': int_to_base36(user.id),
 			'token': token
 		}
 		kwargs.update(reverse_kwargs or {})
-		return node.construct_url(subpath=self.reverse(confirmation_view, kwargs=kwargs), with_domain=True)
+		return node.construct_url(subpath=self.reverse(confirmation_view, kwargs=kwargs), with_domain=True, secure=secure)
 	
 	def send_confirmation_email(self, subject, email, page, extra_context):
 		text_content = page.render_to_string(extra_context=extra_context)
@@ -174,19 +178,24 @@ class PasswordMultiView(LoginMultiView):
 			return HttpResponseRedirect(request.node.get_absolute_url())
 		
 		if request.method == 'POST':
-			form = PasswordResetForm(request.POST)
+			form = self.password_reset_form(request.POST)
 			if form.is_valid():
 				current_site = Site.objects.get_current()
 				for user in form.users_cache:
 					context = {
-						'link': self.make_confirmation_link('password_reset_confirm', token_generator, user, request.node),
+						'link': self.make_confirmation_link('password_reset_confirm', token_generator, user, request.node, secure=request.is_secure()),
+						'user': user,
+						'site': current_site,
+						'request': request,
+						
+						# Deprecated... leave in for backwards-compatibility
 						'username': user.username
 					}
 					self.send_confirmation_email('Confirm password reset for account at %s' % current_site.domain, user.email, self.password_reset_confirmation_email, context)
 					messages.add_message(request, messages.SUCCESS, "An email has been sent to the address you provided with details on resetting your password.", fail_silently=True)
 				return HttpResponseRedirect('')
 		else:
-			form = PasswordResetForm()
+			form = self.password_reset_form()
 		
 		context = self.get_context()
 		context.update(extra_context or {})
@@ -210,14 +219,14 @@ class PasswordMultiView(LoginMultiView):
 		
 		if token_generator.check_token(user, token):
 			if request.method == 'POST':
-				form = SetPasswordForm(user, request.POST)
+				form = self.password_set_form(user, request.POST)
 				
 				if form.is_valid():
 					form.save()
 					messages.add_message(request, messages.SUCCESS, "Password reset successful.")
 					return HttpResponseRedirect(self.reverse('login', node=request.node))
 			else:
-				form = SetPasswordForm(user)
+				form = self.password_set_form(user)
 			
 			context = self.get_context()
 			context.update(extra_context or {})
@@ -230,13 +239,13 @@ class PasswordMultiView(LoginMultiView):
 	
 	def password_change(self, request, extra_context=None):
 		if request.method == 'POST':
-			form = PasswordChangeForm(request.user, request.POST)
+			form = self.password_change_form(request.user, request.POST)
 			if form.is_valid():
 				form.save()
 				messages.add_message(request, messages.SUCCESS, 'Password changed successfully.', fail_silently=True)
 				return HttpResponseRedirect('')
 		else:
-			form = PasswordChangeForm(request.user)
+			form = self.password_change_form(request.user)
 		
 		context = self.get_context()
 		context.update(extra_context or {})
@@ -273,10 +282,13 @@ class RegistrationMultiView(PasswordMultiView):
 			form = self.registration_form(request.POST)
 			if form.is_valid():
 				user = form.save()
-				context = {
-					'link': self.make_confirmation_link('register_confirm', token_generator, user, request.node)
-				}
 				current_site = Site.objects.get_current()
+				context = {
+					'link': self.make_confirmation_link('register_confirm', token_generator, user, request.node, secure=request.is_secure()),
+					'user': user,
+					'site': current_site,
+					'request': request
+				}
 				self.send_confirmation_email('Confirm account creation at %s' % current_site.name, user.email, self.register_confirmation_email, context)
 				messages.add_message(request, messages.SUCCESS, 'An email has been sent to %s with details on activating your account.' % user.email, fail_silently=True)
 				return HttpResponseRedirect(request.node.get_absolute_url())
@@ -368,10 +380,14 @@ class AccountMultiView(RegistrationMultiView):
 					
 					email = form.cleaned_data.pop('email')
 					
-					context = {
-						'link': self.make_confirmation_link('email_change_confirm', token_generator, request.user, request.node, token_args=[email], reverse_kwargs={'email': email.replace('@', '+')})
-					}
 					current_site = Site.objects.get_current()
+					
+					context = {
+						'link': self.make_confirmation_link('email_change_confirm', token_generator, request.user, request.node, token_args=[email], reverse_kwargs={'email': email.replace('@', '+')}, secure=request.is_secure()),
+						'user': request.user,
+						'site': current_site,
+						'request': request
+					}
 					self.send_confirmation_email('Confirm account email change at %s' % current_site.domain, email, self.email_change_confirmation_email, context)
 					
 					message = "An email has be sent to %s to confirm the email%s." % (email, bool(request.user.email) and " change" or "")

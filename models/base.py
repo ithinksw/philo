@@ -5,7 +5,7 @@ from django.contrib.contenttypes import generic
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import RegexValidator
 from django.utils import simplejson as json
-from django.utils.encoding import smart_str
+from django.utils.encoding import force_unicode
 from philo.exceptions import AncestorDoesNotExist
 from philo.models.fields import JSONField
 from philo.utils import ContentTypeRegistryLimiter, ContentTypeSubclassLimiter
@@ -84,7 +84,7 @@ class JSONValue(AttributeValue):
 	value = JSONField(verbose_name='Value (JSON)', help_text='This value must be valid JSON.', default='null', db_index=True)
 	
 	def __unicode__(self):
-		return smart_str(self.value)
+		return force_unicode(self.value)
 	
 	def value_formfields(self):
 		kwargs = {'initial': self.value_json}

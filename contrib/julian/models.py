@@ -149,35 +149,28 @@ class CalendarView(FeedView):
 			return 'entries_by_tag', [], {'tag_slugs': '/'.join(obj)}
 		raise ViewCanNotProvideSubpath
 	
-	def timespan_patterns(self, timespan_name):
-		return self.feed_patterns('get_events_by_timespan', 'timespan_page', "events_by_%s" % timespan_name)
+	def timespan_patterns(self, pattern, timespan_name):
+		return self.feed_patterns(pattern, 'get_events_by_timespan', 'timespan_page', "events_by_%s" % timespan_name)
 	
 	@property
 	def urlpatterns(self):
-		urlpatterns = patterns('',
-			url(r'^', include(self.feed_patterns('get_all_events', 'index_page', 'index'))),
-			
-			url(r'^(?P<year>\d{4})', include(self.timespan_patterns('year'))),
-			url(r'^(?P<year>\d{4})/(?P<month>\d{2})', include(self.timespan_patterns('month'))),
-			url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})', include(self.timespan_patterns('day'))),
-			#url(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/(?P<hour>\d{1,2})', include(self.timespan_patterns('hour'))),
-			url(r'(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/(?P<slug>[\w-]+)', self.event_detail_view, name="event_detail"),
-			
-			url(r'^%s/(?P<username>[^/]+)' % self.owner_permalink_base, include(self.feed_patterns('get_events_by_owner', 'owner_page', 'events_by_user'))),
+		# Perhaps timespans should be done with GET parameters? Or two /-separated
+		# date slugs? (e.g. 2010-02-1/2010-02-2) or a start and duration?
+		# (e.g. 2010-02-01/week/ or ?d=2010-02-01&l=week)
+		urlpatterns = self.feed_patterns(r'^', 'get_all_events', 'index_page', 'index') + \
+			self.timespan_patterns(r'^(?P<year>\d{4})', 'year') + \
+			self.timespan_patterns(r'^(?P<year>\d{4})/(?P<month>\d{2})', 'month') + \
+			self.timespan_patterns(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})', 'day') + \
+			self.feed_patterns(r'^%s/(?P<username>[^/]+)' % self.owner_permalink_base, 'get_events_by_owner', 'owner_page', 'events_by_user') + \
+			self.feed_patterns(r'^%s/(?P<app_label>\w+)/(?P<model>\w+)/(?P<pk>[^/]+)' % self.location_permalink_base, 'get_events_by_location', 'location_page', 'events_by_location') + \
+			self.feed_patterns(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)' % self.tag_permalink_base, 'get_events_by_tag', 'tag_page', 'events_by_tag') + \
+			patterns('',
+				url(r'(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/(?P<slug>[\w-]+)$', self.event_detail_view, name="event_detail"),
+			)
 			
 			# Some sort of shortcut for a location would be useful. This could be on a per-calendar
 			# or per-calendar-view basis.
 			#url(r'^%s/(?P<slug>[\w-]+)' % self.location_permalink_base, ...)
-			url(r'^%s/(?P<app_label>\w+)/(?P<model>\w+)/(?P<pk>[^/]+)' % self.location_permalink_base, include(self.feed_patterns('get_events_by_location', 'location_page', 'events_by_location'))),
-		)
-		
-		if self.feeds_enabled:
-			urlpatterns += patterns('',
-				url(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)/%s$' % (self.tag_permalink_base, self.feed_suffix), self.feed_view('get_events_by_tag', 'events_by_tag_feed'), name='events_by_tag_feed'),
-			)
-		urlpatterns += patterns('',
-			url(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)$' % self.tag_permalink_base, self.page_view('get_events_by_tag', 'tag_page'), name='events_by_tag')
-		)
 		
 		if self.tag_archive_page:
 			urlpatterns += patterns('',

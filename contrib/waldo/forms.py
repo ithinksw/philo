@@ -1,17 +1,12 @@
 from datetime import date
 from django import forms
 from django.conf import settings
+from django.contrib.auth import authenticate
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 from philo.contrib.waldo.tokens import REGISTRATION_TIMEOUT_DAYS
-
-
-LOGIN_FORM_KEY = 'this_is_the_login_form'
-LoginForm = type('LoginForm', (AuthenticationForm,), {
-	LOGIN_FORM_KEY: forms.BooleanField(widget=forms.HiddenInput, initial=True)
-})
 
 
 class EmailInput(forms.TextInput):
@@ -71,3 +66,37 @@ class UserAccountForm(forms.ModelForm):
 	class Meta:
 		model = User
 		fields = ('first_name', 'last_name', 'email')
+
+
+class WaldoAuthenticationForm(AuthenticationForm):
+	ERROR_MESSAGE = _("Please enter a correct username and password. Note that both fields are case-sensitive.")
+	
+	def clean(self):
+		username = self.cleaned_data.get('username')
+		password = self.cleaned_data.get('password')
+		message = self.ERROR_MESSAGE
+		
+		if username and password:
+			self.user_cache = authenticate(username=username, password=password)
+			if self.user_cache is None:
+				if u'@' in username:
+					# Maybe they entered their email? Look it up, but still raise a ValidationError.
+					try:
+						user = User.objects.get(email=username)
+					except (User.DoesNotExist, User.MultipleObjectsReturned):
+						pass
+					else:
+						if user.check_password(password):
+							message = _("Your e-mail address is not your username. Try '%s' instead.") % user.username
+				raise ValidationError(message)
+			elif not self.user_cache.is_active:
+				raise ValidationError(message)
+		self.check_for_test_cookie()
+		return self.cleaned_data
+	
+	def check_for_test_cookie(self):
+		# This method duplicates the Django 1.3 AuthenticationForm method.
+		if self.request and not self.request.session.test_cookie_worked():
+			raise forms.ValidationError(
+				_("Your Web browser doesn't appear to have cookies enabled. "
+				  "Cookies are required for logging in."))

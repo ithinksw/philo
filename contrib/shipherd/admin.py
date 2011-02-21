@@ -12,6 +12,7 @@ class NavigationItemInline(admin.StackedInline):
 	model = NavigationItem
 	extra = 1
 	sortable_field_name = 'order'
+	related_lookup_fields = {'fk': raw_id_fields}
 
 
 class NavigationItemChildInline(NavigationItemInline):
@@ -92,12 +93,14 @@ class NavigationItemAdmin(TreeEntityAdmin):
 		})
 	)
 	raw_id_fields = NAVIGATION_RAW_ID_FIELDS
+	related_lookup_fields = {'fk': raw_id_fields}
 	inlines = [NavigationItemChildInline] + TreeEntityAdmin.inlines
 
 
 class NavigationAdmin(EntityAdmin):
 	inlines = [NavigationNavigationItemInline]
 	raw_id_fields = ['node']
+	related_lookup_fields = {'fk': raw_id_fields}
 
 
 admin.site.unregister(Node)

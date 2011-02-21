@@ -4,7 +4,7 @@ from django.core.urlresolvers import NoReverseMatch
 from django.core.validators import RegexValidator, MinValueValidator
 from django.db import models
 from django.forms.models import model_to_dict
-from philo.models import TreeEntity, JSONField, Node, TreeManager, Entity
+from philo.models import TreeEntity, Node, TreeManager, Entity, TargetURLModel
 from philo.validators import RedirectValidator
 from UserDict import DictMixin
 
@@ -148,18 +148,19 @@ class NavigationManager(models.Manager):
 		# about that. TODO: Benchmark it.
 		caches = self.__class__._cache[self.db][node].values()
 		
-		items = []
+		target_pks = set()
 		
 		for cache in caches:
-			items += cache['items']
+			target_pks |= set([item.target_node_id for item in cache['items']])
 		
 		# A distinct query is not strictly necessary. TODO: benchmark the efficiency
 		# with/without distinct.
-		targets = list(Node.objects.filter(navigation_items__in=items).distinct())
+		targets = list(Node.objects.filter(pk__in=target_pks).distinct())
 		
 		for cache in caches:
 			for item in cache['items']:
-				item.target_node = targets[targets.index(item.target_node)]
+				if item.target_node_id:
+					item.target_node = targets[targets.index(item.target_node)]
 	
 	def clear_cache(self):
 		self.__class__._cache.pop(self.db, None)
@@ -169,7 +170,7 @@ class Navigation(Entity):
 	objects = NavigationManager()
 	
 	node = models.ForeignKey(Node, related_name='navigation_set', help_text="Be available as navigation for this node.")
-	key = models.CharField(max_length=255, validators=[RegexValidator("\w+")], help_text="Must contain one or more alphanumeric characters or underscores.")
+	key = models.CharField(max_length=255, validators=[RegexValidator("\w+")], help_text="Must contain one or more alphanumeric characters or underscores.", db_index=True)
 	depth = models.PositiveSmallIntegerField(default=DEFAULT_NAVIGATION_DEPTH, validators=[MinValueValidator(1)], help_text="Defines the maximum display depth of this navigation.")
 	
 	def __init__(self, *args, **kwargs):
@@ -204,15 +205,11 @@ class NavigationItemManager(TreeManager):
 		return NavigationCacheQuerySet(self.model, using=self._db)
 
 
-class NavigationItem(TreeEntity):
+class NavigationItem(TreeEntity, TargetURLModel):
 	objects = NavigationItemManager()
 	
 	navigation = models.ForeignKey(Navigation, blank=True, null=True, related_name='roots', help_text="Be a root in this navigation tree.")
 	text = models.CharField(max_length=50)
-	
-	target_node = models.ForeignKey(Node, blank=True, null=True, related_name='navigation_items', help_text="Point to this node's url.")
-	url_or_subpath = models.CharField(max_length=200, validators=[RedirectValidator()], blank=True, help_text="Point to this url or, if a node is defined and accepts subpaths, this subpath of the node.")
-	reversing_parameters = JSONField(blank=True, help_text="If reversing parameters are defined, url_or_subpath will instead be interpreted as the view name to be reversed.")
 	
 	order = models.PositiveSmallIntegerField(default=0)
 	
@@ -225,40 +222,9 @@ class NavigationItem(TreeEntity):
 		return self.get_path(field='text', pathsep=u' › ')
 	
 	def clean(self):
-		# Should this be enforced? Not enforcing it would allow creation of "headers" in the navbar.
-		if not self.target_node and not self.url_or_subpath:
-			raise ValidationError("Either a target node or a url must be defined.")
-		
-		if self.reversing_parameters and (not self.url_or_subpath or not self.target_node):
-			raise ValidationError("Reversing parameters require a view name and a target node.")
-		
-		try:
-			self.get_target_url()
-		except NoReverseMatch, e:
-			raise ValidationError(e.message)
-		
+		super(NavigationItem, self).clean()
 		if bool(self.parent) == bool(self.navigation):
 			raise ValidationError("Exactly one of `parent` and `navigation` must be defined.")
-	
-	def get_target_url(self):
-		node = self.target_node
-		if node is not None and node.accepts_subpath and self.url_or_subpath:
-			if self.reversing_parameters is not None:
-				view_name = self.url_or_subpath
-				params = self.reversing_parameters
-				args = isinstance(params, list) and params or None
-				kwargs = isinstance(params, dict) and params or None
-				return node.view.reverse(view_name, args=args, kwargs=kwargs, node=node)
-			else:
-				subpath = self.url_or_subpath
-				while subpath and subpath[0] == '/':
-					subpath = subpath[1:]
-				return '%s%s' % (node.get_absolute_url(), subpath)
-		elif node is not None:
-			return node.get_absolute_url()
-		else:
-			return self.url_or_subpath
-	target_url = property(get_target_url)
 	
 	def is_active(self, request):
 		if self.target_url == request.path:

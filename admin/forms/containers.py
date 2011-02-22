@@ -2,8 +2,9 @@ from django import forms
 from django.contrib.admin.widgets import AdminTextareaWidget
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
-from django.forms.models import ModelForm, BaseInlineFormSet
+from django.forms.models import ModelForm, BaseInlineFormSet, BaseModelFormSet
 from django.forms.formsets import TOTAL_FORM_COUNT
+from django.utils.datastructures import SortedDict
 from philo.admin.widgets import ModelLookupWidget
 from philo.models import Contentlet, ContentReference
 
@@ -20,17 +21,19 @@ class ContainerForm(ModelForm):
 	def __init__(self, *args, **kwargs):
 		super(ContainerForm, self).__init__(*args, **kwargs)
 		self.verbose_name = self.instance.name.replace('_', ' ')
+		self.prefix = self.instance.name
 
 
 class ContentletForm(ContainerForm):
 	content = forms.CharField(required=False, widget=AdminTextareaWidget, label='Content')
 	
 	def should_delete(self):
-		return not bool(self.cleaned_data['content'])
+		# Delete iff: the data has changed and is now empty.
+		return self.has_changed() and not bool(self.cleaned_data['content'])
 	
 	class Meta:
 		model = Contentlet
-		fields = ['name', 'content']
+		fields = ['content']
 
 
 class ContentReferenceForm(ContainerForm):
@@ -43,72 +46,92 @@ class ContentReferenceForm(ContainerForm):
 			pass
 	
 	def should_delete(self):
-		return (self.cleaned_data['content_id'] is None)
+		return self.has_changed() and (self.cleaned_data['content_id'] is None)
 	
 	class Meta:
 		model = ContentReference
-		fields = ['name', 'content_id']
+		fields = ['content_id']
 
 
 class ContainerInlineFormSet(BaseInlineFormSet):
-	def __init__(self, containers, data=None, files=None, instance=None, save_as_new=False, prefix=None, queryset=None):
-		# Unfortunately, I need to add some things to BaseInline between its __init__ and its
-		# super call, so a lot of this is repetition.
-		
-		# Start cribbed from BaseInline
-		from django.db.models.fields.related import RelatedObject
-		self.save_as_new = save_as_new
-		# is there a better way to get the object descriptor?
-		self.rel_name = RelatedObject(self.fk.rel.to, self.model, self.fk).get_accessor_name()
-		if self.fk.rel.field_name == self.fk.rel.to._meta.pk.name:
-			backlink_value = self.instance
-		else:
-			backlink_value = getattr(self.instance, self.fk.rel.field_name)
-		if queryset is None:
-			queryset = self.model._default_manager
-		qs = queryset.filter(**{self.fk.name: backlink_value})
-		# End cribbed from BaseInline
-		
-		self.container_instances, qs = self.get_container_instances(containers, qs)
-		self.extra_containers = containers
-		self.extra = len(self.extra_containers)
-		super(BaseInlineFormSet, self).__init__(data, files, prefix=prefix, queryset=qs)
-	
-	def get_container_instances(self, containers, qs):
-		raise NotImplementedError
+	@property
+	def containers(self):
+		if not hasattr(self, '_containers'):
+			self._containers = self.get_containers()
+		return self._containers
 	
 	def total_form_count(self):
-		if self.data or self.files:
-			return self.management_form.cleaned_data[TOTAL_FORM_COUNT]
+		# This ignores the posted management form data... but that doesn't
+		# seem to have any ill side effects.
+		return len(self.containers.keys())
+	
+	def _get_initial_forms(self):
+		return [form for form in self.forms if form.instance.pk is not None]
+	initial_forms = property(_get_initial_forms)
+	
+	def _get_extra_forms(self):
+		return [form for form in self.forms if form.instance.pk is None]
+	extra_forms = property(_get_extra_forms)
+	
+	def _construct_form(self, i, **kwargs):
+		if 'instance' not in kwargs:
+			kwargs['instance'] = self.containers.values()[i]
+		
+		# Skip over the BaseModelFormSet. We have our own way of doing things!
+		form = super(BaseModelFormSet, self)._construct_form(i, **kwargs)
+		
+		# Since we skipped over BaseModelFormSet, we need to duplicate what BaseInlineFormSet would do.
+		if self.save_as_new:
+			# Remove the primary key from the form's data, we are only
+			# creating new instances
+			form.data[form.add_prefix(self._pk_field.name)] = None
+			
+			# Remove the foreign key from the form's data
+			form.data[form.add_prefix(self.fk.name)] = None
+		
+		# Set the fk value here so that the form can do it's validation.
+		setattr(form.instance, self.fk.get_attname(), self.instance.pk)
+		return form
+	
+	def add_fields(self, form, index):
+		"""Override the pk field's initial value with a real one."""
+		super(ContainerInlineFormSet, self).add_fields(form, index)
+		if index is not None:
+			pk_value = self.containers.values()[index].pk
 		else:
-			return self.initial_form_count() + self.extra
+			pk_value = None
+		form.fields[self._pk_field.name].initial = pk_value
 	
 	def save_existing_objects(self, commit=True):
 		self.changed_objects = []
 		self.deleted_objects = []
 		if not self.get_queryset():
 			return []
-
+		
 		saved_instances = []
 		for form in self.initial_forms:
 			pk_name = self._pk_field.name
 			raw_pk_value = form._raw_value(pk_name)
-
+			
 			# clean() for different types of PK fields can sometimes return
 			# the model instance, and sometimes the PK. Handle either.
 			pk_value = form.fields[pk_name].clean(raw_pk_value)
 			pk_value = getattr(pk_value, 'pk', pk_value)
-
-			obj = self._existing_object(pk_value)
-			if form.should_delete():
-				self.deleted_objects.append(obj)
-				obj.delete()
-				continue
-			if form.has_changed():
-				self.changed_objects.append((obj, form.changed_data))
-				saved_instances.append(self.save_existing(form, obj, commit=commit))
-				if not commit:
-					self.saved_forms.append(form)
+			
+			# if the pk_value is None, they have just switched to a
+			# template which didn't contain data about this container.
+			# Skip!
+			if pk_value is not None:
+				obj = self._existing_object(pk_value)
+				if form.should_delete():
+					self.deleted_objects.append(obj)
+					obj.delete()
+					continue
+				if form.has_changed():
+					self.changed_objects.append((obj, form.changed_data))
+					saved_instances.append(self.save_existing(form, obj, commit=commit))
+					if not commit:
+						self.saved_forms.append(form)
 		return saved_instances
 
 	def save_new_objects(self, commit=True):
@@ -127,64 +150,41 @@ class ContainerInlineFormSet(BaseInlineFormSet):
 
 
 class ContentletInlineFormSet(ContainerInlineFormSet):
-	def __init__(self, data=None, files=None, instance=None, save_as_new=False, prefix=None, queryset=None):
-		if instance is None:
-			self.instance = self.fk.rel.to()
-		else:
-			self.instance = instance
-		
+	def get_containers(self):
 		try:
 			containers = list(self.instance.containers[0])
 		except ObjectDoesNotExist:
 			containers = []
-	
-		super(ContentletInlineFormSet, self).__init__(containers, data, files, instance, save_as_new, prefix, queryset)
-	
-	def get_container_instances(self, containers, qs):
-		qs = qs.filter(name__in=containers)
-		container_instances = []
-		for container in qs:
-			container_instances.append(container)
-			containers.remove(container.name)
-		return container_instances, qs
-	
-	def _construct_form(self, i, **kwargs):
-		if i >= self.initial_form_count(): # and not kwargs.get('instance'):
-			kwargs['instance'] = self.model(name=self.extra_containers[i - self.initial_form_count() - 1])
 		
-		return super(ContentletInlineFormSet, self)._construct_form(i, **kwargs)
+		qs = self.get_queryset().filter(name__in=containers)
+		container_dict = SortedDict([(container.name, container) for container in qs])
+		for name in containers:
+			if name not in container_dict:
+				container_dict[name] = self.model(name=name)
+		
+		container_dict.keyOrder = containers
+		return container_dict
 
 
 class ContentReferenceInlineFormSet(ContainerInlineFormSet):
-	def __init__(self, data=None, files=None, instance=None, save_as_new=False, prefix=None, queryset=None):
-		if instance is None:
-			self.instance = self.fk.rel.to()
-		else:
-			self.instance = instance
-		
+	def get_containers(self):
 		try:
 			containers = list(self.instance.containers[1])
 		except ObjectDoesNotExist:
 			containers = []
-	
-		super(ContentReferenceInlineFormSet, self).__init__(containers, data, files, instance, save_as_new, prefix, queryset)
-	
-	def get_container_instances(self, containers, qs):
-		filter = Q()
 		
+		filter = Q()
 		for name, ct in containers:
 			filter |= Q(name=name, content_type=ct)
+		qs = self.get_queryset().filter(filter)
 		
-		qs = qs.filter(filter)
-		container_instances = []
-		for container in qs:
-			container_instances.append(container)
-			containers.remove((container.name, container.content_type))
-		return container_instances, qs
-
-	def _construct_form(self, i, **kwargs):
-		if i >= self.initial_form_count(): # and not kwargs.get('instance'):
-			name, content_type = self.extra_containers[i - self.initial_form_count() - 1]
-			kwargs['instance'] = self.model(name=name, content_type=content_type)
-
-		return super(ContentReferenceInlineFormSet, self)._construct_form(i, **kwargs)
+		container_dict = SortedDict([(container.name, container) for container in qs])
+		
+		keyOrder = []
+		for name, ct in containers:
+			keyOrder.append(name)
+			if name not in container_dict:
+				container_dict[name] = self.model(name=name, content_type=ct)
+		
+		container_dict.keyOrder = keyOrder
+		return container_dict

@@ -7,15 +7,6 @@
    <h2>{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}</h2>
    {{ inline_admin_formset.formset.non_form_errors }}
    <table>
-	 <thead><tr>
-	 {% for field in inline_admin_formset.fields %}
-	   {% if not field.widget.is_hidden %}
-		 <th{% if field.required %} class="required"{% endif %}>{{ field.label|capfirst }}</th>
-	   {% endif %}
-	 {% endfor %}
-	 {% if inline_admin_formset.formset.can_delete %}<th>{% trans "Delete?" %}</th>{% endif %}
-	 </tr></thead>
-
 	 <tbody>
 	 {% for inline_admin_form in inline_admin_formset %}
 		{% if inline_admin_form.has_auto_field %}{{ inline_admin_form.pk_field.field }}{% endif %}
@@ -28,33 +19,26 @@
 		  {% endfor %}
 		{% endfor %}
 		{% endfor %}
-		{{ inline_admin_form.form.name.as_hidden }}
 		{% endspaceless %}
-		{% if inline_admin_form.form.non_field_errors %}
-		<tr><td colspan="{{ inline_admin_form.field_count }}">{{ inline_admin_form.form.non_field_errors }}</td></tr>
+	{% endfor %}
+	{% for form in inline_admin_formset.formset.forms %}
+		{% if form.non_field_errors %}
+		<tr><td colspan="2">{{ form.non_field_errors }}</td></tr>
 		{% endif %}
-		<tr class="{% cycle "row1" "row2" %} {% if forloop.last %} empty-form{% endif %}"
-			 id="{{ inline_admin_formset.formset.prefix }}-{% if not forloop.last %}{{ forloop.counter0 }}{% else %}empty{% endif %}">
-			<th>{{ inline_admin_form.form.verbose_name|capfirst }}:</th>
-		{% for fieldset in inline_admin_form %}
-		  {% for line in fieldset %}
-			{% for field in line %}
-			  {% if field.field.name != 'name' %}
+		<tr class="{% cycle "row1" "row2" %}{% comment %} {% if forloop.last %} empty-form{% endif %}{% endcomment %}"
+			 id="{{ formset.prefix }}-{% if not forloop.last %}{{ forloop.counter0 }}{% else %}empty{% endif %}">
+			<th>{{ form.verbose_name|capfirst }}:</th>
+			{% for field in form %}
+			  {% if not field.is_hidden %}
 			  <td class="{{ field.field.name }}">
-			  {% if field.is_readonly %}
-				  <p>{{ field.contents }}</p>
-			  {% else %}
 				  {{ field.field.errors.as_ul }}
-				  {{ field.field }}
-			  {% endif %}
+				  {{ field }}
+				  {% if field.field.help_text %}
+				  <p class="help">{{ field.field.help_text|safe }}</p>
+				  {% endif %}
 			  </td>
 			  {% endif %}
 			{% endfor %}
-		  {% endfor %}
-		{% endfor %}
-		{% if inline_admin_formset.formset.can_delete %}
-		  <td class="delete">{% if inline_admin_form.original %}{{ inline_admin_form.deletion_field.field }}{% endif %}</td>
-		{% endif %}
 		</tr>
 	 {% endfor %}
 	 </tbody>

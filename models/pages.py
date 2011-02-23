@@ -7,6 +7,7 @@ from django.db import models
 from django.http import HttpResponse
 from django.template import TemplateDoesNotExist, Context, RequestContext, Template as DjangoTemplate, add_to_builtins as register_templatetags, TextNode, VariableNode
 from django.template.loader_tags import BlockNode, ExtendsNode, BlockContext
+from django.utils.datastructures import SortedDict
 from philo.models.base import TreeModel, register_value_model
 from philo.models.fields import TemplateField
 from philo.models.nodes import View
@@ -14,6 +15,66 @@ from philo.templatetags.containers import ContainerNode
 from philo.utils import fattr, nodelist_crawl
 from philo.validators import LOADED_TEMPLATE_ATTR
 from philo.signals import page_about_to_render_to_string, page_finished_rendering_to_string
+
+
+class LazyContainerFinder(object):
+	_created = 0
+	_initialized = 0
+	
+	def __init__(self, nodes):
+		self.__class__._created += 1
+		self.nodes = nodes
+		self.initialized = False
+		self.contentlet_specs = set()
+		self.contentreference_specs = SortedDict()
+		self.blocks = {}
+		self.block_super = False
+	
+	def process(self, nodelist):
+		for node in nodelist:
+			if isinstance(node, ContainerNode):
+				if not node.references:
+					self.contentlet_specs.add(node.name)
+				else:
+					if node.name not in self.contentreference_specs.keys():
+						self.contentreference_specs[node.name] = node.references
+				continue
+			
+			if isinstance(node, BlockNode):
+				#if nodelist == self.nodes: Necessary?
+				self.blocks[node.name] = block = LazyContainerFinder(node.nodelist)
+				if block.nodes.get_nodes_by_type(BlockNode): # Is this faster?
+					block.initialize()
+					self.blocks.update(block.blocks)
+				continue
+			
+			if isinstance(node, ExtendsNode):
+				continue
+			
+			if isinstance(node, VariableNode):
+				if node.filter_expression.var.lookups == (u'block', u'super'):
+					self.block_super = True
+			
+			if hasattr(node, 'child_nodelists'):
+				for nodelist_name in node.child_nodelists:
+					if hasattr(node, nodelist_name):
+						nodelist = getattr(node, nodelist_name)
+						self.process(nodelist)
+			
+			# LOADED_TEMPLATE_ATTR contains the name of an attribute philo uses to declare a
+			# node as rendering an additional template. Philo monkeypatches the attribute onto
+			# the relevant default nodes and declares it on any native nodes.
+			if hasattr(node, LOADED_TEMPLATE_ATTR):
+				loaded_template = getattr(node, LOADED_TEMPLATE_ATTR)
+				if loaded_template:
+					nodelist = loaded_template.nodelist
+					self.process(nodelist)
+	
+	def initialize(self):
+		if not self.initialized:
+			self.process(self.nodes)
+			self.initialized = True
+			self.__class__._initialized += 1
 
 
 class Template(TreeModel):
@@ -30,55 +91,49 @@ class Template(TreeModel):
 		This will break if there is a recursive extends or includes in the template code.
 		Due to the use of an empty Context, any extends or include tags with dynamic arguments probably won't work.
 		"""
-		def process_node(node, contentlet_specs, contentreference_specs, contentreference_names, block_context=None):
-			if isinstance(node, ContainerNode):
-				if not node.references:
-					if node.name not in contentlet_specs:
-						contentlet_specs.append(node.name)
-				else:
-					if node.name not in contentreference_names:
-						contentreference_specs.append((node.name, node.references))
-						contentreference_names.add(node.name)
-			if isinstance(node, ExtendsNode) and block_context is not None:
-				block_context.add_blocks(node.blocks)
-				parent = getattr(node, LOADED_TEMPLATE_ATTR)
-				for node in parent.nodelist:
-					if not isinstance(node, TextNode):
-						if not isinstance(node, ExtendsNode):
-							blocks = dict([(n.name, n) for n in parent.nodelist.get_nodes_by_type(BlockNode)])
-							block_context.add_blocks(blocks)
-						break
-			
-			if hasattr(node, 'child_nodelists') and not isinstance(node, BlockNode):
-				for nodelist_name in node.child_nodelists:
-					if hasattr(node, nodelist_name):
-						nodelist_crawl(getattr(node, nodelist_name), process_node, contentlet_specs, contentreference_specs, contentreference_names, block_context)
-			
-			# LOADED_TEMPLATE_ATTR contains the name of an attribute philo uses to declare a
-			# node as rendering an additional template. Philo monkeypatches the attribute onto
-			# the relevant default nodes and declares it on any native nodes.
-			if hasattr(node, LOADED_TEMPLATE_ATTR):
-				loaded_template = getattr(node, LOADED_TEMPLATE_ATTR)
-				if loaded_template:
-					nodelist_crawl(loaded_template.nodelist, process_node, contentlet_specs, contentreference_specs, contentreference_names, block_context)
+		template = DjangoTemplate(self.code)
 		
-		contentreference_names = set()
-		contentlet_specs = []
-		contentreference_specs = []
-		block_context = BlockContext()
-		nodelist_crawl(DjangoTemplate(self.code).nodelist, process_node, contentlet_specs, contentreference_specs, contentreference_names, block_context)
-		
-		def process_block_node(node, contentlet_specs, contentreference_specs, contentreference_names, block_super):
-			if isinstance(node, VariableNode) and node.filter_expression.var.lookups == (u'block', u'super'):
-				block_super.append(node)
-			process_node(node, contentlet_specs, contentreference_specs, contentreference_names, block_context=None)
-		
-		for block_list in block_context.blocks.values():
-			for block in block_list[::-1]:
-				block_super = []
-				nodelist_crawl(block.nodelist, process_block_node, contentlet_specs, contentreference_specs, contentreference_names, block_super)
-				if not block_super:
+		def build_extension_tree(nodelist):
+			nodelists = []
+			extends = None
+			for node in nodelist:
+				if not isinstance(node, TextNode):
+					if isinstance(node, ExtendsNode):
+						extends = node
 					break
+			
+			if extends:
+				if extends.nodelist:
+					nodelists.append(LazyContainerFinder(extends.nodelist))
+				loaded_template = getattr(extends, LOADED_TEMPLATE_ATTR)
+				nodelists.extend(build_extension_tree(loaded_template.nodelist))
+			else:
+				# Base case: root.
+				nodelists.append(LazyContainerFinder(nodelist))
+			return nodelists
+		
+		# Build a tree of the templates we're using, placing the root template first.
+		levels = build_extension_tree(template.nodelist)[::-1]
+		
+		contentlet_specs = set()
+		contentreference_specs = SortedDict()
+		blocks = {}
+		
+		for level in levels:
+			level.initialize()
+			contentlet_specs |= level.contentlet_specs
+			contentreference_specs.update(level.contentreference_specs)
+			for name, block in level.blocks.items():
+				if block.block_super:
+					blocks.setdefault(name, []).append(block)
+				else:
+					blocks[name] = [block]
+		
+		for block_list in blocks.values():
+			for block in block_list:
+				block.initialize()
+				contentlet_specs |= block.contentlet_specs
+				contentreference_specs.update(block.contentreference_specs)
 		
 		return contentlet_specs, contentreference_specs
 	

@@ -169,19 +169,19 @@ class ContentletInlineFormSet(ContainerInlineFormSet):
 class ContentReferenceInlineFormSet(ContainerInlineFormSet):
 	def get_containers(self):
 		try:
-			containers = list(self.instance.containers[1])
+			containers = self.instance.containers[1]
 		except ObjectDoesNotExist:
-			containers = []
+			containers = {}
 		
 		filter = Q()
-		for name, ct in containers:
+		for name, ct in containers.items():
 			filter |= Q(name=name, content_type=ct)
 		qs = self.get_queryset().filter(filter)
 		
 		container_dict = SortedDict([(container.name, container) for container in qs])
 		
 		keyOrder = []
-		for name, ct in containers:
+		for name, ct in containers.items():
 			keyOrder.append(name)
 			if name not in container_dict:
 				container_dict[name] = self.model(name=name, content_type=ct)

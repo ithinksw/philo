@@ -5,7 +5,8 @@ from django.contrib.contenttypes import generic
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.http import HttpResponse
-from django.template import TemplateDoesNotExist, Context, RequestContext, Template as DjangoTemplate, add_to_builtins as register_templatetags
+from django.template import TemplateDoesNotExist, Context, RequestContext, Template as DjangoTemplate, add_to_builtins as register_templatetags, TextNode, VariableNode
+from django.template.loader_tags import BlockNode, ExtendsNode, BlockContext
 from philo.models.base import TreeModel, register_value_model
 from philo.models.fields import TemplateField
 from philo.models.nodes import View
@@ -29,19 +30,57 @@ class Template(TreeModel):
 		This will break if there is a recursive extends or includes in the template code.
 		Due to the use of an empty Context, any extends or include tags with dynamic arguments probably won't work.
 		"""
-		def process_node(node, nodes):
+		def process_node(node, contentlet_specs, contentreference_specs, contentreference_names, block_context=None):
 			if isinstance(node, ContainerNode):
-				nodes.append(node)
+				if not node.references:
+					if node.name not in contentlet_specs:
+						contentlet_specs.append(node.name)
+				else:
+					if node.name not in contentreference_names:
+						contentreference_specs.append((node.name, node.references))
+						contentreference_names.add(node.name)
+			if isinstance(node, ExtendsNode) and block_context is not None:
+				block_context.add_blocks(node.blocks)
+				parent = getattr(node, LOADED_TEMPLATE_ATTR)
+				for node in parent.nodelist:
+					if not isinstance(node, TextNode):
+						if not isinstance(node, ExtendsNode):
+							blocks = dict([(n.name, n) for n in parent.nodelist.get_nodes_by_type(BlockNode)])
+							block_context.add_blocks(blocks)
+						break
+			
+			if hasattr(node, 'child_nodelists') and not isinstance(node, BlockNode):
+				for nodelist_name in node.child_nodelists:
+					if hasattr(node, nodelist_name):
+						nodelist_crawl(getattr(node, nodelist_name), process_node, contentlet_specs, contentreference_specs, contentreference_names, block_context)
+			
+			# LOADED_TEMPLATE_ATTR contains the name of an attribute philo uses to declare a
+			# node as rendering an additional template. Philo monkeypatches the attribute onto
+			# the relevant default nodes and declares it on any native nodes.
+			if hasattr(node, LOADED_TEMPLATE_ATTR):
+				loaded_template = getattr(node, LOADED_TEMPLATE_ATTR)
+				if loaded_template:
+					nodelist_crawl(loaded_template.nodelist, process_node, contentlet_specs, contentreference_specs, contentreference_names, block_context)
 		
-		all_nodes = nodelist_crawl(DjangoTemplate(self.code).nodelist, process_node)
-		contentlet_node_names = set([node.name for node in all_nodes if not node.references])
-		contentreference_node_names = []
-		contentreference_node_specs = []
-		for node in all_nodes:
-			if node.references and node.name not in contentreference_node_names:
-				contentreference_node_specs.append((node.name, node.references))
-				contentreference_node_names.append(node.name)
-		return contentlet_node_names, contentreference_node_specs
+		contentreference_names = set()
+		contentlet_specs = []
+		contentreference_specs = []
+		block_context = BlockContext()
+		nodelist_crawl(DjangoTemplate(self.code).nodelist, process_node, contentlet_specs, contentreference_specs, contentreference_names, block_context)
+		
+		def process_block_node(node, contentlet_specs, contentreference_specs, contentreference_names, block_super):
+			if isinstance(node, VariableNode) and node.filter_expression.var.lookups == (u'block', u'super'):
+				block_super.append(node)
+			process_node(node, contentlet_specs, contentreference_specs, contentreference_names, block_context=None)
+		
+		for block_list in block_context.blocks.values():
+			for block in block_list[::-1]:
+				block_super = []
+				nodelist_crawl(block.nodelist, process_block_node, contentlet_specs, contentreference_specs, contentreference_names, block_super)
+				if not block_super:
+					break
+		
+		return contentlet_specs, contentreference_specs
 	
 	def __unicode__(self):
 		return self.get_path(pathsep=u' › ', field='name')

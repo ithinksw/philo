@@ -18,11 +18,7 @@ from philo.signals import page_about_to_render_to_string, page_finished_renderin
 
 
 class LazyContainerFinder(object):
-	_created = 0
-	_initialized = 0
-	
 	def __init__(self, nodes):
-		self.__class__._created += 1
 		self.nodes = nodes
 		self.initialized = False
 		self.contentlet_specs = set()
@@ -41,11 +37,9 @@ class LazyContainerFinder(object):
 				continue
 			
 			if isinstance(node, BlockNode):
-				#if nodelist == self.nodes: Necessary?
 				self.blocks[node.name] = block = LazyContainerFinder(node.nodelist)
-				if block.nodes.get_nodes_by_type(BlockNode): # Is this faster?
-					block.initialize()
-					self.blocks.update(block.blocks)
+				block.initialize()
+				self.blocks.update(block.blocks)
 				continue
 			
 			if isinstance(node, ExtendsNode):
@@ -74,7 +68,6 @@ class LazyContainerFinder(object):
 		if not self.initialized:
 			self.process(self.nodes)
 			self.initialized = True
-			self.__class__._initialized += 1
 
 
 class Template(TreeModel):

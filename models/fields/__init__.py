@@ -7,6 +7,7 @@ from django.utils.text import capfirst
 from django.utils.translation import ugettext_lazy as _
 from philo.forms.fields import JSONFormField
 from philo.validators import TemplateValidator, json_validator
+#from philo.models.fields.entities import *
 
 
 class TemplateField(models.TextField):

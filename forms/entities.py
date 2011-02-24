@@ -43,9 +43,15 @@ class EntityFormBase(ModelForm):
 _old_metaclass_new = ModelFormMetaclass.__new__
 
 def _new_metaclass_new(cls, name, bases, attrs):
+	formfield_callback = attrs.get('formfield_callback', lambda f, **kwargs: f.formfield(**kwargs))
 	new_class = _old_metaclass_new(cls, name, bases, attrs)
-	if issubclass(new_class, EntityFormBase) and new_class._meta.model:
-		new_class.base_fields.update(proxy_fields_for_entity_model(new_class._meta.model, new_class._meta.fields, new_class._meta.exclude, new_class._meta.widgets)) # don't pass in formfield_callback
+	opts = new_class._meta
+	if issubclass(new_class, EntityFormBase) and opts.model:
+		# "override" proxy fields with declared fields by excluding them if there's a name conflict.
+		exclude = (list(opts.exclude or []) + new_class.declared_fields.keys()) or None
+		proxy_fields = proxy_fields_for_entity_model(opts.model, opts.fields, exclude, opts.widgets, formfield_callback) # don't pass in formfield_callback
+		new_class.proxy_fields = proxy_fields
+		new_class.base_fields.update(proxy_fields)
 	return new_class
 
 ModelFormMetaclass.__new__ = staticmethod(_new_metaclass_new)
@@ -84,30 +90,10 @@ class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it 
 				continue
 			if self._meta.exclude and f.name in self._meta.exclude:
 				continue
-			setattr(instance, f.attname, cleaned_data[f.name])
+			setattr(instance, f.attname, f.get_storage_value(cleaned_data[f.name]))
 		
 		if commit:
 			instance.save()
 			self.save_m2m()
 		
 		return instance
-
-	
-	def apply_data(self, cleaned_data):
-		self.value = cleaned_data.get('value', None)
-	
-	def apply_data(self, cleaned_data):
-		if 'value' in cleaned_data and cleaned_data['value'] is not None:
-			self.value = cleaned_data['value']
-		else:
-			self.content_type = cleaned_data.get('content_type', None)
-			# If there is no value set in the cleaned data, clear the stored value.
-			self.object_id = None
-	
-	def apply_data(self, cleaned_data):
-		if 'value' in cleaned_data and cleaned_data['value'] is not None:
-			self.value = cleaned_data['value']
-		else:
-			self.content_type = cleaned_data.get('content_type', None)
-			# If there is no value set in the cleaned data, clear the stored value.
-			self.value = []

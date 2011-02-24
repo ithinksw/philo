@@ -5,7 +5,7 @@
 {% comment %}Don't render the formset at all if there aren't any forms.{% endcomment %}
 {% if inline_admin_formset.formset.forms %}
 	<fieldset class="module{% if inline_admin_formset.opts.classes %} {{ inline_admin_formset.opts.classes|join:" " }}{% endif %}">
-		<h2>{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}</h2>
+		<h2{% if "collapse" in inline_admin_formset.opts.classes %} class="collapse-handler"{% endif %}>{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}</h2>
 		{{ inline_admin_formset.formset.non_form_errors }}
 		{% for inline_admin_form in inline_admin_formset %}
 			{% if inline_admin_form.has_auto_field %}{{ inline_admin_form.pk_field.field }}{% endif %}
@@ -18,24 +18,23 @@
 				{% endfor %}
 			{% endfor %}
 			{% endfor %}{% endspaceless %}
-			<div class="row cells-{{ inline_admin_form.fields|length }}{% if not inline_admin_form.fields|length_is:"2" %} cells{% endif %}{% if inline_admin_form.errors %} errors{% endif %} {% for field in inline_admin_form %}{{ field.field.name }} {% endfor %}{% if forloop.last %} empty-form{% endif %}">
-				<div{% if not inline_admin_form.fields|length_is:"2" %} class="cell"{% endif %}>
-					<div class="column span-4"><label class='required' for="{{ inline_admin_form.form.content.auto_id }}{{ inline_admin_form.form.content_id.auto_id }}">{{ inline_admin_form.form.verbose_name|capfirst }}:</label>{{ inline_admin_form.form.name.as_hidden }}</div>
-				{% for fieldset in inline_admin_form %}{% for line in fieldset %}{% for field in line %}
-					{% if field.field.name != 'name' %}
+		{% endfor %}
+		{% for form in inline_admin_formset.formset.forms %}
+			<div class="row cells-{{ form.fields.keys|length }}{% if not form.fields.keys|length_is:"2" %} cells{% endif %}{% if form.errors %} errors{% endif %} {% for field in form %}{{ field.field.name }} {% endfor %}{% comment %} {% if forloop.last %} empty-form{% endif %}{% endcomment %}">
+				{{ form.non_field_errors }}
+				<div{% if not form.fields.keys|length_is:"2" %} class="cell"{% endif %}>
+					<div class="column span-4"><label class='required' for="{{ form.content.auto_id }}{{ form.content_id.auto_id }}">{{ form.verbose_name|capfirst }}:</label></div>
+				{% for field in form %}
+					{% if not field.is_hidden %}
 					<div class="column span-flexible">
-						{% if field.is_readonly %}
-							<p class="readonly">{{ field.contents }}</p>
-						{% else %}
-							{{ field.field }}
-						{% endif %}
-						{{ inline_admin_form.errors }}
-						{% if field.field.field.help_text %}
-							<p class="help">{{ field.field.field.help_text|safe }}</p>
+						{{ field }}
+						{{ field.errors }}
+						{% if field.field.help_text %}
+							<p class="help">{{ field.field.help_text|safe }}</p>
 						{% endif %}
 					</div>
 					{% endif %}
-				{% endfor %}{% endfor %}{% endfor %}
+				{% endfor %}
 				</div>
 			</div>
 		{% endfor %}

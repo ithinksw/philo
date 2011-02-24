@@ -5,7 +5,7 @@ from django.contrib.contenttypes import generic
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import RegexValidator
 from django.utils import simplejson as json
-from django.utils.encoding import smart_str
+from django.utils.encoding import force_unicode
 from philo.exceptions import AncestorDoesNotExist
 from philo.models.fields import JSONField
 from philo.utils import ContentTypeRegistryLimiter, ContentTypeSubclassLimiter
@@ -45,16 +45,15 @@ def register_value_model(model):
 	value_content_type_limiter.register_class(model)
 
 
+register_value_model(Tag)
+
+
 def unregister_value_model(model):
 	value_content_type_limiter.unregister_class(model)
 
 
 class AttributeValue(models.Model):
 	attribute_set = generic.GenericRelation('Attribute', content_type_field='value_content_type', object_id_field='value_object_id')
-	
-	@property
-	def attribute(self):
-		return self.attribute_set.all()[0]
 	
 	def set_value(self, value):
 		raise NotImplementedError
@@ -78,10 +77,10 @@ attribute_value_limiter = ContentTypeSubclassLimiter(AttributeValue)
 
 
 class JSONValue(AttributeValue):
-	value = JSONField(verbose_name='Value (JSON)', help_text='This value must be valid JSON.', default='null')
+	value = JSONField(verbose_name='Value (JSON)', help_text='This value must be valid JSON.', default='null', db_index=True)
 	
 	def __unicode__(self):
-		return smart_str(self.value)
+		return force_unicode(self.value)
 	
 	def value_formfields(self):
 		kwargs = {'initial': self.value_json}
@@ -101,7 +100,7 @@ class JSONValue(AttributeValue):
 
 class ForeignKeyValue(AttributeValue):
 	content_type = models.ForeignKey(ContentType, limit_choices_to=value_content_type_limiter, verbose_name='Value type', null=True, blank=True)
-	object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True)
+	object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True, db_index=True)
 	value = generic.GenericForeignKey()
 	
 	def value_formfields(self):
@@ -217,14 +216,14 @@ class ManyToManyValue(AttributeValue):
 
 class Attribute(models.Model):
 	entity_content_type = models.ForeignKey(ContentType, related_name='attribute_entity_set', verbose_name='Entity type')
-	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID')
+	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID', db_index=True)
 	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
 	
 	value_content_type = models.ForeignKey(ContentType, related_name='attribute_value_set', limit_choices_to=attribute_value_limiter, verbose_name='Value type', null=True, blank=True)
-	value_object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True)
+	value_object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True, db_index=True)
 	value = generic.GenericForeignKey('value_content_type', 'value_object_id')
 	
-	key = models.CharField(max_length=255, validators=[RegexValidator("\w+")], help_text="Must contain one or more alphanumeric characters or underscores.")
+	key = models.CharField(max_length=255, validators=[RegexValidator("\w+")], help_text="Must contain one or more alphanumeric characters or underscores.", db_index=True)
 	
 	def __unicode__(self):
 		return u'"%s": %s' % (self.key, self.value)
@@ -312,11 +311,6 @@ class TreeManager(models.Manager):
 		# tree structure won't be that deep.
 		segments = path.split(pathsep)
 		
-		# Check for a trailing pathsep so we can restore it later.
-		trailing_pathsep = False
-		if segments[-1] == '':
-			trailing_pathsep = True
-		
 		# Clean out blank segments. Handles multiple consecutive pathseps.
 		while True:
 			try:
@@ -348,12 +342,6 @@ class TreeManager(models.Manager):
 			
 			return kwargs
 		
-		def build_path(segments):
-			path = pathsep.join(segments)
-			if trailing_pathsep and segments and segments[-1] != '':
-				path += pathsep
-			return path
-		
 		def find_obj(segments, depth, deepest_found=None):
 			if deepest_found is None:
 				deepest_level = 0
@@ -374,7 +362,7 @@ class TreeManager(models.Manager):
 				if deepest_level == depth:
 					# This should happen if nothing is found with any part of the given path.
 					if root is not None and deepest_found is None:
-						return root, build_path(segments)
+						return root, pathsep.join(segments)
 					raise
 				
 				return find_obj(segments, depth, deepest_found)
@@ -387,7 +375,7 @@ class TreeManager(models.Manager):
 				
 				# Could there be a deeper one?
 				if obj.is_leaf_node():
-					return obj, build_path(segments[deepest_level:]) or None
+					return obj, pathsep.join(segments[deepest_level:]) or None
 				
 				depth += (len(segments) - depth)/2 or len(segments) - depth
 				
@@ -395,13 +383,13 @@ class TreeManager(models.Manager):
 					depth = deepest_level + obj.get_descendant_count()
 				
 				if deepest_level == depth:
-					return obj, build_path(segments[deepest_level:]) or None
+					return obj, pathsep.join(segments[deepest_level:]) or None
 				
 				try:
 					return find_obj(segments, depth, obj)
 				except self.model.DoesNotExist:
 					# Then this was the deepest.
-					return obj, build_path(segments[deepest_level:])
+					return obj, pathsep.join(segments[deepest_level:])
 		
 		if absolute_result:
 			return self.get(**make_query_kwargs(segments, root))

@@ -1,11 +1,11 @@
 """
-The Attributes defined in this file can be assigned as fields on a proxy of
-a subclass of philo.models.Entity. They act like any other model fields,
-but instead of saving their data to the database, they save it to
-attributes related to a model instance. Additionally, a new attribute will
-be created for an instance if and only if the field's value has been set.
-This is relevant i.e. for passthroughs, where the value of the field may
-be defined by some other instance's attributes.
+The EntityProxyFields defined in this file can be assigned as fields on
+a subclass of philo.models.Entity. They act like any other model
+fields, but instead of saving their data to the database, they save it
+to attributes related to a model instance. Additionally, a new
+attribute will be created for an instance if and only if the field's
+value has been set. This is relevant i.e. for passthroughs, where the
+value of the field may be defined by some other instance's attributes.
 
 Example::
 
@@ -14,10 +14,8 @@ Example::
 	
 	class ThingProxy(Thing):
 		improvised = JSONAttribute(models.BooleanField)
-		
-		class Meta:
-			proxy = True
 """
+from itertools import tee
 from django import forms
 from django.core.exceptions import FieldError
 from django.db import models
@@ -25,6 +23,7 @@ from django.db.models.fields import NOT_PROVIDED
 from django.utils.text import capfirst
 from philo.signals import entity_class_prepared
 from philo.models import ManyToManyValue, JSONValue, ForeignKeyValue, Attribute, Entity
+import datetime
 
 
 __all__ = ('JSONAttribute', 'ForeignKeyAttribute', 'ManyToManyAttribute')
@@ -34,11 +33,12 @@ ATTRIBUTE_REGISTRY = '_attribute_registry'
 
 
 class EntityProxyField(object):
-	def __init__(self, verbose_name=None, help_text=None, default=NOT_PROVIDED, editable=True, *args, **kwargs):
+	def __init__(self, verbose_name=None, help_text=None, default=NOT_PROVIDED, editable=True, choices=None, *args, **kwargs):
 		self.verbose_name = verbose_name
 		self.help_text = help_text
 		self.default = default
 		self.editable = editable
+		self._choices = choices or []
 	
 	def actually_contribute_to_class(self, sender, **kwargs):
 		sender._entity_meta.add_proxy_field(self)
@@ -69,8 +69,21 @@ class EntityProxyField(object):
 		this field's initial value."""
 		return getattr(obj, self.name)
 	
+	def get_storage_value(self, value):
+		"""Final conversion of `value` before it gets stored on an Entity instance.
+		This step is performed by the ProxyFieldForm."""
+		return value
+	
 	def has_default(self):
 		return self.default is not NOT_PROVIDED
+	
+	def _get_choices(self):
+		if hasattr(self._choices, 'next'):
+			choices, self._choices = tee(self._choices)
+			return choices
+		else:
+			return self._choices
+	choices = property(_get_choices)
 
 
 class AttributeFieldDescriptor(object):
@@ -151,7 +164,6 @@ class AttributeField(EntityProxyField):
 		if not hasattr(opts, '_has_attribute_fields'):
 			opts._has_attribute_fields = True
 			models.signals.post_save.connect(process_attribute_fields, sender=sender)
-		
 	
 	def contribute_to_class(self, cls, name):
 		if self.attribute_key is None:
@@ -160,7 +172,7 @@ class AttributeField(EntityProxyField):
 	
 	def validate_value(self, value):
 		"Confirm that the value is valid or raise an appropriate error."
-		raise NotImplementedError("validate_value must be implemented by AttributeField subclasses.")
+		pass
 	
 	@property
 	def value_class(self):
@@ -176,9 +188,6 @@ class JSONAttribute(AttributeField):
 			field_template = models.CharField(max_length=255)
 		self.field_template = field_template
 	
-	def validate_value(self, value):
-		pass
-	
 	def formfield(self, **kwargs):
 		defaults = {
 			'required': False,
@@ -189,6 +198,19 @@ class JSONAttribute(AttributeField):
 			defaults['initial'] = self.default
 		defaults.update(kwargs)
 		return self.field_template.formfield(**defaults)
+	
+	def value_from_object(self, obj):
+		value = super(JSONAttribute, self).value_from_object(obj)
+		if isinstance(self.field_template, (models.DateField, models.DateTimeField)):
+			value = self.field_template.to_python(value)
+		return value
+	
+	def get_storage_value(self, value):
+		if isinstance(value, datetime.datetime):
+			return value.strftime("%Y-%m-%d %H:%M:%S")
+		if isinstance(value, datetime.date):
+			return value.strftime("%Y-%m-%d")
+		return value
 
 
 class ForeignKeyAttribute(AttributeField):
@@ -196,18 +218,18 @@ class ForeignKeyAttribute(AttributeField):
 	
 	def __init__(self, model, limit_choices_to=None, **kwargs):
 		super(ForeignKeyAttribute, self).__init__(**kwargs)
-		self.model = model
+		self.to = model
 		if limit_choices_to is None:
 			limit_choices_to = {}
 		self.limit_choices_to = limit_choices_to
 	
 	def validate_value(self, value):
-		if value is not None and not isinstance(value, self.model) :
-			raise TypeError("The '%s' attribute can only be set to an instance of %s or None." % (self.name, self.model.__name__))
+		if value is not None and not isinstance(value, self.to) :
+			raise TypeError("The '%s' attribute can only be set to an instance of %s or None." % (self.name, self.to.__name__))
 	
 	def formfield(self, form_class=forms.ModelChoiceField, **kwargs):
 		defaults = {
-			'queryset': self.model._default_manager.complex_filter(self.limit_choices_to)
+			'queryset': self.to._default_manager.complex_filter(self.limit_choices_to)
 		}
 		defaults.update(kwargs)
 		return super(ForeignKeyAttribute, self).formfield(form_class=form_class, **defaults)
@@ -215,14 +237,18 @@ class ForeignKeyAttribute(AttributeField):
 	def value_from_object(self, obj):
 		relobj = super(ForeignKeyAttribute, self).value_from_object(obj)
 		return getattr(relobj, 'pk', None)
+	
+	def get_related_field(self):
+		"""Spoof being a rel from a ForeignKey."""
+		return self.to._meta.pk
 
 
 class ManyToManyAttribute(ForeignKeyAttribute):
 	value_class = ManyToManyValue
 	
 	def validate_value(self, value):
-		if not isinstance(value, models.query.QuerySet) or value.model != self.model:
-			raise TypeError("The '%s' attribute can only be set to a %s QuerySet." % (self.name, self.model.__name__))
+		if not isinstance(value, models.query.QuerySet) or value.model != self.to:
+			raise TypeError("The '%s' attribute can only be set to a %s QuerySet." % (self.name, self.to.__name__))
 	
 	def formfield(self, form_class=forms.ModelMultipleChoiceField, **kwargs):
 		return super(ManyToManyAttribute, self).formfield(form_class=form_class, **kwargs)

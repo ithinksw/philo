@@ -33,7 +33,8 @@ class SearchAdmin(admin.ModelAdmin):
 
 
 class SearchViewAdmin(EntityAdmin):
-	pass
+	raw_id_fields = ('results_page',)
+	related_lookup_fields = {'fk': raw_id_fields}
 
 
 admin.site.register(Search, SearchAdmin)

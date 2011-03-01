@@ -1,0 +1,32 @@
+{% extends "admin/base_site.html" %}
+
+<!-- LOADING -->
+{% load i18n %}
+
+<!-- BREADCRUMBS -->
+{% block breadcrumbs %}
+	<div id="breadcrumbs">
+		<a href="../../">{% trans "Home" %}</a> &rsaquo;
+		<a href="../">{{ app_label|capfirst }}</a> &rsaquo;
+		<a href="./">{{ opts.verbose_name_plural|capfirst }}</a> &rsaquo;
+		{% trans 'Search results for multiple objects' %}
+	</div>
+{% endblock %}
+
+<!-- CONTENT -->
+{% block content %}
+	<div class="container-grid delete-confirmation">
+		{% for search in queryset %}
+		<h1>{{ search.string }}</h1>
+		<div class="module">
+			<h2>{% blocktrans %}Results{% endblocktrans %}</h2>{% comment %}For the favored results, add a class?{% endcomment %}
+			{% for result in search.get_weighted_results %}
+			<div class="row cell-2">
+				<div class="cell span-4">{{ result.url }}</div>
+				<div class="cell span-flexible">{{ result.weight }}</div>
+			</div>
+			{% endfor %}
+		</div>
+		{% endfor %}
+	</div>
+{% endblock %}

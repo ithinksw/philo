@@ -1,8 +1,10 @@
 from django.conf.urls.defaults import patterns, url
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.http import HttpResponseRedirect, Http404
 from django.utils import simplejson as json
+from django.utils.datastructures import SortedDict
 from philo.contrib.sobol import registry
 from philo.contrib.sobol.forms import SearchForm
 from philo.contrib.sobol.utils import HASH_REDIRECT_GET_KEY, URL_REDIRECT_GET_KEY, SEARCH_ARG_GET_KEY, check_redirect_hash
@@ -23,51 +25,50 @@ class Search(models.Model):
 	def __unicode__(self):
 		return self.string
 	
-	def get_favored_results(self, error=5):
-		"""Calculate the set of most-favored results. A higher error
+	def get_weighted_results(self, threshhold=None):
+		"Returns this search's results ordered by decreasing weight."
+		if not hasattr(self, '_weighted_results'):
+			result_qs = self.result_urls.all()
+			
+			if threshhold is not None:
+				result_qs = result_qs.filter(counts__datetime__gte=threshhold)
+			
+			results = [result for result in result_qs]
+			
+			results.sort(cmp=lambda x,y: cmp(y.weight, x.weight))
+			
+			self._weighted_results = results
+		
+		return self._weighted_results
+	
+	def get_favored_results(self, error=5, threshhold=None):
+		"""
+		Calculate the set of most-favored results. A higher error
 		will cause this method to be more reticent about adding new
-		items."""
-		results = self.result_urls.values_list('pk', 'url',)
+		items.
 		
-		result_dict = {}
-		for pk, url in results:
-			result_dict[pk] = {'url': url, 'value': 0}
-		
-		clicks = Click.objects.filter(result__pk__in=result_dict.keys()).values_list('result__pk', 'datetime')
-		
-		now = datetime.datetime.now()
-		
-		def datetime_value(dt):
-			days = (now - dt).days
-			if days < 0:
-				raise ValueError("Click dates must be in the past.")
-			if days == 0:
-				value = 1.0
-			else:
-				value = 1.0/days**2
-			return value
-		
-		for pk, dt in clicks:
-			value = datetime_value(dt)
-			result_dict[pk]['value'] += value
-		
-		#TODO: is there a reasonable minimum value for consideration?
-		subsets = {}
-		for d in result_dict.values():
-			subsets.setdefault(d['value'], []).append(d)
-		
-		# Now calculate the result set.
-		results = []
-		
-		def cost(value):
-			return error*sum([(value - item['value'])**2 for item in results])
-		
-		for value, subset in sorted(subsets.items(), cmp=lambda x,y: cmp(y[0], x[0])):
-			if value > cost(value):
-				results += subset
-			else:
-				break
-		return results
+		The thought is to see whether there are any results which
+		vastly outstrip the other options. As such, evenly-weighted
+		results should be grouped together and either added or
+		excluded as a group.
+		"""
+		if not hasattr(self, '_favored_results'):
+			results = self.get_weighted_results(threshhold)
+			
+			grouped_results = SortedDict()
+			
+			for result in results:
+				grouped_results.setdefault(result.weight, []).append(result)
+			
+			self._favored_results = []
+			
+			for value, subresults in grouped_results.items():
+				cost = error * sum([(value - result.weight)**2 for result in results])
+				if value > cost:
+					self._favored_results += subresults
+				else:
+					break
+		return self._favored_results
 	
 	class Meta:
 		ordering = ['string']
@@ -81,6 +82,18 @@ class ResultURL(models.Model):
 	def __unicode__(self):
 		return self.url
 	
+	def get_weight(self, threshhold=None):
+		if not hasattr(self, '_weight'):
+			clicks = self.clicks.all()
+			
+			if threshhold is not None:
+				clicks = clicks.filter(datetime__gte=threshhold)
+			
+			self._weight = sum([click.weight for click in clicks])
+		
+		return self._weight
+	weight = property(get_weight)
+	
 	class Meta:
 		ordering = ['url']
 
@@ -92,6 +105,23 @@ class Click(models.Model):
 	def __unicode__(self):
 		return self.datetime.strftime('%B %d, %Y %H:%M:%S')
 	
+	def get_weight(self, default=1, weighted=lambda value, days: value/days**2):
+		if not hasattr(self, '_weight'):
+			days = (datetime.datetime.now() - self.datetime).days
+			if days < 0:
+				raise ValueError("Click dates must be in the past.")
+			default = float(default)
+			if days == 0:
+				self._weight = float(default)
+			else:
+				self._weight = weighted(default, days)
+		return self._weight
+	weight = property(get_weight)
+	
+	def clean(self):
+		if self.datetime > datetime.datetime.now():
+			raise ValidationError("Click dates must be in the past.")
+	
 	class Meta:
 		ordering = ['datetime']
 		get_latest_by = 'datetime'
@@ -102,6 +132,8 @@ class SearchView(MultiView):
 	searches = SlugMultipleChoiceField(choices=registry.iterchoices())
 	enable_ajax_api = models.BooleanField("Enable AJAX API", default=True)
 	placeholder_text = models.CharField(max_length=75, default="Search")
+	
+	search_form = SearchForm
 	
 	def __unicode__(self):
 		return u"%s (%s)" % (self.placeholder_text, u", ".join([display for slug, display in registry.iterchoices()]))
@@ -130,7 +162,7 @@ class SearchView(MultiView):
 		context.update(extra_context or {})
 		
 		if SEARCH_ARG_GET_KEY in request.GET:
-			form = SearchForm(request.GET)
+			form = self.search_form(request.GET)
 			
 			if form.is_valid():
 				search_string = request.GET[SEARCH_ARG_GET_KEY].lower()

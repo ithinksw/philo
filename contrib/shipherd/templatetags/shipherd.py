@@ -82,14 +82,15 @@ def recursenavigation(parser, token):
 	{{ navloop.revcounter }}, {{ navloop.revcounter0 }}, {{ navloop.first }}, {{ navloop.last }},
 	and {{ navloop.parentloop }} in the context.
 	
-	Note that the tag takes one variable, which is a Node instance.
+	Note that the tag takes two variables: a Node instance and the key of the navigation to
+	be recursed.
 	
 	Usage:
 		<ul>
 			{% recursenavigation node main %}
 				<li{% if active %} class='active'{% endif %}>
-					{{ navigation.text }}
-					{% if navigation.get_children %}
+					{{ item.text }}
+					{% if children %}
 						<ul>
 							{{ children }}
 						</ul>

@@ -63,7 +63,7 @@ class Search(models.Model):
 			self._favored_results = []
 			
 			for value, subresults in grouped_results.items():
-				cost = error * sum([(value - result.weight)**2 for result in results])
+				cost = error * sum([(value - result.weight)**2 for result in self._favored_results])
 				if value > cost:
 					self._favored_results += subresults
 				else:

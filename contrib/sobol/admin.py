@@ -7,6 +7,7 @@ from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.utils.functional import update_wrapper
+from django.utils.translation import ugettext_lazy as _
 from philo.admin import EntityAdmin
 from philo.contrib.sobol.models import Search, ResultURL, SearchView
 
@@ -79,7 +80,13 @@ class SearchAdmin(admin.ModelAdmin):
 		qs = self.queryset(request).filter(pk__in=object_ids)
 		opts = self.model._meta
 		
+		if len(object_ids) == 1:
+			title = _(u"Search results for %s" % qs[0])
+		else:
+			title = _(u"Search results for multiple objects")
+		
 		context = {
+			'title': title,
 			'queryset': qs,
 			'opts': opts,
 			'root_path': self.admin_site.root_path,

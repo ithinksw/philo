@@ -69,6 +69,9 @@ class SearchRegistry(object):
 	
 	def __getitem__(self, key):
 		return self._registry[key]
+	
+	def __iter__(self):
+		return self._registry.__iter__()
 
 
 registry = SearchRegistry()
@@ -90,7 +93,7 @@ class Result(object):
 		return self.search.get_result_title(self.result)
 	
 	def get_url(self):
-		return self.search.get_result_querydict(self.result).urlencode()
+		return "?%s" % self.search.get_result_querydict(self.result).urlencode()
 	
 	def get_template(self):
 		return self.search.get_result_template(self.result)
@@ -98,13 +101,17 @@ class Result(object):
 	def get_extra_context(self):
 		return self.search.get_result_extra_context(self.result)
 	
-	def render(self):
-		t = self.get_template()
-		c = Context(self.get_extra_context())
-		c.update({
+	def get_context(self):
+		context = self.get_extra_context()
+		context.update({
 			'title': self.get_title(),
 			'url': self.get_url()
 		})
+		return context
+	
+	def render(self):
+		t = self.get_template()
+		c = Context(self.get_context())
 		return t.render(c)
 	
 	def __unicode__(self):
@@ -210,9 +217,6 @@ class BaseSearch(object):
 		if not hasattr(self, '_result_template'):
 			self._result_template = Template(DEFAULT_RESULT_TEMPLATE_STRING)
 		return self._result_template
-	
-	def get_ajax_result_template(self, result):
-		return getattr(self, 'ajax_result_template', DEFAULT_RESULT_TEMPLATE_STRING)
 	
 	def get_result_extra_context(self, result):
 		return {}

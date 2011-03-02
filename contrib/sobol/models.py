@@ -2,7 +2,7 @@ from django.conf.urls.defaults import patterns, url
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.utils import simplejson as json
 from django.utils.datastructures import SortedDict
 from philo.contrib.sobol import registry
@@ -148,7 +148,7 @@ class SearchView(MultiView):
 		)
 		if self.enable_ajax_api:
 			urlpatterns += patterns('',
-				url(r'^(?P<slug>[\w-]+)', self.ajax_api_view, name='ajax_api_view')
+				url(r'^(?P<slug>[\w-]+)$', self.ajax_api_view, name='ajax_api_view')
 			)
 		return urlpatterns
 	
@@ -196,6 +196,10 @@ class SearchView(MultiView):
 					context.update({
 						'searches': search_instances
 					})
+				else:
+					context.update({
+						'searches': [{'verbose_name': verbose_name, 'url': self.reverse('ajax_api_view', kwargs={'slug': slug}, node=request.node)} for slug, verbose_name in registry.iterchoices()]
+					})
 		else:
 			form = SearchForm()
 		
@@ -214,8 +218,7 @@ class SearchView(MultiView):
 			raise Http404
 		
 		search_instance = self.get_search_instance(slug, search_string)
-		response = json.dumps({
-			'results': search_instance.results,
-			'template': search_instance.get_template()
-		})
+		response = HttpResponse(json.dumps({
+			'results': [result.get_context() for result in search_instance.results],
+		}))
 		return response

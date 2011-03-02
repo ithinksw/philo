@@ -19,9 +19,22 @@ class RecurseNavigationNode(RecurseTreeNode):
 	def _render_node(self, context, item, request):
 		bits = []
 		context.push()
-		for child in item.get_children():
+		
+		# loosely based on django.template.defaulttags.ForNode.render
+		children = item.get_children()
+		parentloop = context['navloop']
+		loop_dict = context['navloop'] = {'parentloop':parentloop}
+		len_items = len(children)
+		for i, child in enumerate(children):
 			context['item'] = child
+			loop_dict['counter0'] = i
+			loop_dict['counter'] = i + 1
+			loop_dict['revcounter'] = len_items - i
+			loop_dict['revcounter0'] = len_items - i - 1
+			loop_dict['first'] = (i == 0)
+			loop_dict['last'] = (i == len_items - 1)
 			bits.append(self._render_node(context, child, request))
+		context['navloop'] = context['navloop']['parentloop']
 		context['item'] = item
 		context['children'] = mark_safe(u''.join(bits))
 		context['active'] = item.is_active(request)
@@ -39,11 +52,25 @@ class RecurseNavigationNode(RecurseTreeNode):
 		instance = self.instance_var.resolve(context)
 		
 		try:
-			navigation = instance.navigation[self.key]
+			items = instance.navigation[self.key]
 		except:
 			return settings.TEMPLATE_STRING_IF_INVALID
 		
-		bits = [self._render_node(context, item, request) for item in navigation]
+		bits = []
+		
+		# loosely based on django.template.defaulttags.ForNode.render
+		# This is a repetition of the stuff that happens above. We should eliminate that somehow.
+		loop_dict = context['navloop'] = {'parentloop':{}}
+		len_items = len(items)
+		for i, item in enumerate(items):
+			loop_dict['counter0'] = i
+			loop_dict['counter'] = i + 1
+			loop_dict['revcounter'] = len_items - i
+			loop_dict['revcounter0'] = len_items - i - 1
+			loop_dict['first'] = (i == 0)
+			loop_dict['last'] = (i == len_items - 1)
+			bits.append(self._render_node(context, item, request))
+		
 		return ''.join(bits)
 
 
@@ -51,7 +78,9 @@ class RecurseNavigationNode(RecurseTreeNode):
 def recursenavigation(parser, token):
 	"""
 	Based on django-mptt's recursetree templatetag. In addition to {{ item }} and {{ children }},
-	sets {{ active }} and {{ active_descendants }} in the context.
+	sets {{ active }}, {{ active_descendants }}, {{ navloop.counter }}, {{ navloop.counter0 }},
+	{{ navloop.revcounter }}, {{ navloop.revcounter0 }}, {{ navloop.first }}, {{ navloop.last }},
+	and {{ navloop.parentloop }} in the context.
 	
 	Note that the tag takes two variables: a Node instance and the key of the navigation to
 	be recursed.

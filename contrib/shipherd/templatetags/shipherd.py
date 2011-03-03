@@ -9,17 +9,18 @@ from django.utils.translation import ugettext as _
 register = template.Library()
 
 
-class RecurseNavigationMarker(object):
-	pass
-
-
-class RecurseNavigationNode(template.Node):
-	def __init__(self, template_nodes, instance_var, key):
+class LazyNavigationRecurser(object):
+	def __init__(self, template_nodes, items, context, request):
 		self.template_nodes = template_nodes
-		self.instance_var = instance_var
-		self.key = key
+		self.items = items
+		self.context = context
+		self.request = request
 	
-	def _render_items(self, items, context, request):
+	def __call__(self):
+		items = self.items
+		context = self.context
+		request = self.request
+		
 		if not items:
 			return ''
 		
@@ -51,24 +52,25 @@ class RecurseNavigationNode(template.Node):
 			
 			# Set on loop_dict and context for backwards-compatibility.
 			# Eventually only allow access through the loop_dict.
-			loop_dict['item'] = context['item'] = item
 			loop_dict['active'] = context['active'] = item.is_active(request)
 			loop_dict['active_descendants'] = context['active_descendants'] = item.has_active_descendants(request)
 			
+			# Set these directly in the context for easy access.
+			context['item'] = item
+			context['children'] = self.__class__(self.template_nodes, item.get_children(), context, request)
+			
 			# Then render the nodelist bit by bit.
 			for node in self.template_nodes:
-				if isinstance(node, RecurseNavigationMarker):
-					# Then recurse!
-					children = items.get_children()
-					bits.append(self._render_items(children, context, request))
-				elif isinstance(node, template.VariableNode) and node.filter_expression.var.lookups == (u'children',):
-					# Then recurse! This is here for backwards-compatibility only.
-					children = items.get_children()
-					bits.append(self._render_items(children, context, request))
-				else:
-					bits.append(node.render(context))
+				bits.append(node.render(context))
 		context.pop()
 		return ''.join(bits)
+
+
+class RecurseNavigationNode(template.Node):
+	def __init__(self, template_nodes, instance_var, key):
+		self.template_nodes = template_nodes
+		self.instance_var = instance_var
+		self.key = key
 	
 	def render(self, context):
 		try:
@@ -83,28 +85,44 @@ class RecurseNavigationNode(template.Node):
 		except:
 			return settings.TEMPLATE_STRING_IF_INVALID
 		
-		return self._render_items(items, context, request)
+		return LazyNavigationRecurser(self.template_nodes, items, context, request)()
 
 
 @register.tag
 def recursenavigation(parser, token):
 	"""
-	Based on django-mptt's recursetree templatetag. In addition to {{ item }} and {{ children }},
-	sets {{ active }}, {{ active_descendants }}, {{ navloop.counter }}, {{ navloop.counter0 }},
-	{{ navloop.revcounter }}, {{ navloop.revcounter0 }}, {{ navloop.first }}, {{ navloop.last }},
-	and {{ navloop.parentloop }} in the context.
+	The recursenavigation templatetag takes two arguments:
+	- the node for which the navigation should be found
+	- the navigation's key.
 	
-	Note that the tag takes two variables: a Node instance and the key of the navigation to
-	be recursed.
+	It will then recursively loop over each item in the navigation and render the template
+	chunk within the block. recursenavigation sets the following variables in the context:
 	
-	Usage:
+		==============================  ================================================
+		Variable                        Description
+		==============================  ================================================
+		``navloop.depth``               The current depth of the loop (1 is the top level)
+		``navloop.depth0``              The current depth of the loop (0 is the top level)
+		``navloop.counter``             The current iteration of the current level(1-indexed)
+		``navloop.counter0``            The current iteration of the current level(0-indexed)
+		``navloop.first``               True if this is the first time through the current level
+		``navloop.last``                True if this is the last time through the current level
+		``navloop.parentloop``          This is the loop one level "above" the current one
+		==============================  ================================================
+		``item``                        The current item in the loop (a NavigationItem instance)
+		``children``                    If accessed, performs the next level of recursion.
+		``navloop.active``              True if the item is active for this request
+		``navloop.active_descendants``  True if the item has active descendants for this request
+		==============================  ================================================
+	
+	Example:
 		<ul>
 			{% recursenavigation node main %}
-				<li{% if active %} class='active'{% endif %}>
-					{{ item.text }}
+				<li{% if navloop.active %} class='active'{% endif %}>
+					{{ navloop.item.text }}
 					{% if item.get_children %}
 						<ul>
-							{% recurse %}
+							{{ children }}
 						</ul>
 					{% endif %}
 				</li>

@@ -1,5 +1,7 @@
-from django.contrib import admin
 from django import forms
+from django.contrib import admin
+from django.core.urlresolvers import reverse
+from django.http import HttpResponseRedirect, QueryDict
 from philo.admin import EntityAdmin, AddTagAdmin, COLLAPSE_CLASSES
 from philo.contrib.penfield.models import BlogEntry, Blog, BlogView, Newsletter, NewsletterArticle, NewsletterIssue, NewsletterView
 
@@ -91,10 +93,18 @@ class NewsletterArticleAdmin(TitledAdmin, AddTagAdmin):
 			'classes': COLLAPSE_CLASSES
 		})
 	)
+	actions = ['make_issue']
 	
 	def author_names(self, obj):
 		return ', '.join([author.get_full_name() for author in obj.authors.all()])
 	author_names.short_description = "Authors"
+	
+	def make_issue(self, request, queryset):
+		opts = NewsletterIssue._meta
+		info = opts.app_label, opts.module_name
+		url = reverse("admin:%s_%s_add" % info)
+		return HttpResponseRedirect("%s?articles=%s" % (url, ",".join([str(a.pk) for a in queryset])))
+	make_issue.short_description = u"Create issue from selected %(verbose_name_plural)s"
 
 
 class NewsletterIssueAdmin(TitledAdmin):
@@ -117,7 +127,7 @@ class NewsletterViewAdmin(EntityAdmin):
 			'classes': COLLAPSE_CLASSES
 		}),
 		('Feeds', {
-			'fields': ( 'feeds_enabled', 'feed_suffix', 'feed_type', 'item_title_template', 'item_description_template',),
+			'fields': ( 'feeds_enabled', 'feed_suffix', 'feed_type', 'feed_length', 'item_title_template', 'item_description_template',),
 			'classes': COLLAPSE_CLASSES
 		})
 	)

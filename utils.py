@@ -122,29 +122,3 @@ def get_included(self):
 # We ignore the IncludeNode because it will never work in a blank context.
 setattr(ExtendsNode, LOADED_TEMPLATE_ATTR, property(get_extended))
 setattr(ConstantIncludeNode, LOADED_TEMPLATE_ATTR, property(get_included))
-
-
-def nodelist_crawl(nodelist, callback):
-	"""This function crawls through a template's nodelist and the nodelists of any included or extended
-	templates, as determined by the presence and value of <LOADED_TEMPLATE_ATTR> on a node. Each node
-	will also be passed to a callback function for additional processing."""
-	results = []
-	for node in nodelist:
-		try:
-			if hasattr(node, 'child_nodelists'):
-				for nodelist_name in node.child_nodelists:
-					if hasattr(node, nodelist_name):
-						results.extend(nodelist_crawl(getattr(node, nodelist_name), callback))
-			
-			# LOADED_TEMPLATE_ATTR contains the name of an attribute philo uses to declare a
-			# node as rendering an additional template. Philo monkeypatches the attribute onto
-			# the relevant default nodes and declares it on any native nodes.
-			if hasattr(node, LOADED_TEMPLATE_ATTR):
-				loaded_template = getattr(node, LOADED_TEMPLATE_ATTR)
-				if loaded_template:
-					results.extend(nodelist_crawl(loaded_template.nodelist, callback))
-			
-			callback(node, results)
-		except:
-			raise # fail for this node
-	return results

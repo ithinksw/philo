@@ -127,7 +127,7 @@ class NewsletterViewAdmin(EntityAdmin):
 			'classes': COLLAPSE_CLASSES
 		}),
 		('Feeds', {
-			'fields': ( 'feeds_enabled', 'feed_suffix', 'feed_type', 'item_title_template', 'item_description_template',),
+			'fields': ( 'feeds_enabled', 'feed_suffix', 'feed_type', 'feed_length', 'item_title_template', 'item_description_template',),
 			'classes': COLLAPSE_CLASSES
 		})
 	)

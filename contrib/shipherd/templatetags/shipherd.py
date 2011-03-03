@@ -3,6 +3,7 @@ from django.conf import settings
 from django.utils.safestring import mark_safe
 from philo.contrib.shipherd.models import Navigation
 from philo.models import Node
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
 
@@ -63,7 +64,7 @@ class LazyNavigationRecurser(object):
 			for node in self.template_nodes:
 				bits.append(node.render(context))
 		context.pop()
-		return ''.join(bits)
+		return mark_safe(''.join(bits))
 
 
 class RecurseNavigationNode(template.Node):

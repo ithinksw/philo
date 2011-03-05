@@ -10,6 +10,8 @@ from django.utils.datastructures import SortedDict
 from django.utils.encoding import smart_unicode, force_unicode
 from django.utils.html import escape
 from datetime import date, datetime
+from philo.contrib.penfield.exceptions import HttpNotAcceptable
+from philo.contrib.penfield.middleware import http_not_acceptable
 from philo.contrib.penfield.validators import validate_pagination_count
 from philo.exceptions import ViewCanNotProvideSubpath
 from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model, TemplateField, Template
@@ -44,6 +46,7 @@ class FeedView(MultiView):
 	feed_type = models.CharField(max_length=50, choices=FEED_CHOICES, default=ATOM)
 	feed_suffix = models.CharField(max_length=255, blank=False, default="feed")
 	feeds_enabled = models.BooleanField(default=True)
+	feed_length = models.PositiveIntegerField(blank=True, null=True, default=15, help_text="The maximum number of items to return for this feed. All items will be returned if this field is blank.")
 	
 	item_title_template = models.ForeignKey(Template, blank=True, null=True, related_name="%(app_label)s_%(class)s_title_related")
 	item_description_template = models.ForeignKey(Template, blank=True, null=True, related_name="%(app_label)s_%(class)s_description_related")
@@ -62,7 +65,7 @@ class FeedView(MultiView):
 		urlpatterns = patterns('')
 		if self.feeds_enabled:
 			feed_reverse_name = "%s_feed" % reverse_name
-			feed_view = self.feed_view(get_items_attr, feed_reverse_name)
+			feed_view = http_not_acceptable(self.feed_view(get_items_attr, feed_reverse_name))
 			feed_pattern = r'%s%s%s$' % (base, (base and base[-1] != "^") and "/" or "", self.feed_suffix)
 			urlpatterns += patterns('',
 				url(feed_pattern, feed_view, name=feed_reverse_name),
@@ -139,8 +142,7 @@ class FeedView(MultiView):
 				else:
 					feed_type = None
 			if not feed_type:
-				# See RFC 2616
-				return HttpResponse(status=406)
+				raise HttpNotAcceptable
 		return FEEDS[feed_type]
 	
 	def get_feed(self, obj, request, reverse_name):
@@ -193,6 +195,9 @@ class FeedView(MultiView):
 			current_site = Site.objects.get_current()
 		except Site.DoesNotExist:
 			current_site = RequestSite(request)
+		
+		if self.feed_length is not None:
+			items = items[:self.feed_length]
 		
 		for item in items:
 			if title_template is not None:

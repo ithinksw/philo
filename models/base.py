@@ -5,7 +5,7 @@ from django.contrib.contenttypes import generic
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import RegexValidator
 from django.utils import simplejson as json
-from django.utils.encoding import smart_str
+from django.utils.encoding import force_unicode
 from philo.exceptions import AncestorDoesNotExist
 from philo.models.fields import JSONField
 from philo.utils import ContentTypeRegistryLimiter, ContentTypeSubclassLimiter
@@ -55,10 +55,6 @@ def unregister_value_model(model):
 class AttributeValue(models.Model):
 	attribute_set = generic.GenericRelation('Attribute', content_type_field='value_content_type', object_id_field='value_object_id')
 	
-	@property
-	def attribute(self):
-		return self.attribute_set.all()[0]
-	
 	def set_value(self, value):
 		raise NotImplementedError
 	
@@ -84,7 +80,7 @@ class JSONValue(AttributeValue):
 	value = JSONField(verbose_name='Value (JSON)', help_text='This value must be valid JSON.', default='null', db_index=True)
 	
 	def __unicode__(self):
-		return smart_str(self.value)
+		return force_unicode(self.value)
 	
 	def value_formfields(self):
 		kwargs = {'initial': self.value_json}

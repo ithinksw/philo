@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.core.servers.basehttp import FileWrapper
 from django.core.urlresolvers import resolve, clear_url_caches, reverse, NoReverseMatch
 from django.template import add_to_builtins as register_templatetags
+from django.utils.encoding import smart_str
 from inspect import getargspec
 from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED
 from philo.models.base import TreeEntity, Entity, QuerySetMapper, register_value_model
@@ -114,8 +115,8 @@ class View(Entity):
 		
 		try:
 			subpath = reverse(view_name, urlconf=self, args=args or [], kwargs=kwargs or {})
-		except NoReverseMatch:
-			raise ViewCanNotProvideSubpath
+		except NoReverseMatch, e:
+			raise ViewCanNotProvideSubpath(e.message)
 		
 		if node is not None:
 			return node.construct_url(subpath)
@@ -210,7 +211,6 @@ class TargetURLModel(models.Model):
 	reversing_parameters = JSONField(blank=True, help_text="If reversing parameters are defined, url_or_subpath will instead be interpreted as the view name to be reversed.")
 	
 	def clean(self):
-		# Should this be enforced? Not enforcing it would allow creation of "headers" in the navbar.
 		if not self.target_node and not self.url_or_subpath:
 			raise ValidationError("Either a target node or a url must be defined.")
 		
@@ -219,15 +219,20 @@ class TargetURLModel(models.Model):
 		
 		try:
 			self.get_target_url()
-		except NoReverseMatch, e:
+		except (NoReverseMatch, ViewCanNotProvideSubpath), e:
 			raise ValidationError(e.message)
 		
 		super(TargetURLModel, self).clean()
 	
 	def get_reverse_params(self):
 		params = self.reversing_parameters
-		args = isinstance(params, list) and params or None
-		kwargs = isinstance(params, dict) and params or None
+		args = kwargs = None
+		if isinstance(params, list):
+			args = params
+		elif isinstance(params, dict):
+			# Convert unicode keys to strings for Python < 2.6.5. Compare
+			# http://stackoverflow.com/questions/4598604/how-to-pass-unicode-keywords-to-kwargs
+			kwargs = dict([(smart_str(k, 'ascii'), v) for k, v in params.items()])
 		return self.url_or_subpath, args, kwargs
 	
 	def get_target_url(self):
@@ -254,7 +259,7 @@ class TargetURLModel(models.Model):
 		abstract = True
 
 
-class Redirect(View, TargetURLModel):
+class Redirect(TargetURLModel, View):
 	STATUS_CODES = (
 		(302, 'Temporary'),
 		(301, 'Permanent'),

@@ -8,44 +8,20 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Adding field 'NewsletterView.feed_type'
-        db.add_column('penfield_newsletterview', 'feed_type', self.gf('django.db.models.fields.CharField')(default='application/atom+xml', max_length=50), keep_default=False)
+        # Adding field 'NewsletterView.feed_length'
+        db.add_column('penfield_newsletterview', 'feed_length', self.gf('django.db.models.fields.PositiveIntegerField')(default=15, null=True, blank=True), keep_default=False)
 
-        # Adding field 'NewsletterView.item_title_template'
-        db.add_column('penfield_newsletterview', 'item_title_template', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='penfield_newsletterview_title_related', null=True, to=orm['philo.Template']), keep_default=False)
-
-        # Adding field 'NewsletterView.item_description_template'
-        db.add_column('penfield_newsletterview', 'item_description_template', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='penfield_newsletterview_description_related', null=True, to=orm['philo.Template']), keep_default=False)
-
-        # Adding field 'BlogView.feed_type'
-        db.add_column('penfield_blogview', 'feed_type', self.gf('django.db.models.fields.CharField')(default='atom', max_length=50), keep_default=False)
-
-        # Adding field 'BlogView.item_title_template'
-        db.add_column('penfield_blogview', 'item_title_template', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='penfield_blogview_title_related', null=True, to=orm['philo.Template']), keep_default=False)
-
-        # Adding field 'BlogView.item_description_template'
-        db.add_column('penfield_blogview', 'item_description_template', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='penfield_blogview_description_related', null=True, to=orm['philo.Template']), keep_default=False)
+        # Adding field 'BlogView.feed_length'
+        db.add_column('penfield_blogview', 'feed_length', self.gf('django.db.models.fields.PositiveIntegerField')(default=15, null=True, blank=True), keep_default=False)
 
 
     def backwards(self, orm):
         
-        # Deleting field 'NewsletterView.feed_type'
-        db.delete_column('penfield_newsletterview', 'feed_type')
+        # Deleting field 'NewsletterView.feed_length'
+        db.delete_column('penfield_newsletterview', 'feed_length')
 
-        # Deleting field 'NewsletterView.item_title_template'
-        db.delete_column('penfield_newsletterview', 'item_title_template_id')
-
-        # Deleting field 'NewsletterView.item_description_template'
-        db.delete_column('penfield_newsletterview', 'item_description_template_id')
-
-        # Deleting field 'BlogView.feed_type'
-        db.delete_column('penfield_blogview', 'feed_type')
-
-        # Deleting field 'BlogView.item_title_template'
-        db.delete_column('penfield_blogview', 'item_title_template_id')
-
-        # Deleting field 'BlogView.item_description_template'
-        db.delete_column('penfield_blogview', 'item_description_template_id')
+        # Deleting field 'BlogView.feed_length'
+        db.delete_column('penfield_blogview', 'feed_length')
 
 
     models = {
@@ -118,8 +94,9 @@ class Migration(SchemaMigration):
             'entry_page': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'blog_entry_related'", 'to': "orm['philo.Page']"}),
             'entry_permalink_base': ('django.db.models.fields.CharField', [], {'default': "'entries'", 'max_length': '255'}),
             'entry_permalink_style': ('django.db.models.fields.CharField', [], {'max_length': '1'}),
+            'feed_length': ('django.db.models.fields.PositiveIntegerField', [], {'default': '15', 'null': 'True', 'blank': 'True'}),
             'feed_suffix': ('django.db.models.fields.CharField', [], {'default': "'feed'", 'max_length': '255'}),
-            'feed_type': ('django.db.models.fields.CharField', [], {'default': "'atom'", 'max_length': '50'}),
+            'feed_type': ('django.db.models.fields.CharField', [], {'default': "'application/atom+xml; charset=utf8'", 'max_length': '50'}),
             'feeds_enabled': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'index_page': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'blog_index_related'", 'to': "orm['philo.Page']"}),
@@ -162,8 +139,9 @@ class Migration(SchemaMigration):
             'article_page': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'newsletter_article_related'", 'to': "orm['philo.Page']"}),
             'article_permalink_base': ('django.db.models.fields.CharField', [], {'default': "'articles'", 'max_length': '255'}),
             'article_permalink_style': ('django.db.models.fields.CharField', [], {'max_length': '1'}),
+            'feed_length': ('django.db.models.fields.PositiveIntegerField', [], {'default': '15', 'null': 'True', 'blank': 'True'}),
             'feed_suffix': ('django.db.models.fields.CharField', [], {'default': "'feed'", 'max_length': '255'}),
-            'feed_type': ('django.db.models.fields.CharField', [], {'default': "'atom'", 'max_length': '50'}),
+            'feed_type': ('django.db.models.fields.CharField', [], {'default': "'application/atom+xml; charset=utf8'", 'max_length': '50'}),
             'feeds_enabled': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'index_page': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'newsletter_index_related'", 'to': "orm['philo.Page']"}),
@@ -177,11 +155,11 @@ class Migration(SchemaMigration):
         'philo.attribute': {
             'Meta': {'unique_together': "(('key', 'entity_content_type', 'entity_object_id'), ('value_content_type', 'value_object_id'))", 'object_name': 'Attribute'},
             'entity_content_type': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'attribute_entity_set'", 'to': "orm['contenttypes.ContentType']"}),
-            'entity_object_id': ('django.db.models.fields.PositiveIntegerField', [], {}),
+            'entity_object_id': ('django.db.models.fields.PositiveIntegerField', [], {'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'key': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'key': ('django.db.models.fields.CharField', [], {'max_length': '255', 'db_index': 'True'}),
             'value_content_type': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'attribute_value_set'", 'null': 'True', 'to': "orm['contenttypes.ContentType']"}),
-            'value_object_id': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'})
+            'value_object_id': ('django.db.models.fields.PositiveIntegerField', [], {'db_index': 'True', 'null': 'True', 'blank': 'True'})
         },
         'philo.node': {
             'Meta': {'object_name': 'Node'},

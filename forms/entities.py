@@ -43,7 +43,9 @@ class EntityFormBase(ModelForm):
 _old_metaclass_new = ModelFormMetaclass.__new__
 
 def _new_metaclass_new(cls, name, bases, attrs):
-	formfield_callback = attrs.get('formfield_callback', lambda f, **kwargs: f.formfield(**kwargs))
+	formfield_callback = attrs.get('formfield_callback', None)
+	if formfield_callback is None:
+		formfield_callback = lambda f, **kwargs: f.formfield(**kwargs)
 	new_class = _old_metaclass_new(cls, name, bases, attrs)
 	opts = new_class._meta
 	if issubclass(new_class, EntityFormBase) and opts.model:

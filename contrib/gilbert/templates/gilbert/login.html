@@ -1,0 +1,102 @@
+{% extends 'gilbert/base.html' %}
+{% load staticmedia %}
+
+{% block css %}{{ block.super }}
+	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/extjs/examples/ux/statusbar/css/statusbar.css' %}" />
+	<style type="text/css">
+		.icon-door-open-in {
+			background: url({% mediaurl 'gilbert/fugue-icons/icons-shadowless' %}/door-open-in.png) no-repeat !important;
+		}
+		.x-statusbar .x-status-error {
+			cursor: help;
+			background-image: url({% mediaurl 'gilbert/fugue-icons/icons-shadowless' %}/exclamation-red.png) !important;
+		}
+	</style>
+{% endblock %}
+
+{% block js %}{{ block.super }}
+	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/examples/ux/statusbar/StatusBar.js' %}"></script>
+	<script type="text/javascript" charset="utf-8">
+		Ext.onReady(function () {
+			
+			var login_form = new Ext.FormPanel({
+				border: false,{% if request.GET.theme %}
+				bodyStyle: 'padding: 10px',{% else %}
+				bodyStyle: 'padding: 0px 10px 0px;',{% endif %}
+				items: [
+					{
+						xtype: 'hidden',
+						name: 'csrfmiddlewaretoken',
+						value: '{{ csrf_token }}',
+					},
+					{
+						xtype: 'textfield',
+						anchor: '100%',
+						fieldLabel: 'Username',
+						name: 'username',
+					},
+					{
+						xtype: 'textfield',
+						inputType: 'password',
+						anchor: '100%',
+						fieldLabel: 'Password',
+						name: 'password',
+					}
+				],
+				url: '{{ form_url }}',
+				standardSubmit: true,
+				keys: [
+					{
+						key: [Ext.EventObject.ENTER],
+						handler: function () {
+							var form = login_form.getForm();
+							form.submit();
+						},
+					},
+				],
+			});
+			
+			var login_status_bar = window.status_bar = new Ext.ux.StatusBar({
+				items: [
+					{
+						xtype: 'button',
+						text: 'Log in',
+						iconCls: 'icon-door-open-in',
+						handler: function () {
+							var form = login_form.getForm();
+							form.submit();
+						},
+					},
+				],
+			});
+			var login_window = new Ext.Window({
+				header: false,
+				closable: false,
+				resizable: false,
+				draggable: false,
+				frame: true,
+				autoHeight: true,
+				width: 320,
+				items: login_form,
+				bbar: login_status_bar,
+			});
+			
+			login_window.show();
+			{% if error_message %}
+			login_status_bar.setStatus({
+				iconCls: 'x-status-error',
+				text: '{{ error_message_short }}',
+			});
+			
+			new Ext.ToolTip({
+				target: login_status_bar.statusEl.el,
+				anchor: 'top',
+				title: '{{ error_message_short }}',
+				html: '{{ error_message }}',
+			});
+			
+			Ext.QuickTips.init();
+			{% endif %}
+		});
+	</script>
+{% endblock %}

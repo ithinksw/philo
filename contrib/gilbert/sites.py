@@ -1,248 +1,242 @@
-from django.contrib.admin.sites import AdminSite
-from django.contrib.auth import authenticate, login, logout
 from django.conf.urls.defaults import url, patterns, include
 from django.core.urlresolvers import reverse
 from django.shortcuts import render_to_response
 from django.conf import settings
 from django.utils import simplejson as json
 from django.utils.datastructures import SortedDict
-from django.http import HttpResponse
+
 from django.db.models.base import ModelBase
 from philo.utils import fattr
-from philo.contrib.gilbert.plugins import GilbertModelAdmin, GilbertPlugin, is_gilbert_method, gilbert_method
-from philo.contrib.gilbert.exceptions import AlreadyRegistered, NotRegistered
+from .exceptions import AlreadyRegistered, NotRegistered
 from django.forms.models import model_to_dict
 import sys
-from traceback import format_tb
 from inspect import getargspec
 from django.views.decorators.cache import never_cache
-from philo.contrib.gilbert import __version__ as gilbert_version
+from . import __version__ as gilbert_version
 import staticmedia
 import os
+import datetime
+from .extdirect import ExtAction, ExtRouter
+
+from functools import partial
+from django.http import HttpResponse, HttpResponseRedirect
+from django.template import RequestContext
+from django.core.context_processors import csrf
+from django.utils.functional import update_wrapper
+from django.contrib.auth import authenticate, login
+from .plugins.models import Models, ModelAdmin
+from .plugins.auth import Auth
+
 
 __all__ = ('GilbertSite', 'site')
 
 
-class GilbertAuthPlugin(GilbertPlugin):
-	name = 'auth'
+class CoreRouter(ExtRouter):
+	def __init__(self, site):
+		self.site = site
+		self._actions = {}
 	
 	@property
-	def js(self):
-		return [staticmedia.url('gilbert/Gilbert.api.auth.js')]
+	def namespace(self):
+		return 'Gilbert.api.plugins'
 	
 	@property
-	def fugue_icons(self):
-		return ['user-silhouette', 'key--pencil', 'door-open-out', 'door-open-in']
+	def url(self):
+		return reverse('%s:router' % self.site.namespace, current_app=self.site.app_name)
 	
-	@gilbert_method(restricted=False)
-	def login(self, request, username, password):
-		user = authenticate(username=username, password=password)
-		if user is not None and user.is_active:
-			login(request, user)
-			return True
-		else:
-			return False
+	@property
+	def type(self):
+		return 'remoting'
 	
-	@gilbert_method
-	def logout(self, request):
-		logout(request)
-		return True
+	@property
+	def actions(self):
+		return self._actions
 	
-	@gilbert_method
-	def get_passwd_form(self, request):
-		from django.contrib.auth.forms import PasswordChangeForm
-		return PasswordChangeForm(request.user).as_ext()
+	@property
+	def plugins(self):
+		return list(action.obj for action in self._actions.itervalues())
 	
-	@gilbert_method(form_handler=True)
-	def submit_passwd_form(self, request):
-		from django.contrib.auth.forms import PasswordChangeForm
-		form = PasswordChangeForm(request.user, data=request.POST)
-		if form.is_valid():
-			form.save()
-			return {'success': True}
-		else:
-			return {'success': False, 'errors': form.errors}
+	def register_plugin(self, plugin):
+		action = ExtAction(plugin)
+		self._actions[action.name] = action
+
+
+class ModelRouter(ExtRouter):
+	def __init__(self, site, app_label):
+		self.site = site
+		self.app_label = app_label
+		self._actions = {}
 	
-	@gilbert_method
-	def whoami(self, request):
-		user = request.user
-		return user.get_full_name() or user.username
+	@property
+	def namespace(self):
+		return 'Gilbert.api.models.%s' % self.app_label
+	
+	@property
+	def url(self):
+		return reverse('%s:model_router' % self.site.namespace, current_app=self.site.app_name, kwargs={'app_label': self.app_label})
+	
+	@property
+	def type(self):
+		return 'remoting'
+	
+	@property
+	def actions(self):
+		return self._actions
+	
+	@property
+	def models(self):
+		return dict((name, action.obj) for name, action in self._actions.iteritems())
+	
+	def register_admin(self, name, admin):
+		action = ExtAction(admin)
+		action.name = name
+		self._actions[action.name] = action
 
 
 class GilbertSite(object):
 	version = gilbert_version
 	
-	def __init__(self, namespace='gilbert', app_name='gilbert', title='Gilbert'):
+	def __init__(self, namespace='gilbert', app_name='gilbert', title=None):
 		self.namespace = namespace
 		self.app_name = app_name
-		self.title = title
-		self.model_registry = SortedDict()
-		self.plugin_registry = SortedDict()
-		self.register_plugin(GilbertAuthPlugin)
+		if title is None:
+			self.title = getattr(settings, 'GILBERT_TITLE', 'Gilbert')
+		else:
+			self.title = title
+		
+		self.core_router = CoreRouter(self)
+		self.model_routers = SortedDict()
+		
+		self.register_plugin(Models)
+		self.register_plugin(Auth)
 	
 	def register_plugin(self, plugin):
-		if plugin.name in self.plugin_registry:
-			raise AlreadyRegistered('A plugin named \'%s\' is already registered' % plugin.name)
-		self.plugin_registry[plugin.name] = plugin(self)
+		self.core_router.register_plugin(plugin(self))
 	
-	def register_model(self, model_or_iterable, admin_class=GilbertModelAdmin, **admin_attrs):
+	def register_model(self, model_or_iterable, admin_class=ModelAdmin, **admin_attrs):
 		if isinstance(model_or_iterable, ModelBase):
 			model_or_iterable = [model_or_iterable]
 		for model in model_or_iterable:
-			if model._meta.app_label not in self.model_registry:
-				self.model_registry[model._meta.app_label] = SortedDict()
-			if model._meta.object_name in self.model_registry[model._meta.app_label]:
-				raise AlreadyRegistered('The model %s.%s is already registered' % (model._meta.app_label, model.__name__))
+			app_label = model._meta.app_label
+			name = model._meta.object_name
+			
+			if app_label not in self.model_routers:
+				self.model_routers[app_label] = ModelRouter(self, app_label)
+			router = self.model_routers[app_label]
+			
 			if admin_attrs:
 				admin_attrs['__module__'] = __name__
 				admin_class = type('%sAdmin' % model.__name__, (admin_class,), admin_attrs)
-			self.model_registry[model._meta.app_label][model._meta.object_name] = admin_class(self, model)
+			
+			router.register_admin(name, admin_class(self, model))
 	
 	def has_permission(self, request):
 		return request.user.is_active and request.user.is_staff
 	
+	def protected_view(self, view, login_page=True, cacheable=False):
+		def inner(request, *args, **kwargs):
+			if not self.has_permission(request):
+				if login_page:
+					return self.login(request)
+				else:
+					return HttpResponse(status=403)
+			return view(request, *args, **kwargs)
+		if not cacheable:
+			inner = never_cache(inner)
+		return update_wrapper(inner, view)
+	
 	@property
 	def urls(self):
 		urlpatterns = patterns('',
-			url(r'^$', self.index, name='index'),
-			url(r'^css$', self.css, name='css'),
-			url(r'^api$', self.api, name='api'),
-			url(r'^router/?$', self.router, name='router'),
-			url(r'^router/models/(?P<app_label>\w+)/?$', self.router, name='models'),
-			url(r'^login$', self.router, name='login'),
+			url(r'^$', self.protected_view(self.index), name='index'),
+			url(r'^api.js$', self.protected_view(self.api, login_page=False), name='api'),
+			url(r'^icons.css$', self.protected_view(self.icons, login_page=False), name='icons'),
+			url(r'^router$', self.protected_view(self.router, login_page=False), name='router'),
+			url(r'^router/models/(?P<app_label>\w+)$', self.protected_view(self.router, login_page=False), name='model_router'),
 		)
-		
 		return (urlpatterns, self.app_name, self.namespace)
 	
-	def request_context(self, request, extra_context=None):
-		from django.template import RequestContext
-		context = RequestContext(request, current_app=self.namespace)
-		context.update(extra_context or {})
-		context.update({'gilbert': self, 'user': request.user, 'logged_in': self.has_permission(request)})
-		return context
-	
-	@never_cache
-	def index(self, request, extra_context=None):
-		return render_to_response('gilbert/index.html', context_instance=self.request_context(request, extra_context))
-	
-	def css(self, request, extra_context=None):
-		icon_names = []
-		for plugin in self.plugin_registry.values():
-			icon_names.extend(plugin.fugue_icons)
-		
-		icons = dict([(icon_name, staticmedia.url('gilbert/fugue-icons/icons/%s.png' % icon_name)) for icon_name in set(icon_names)])
-		
-		context = extra_context or {}
-		context.update({'icons': icons})
-		
-		return render_to_response('gilbert/styles.css', context_instance=self.request_context(request, context), mimetype='text/css')
-	
-	@never_cache
-	def api(self, request, extra_context=None):
-		providers = []
-		for app_label, models in self.model_registry.items():
-			app_provider = {
-				'namespace': 'Gilbert.api.models.%s' % app_label,
-				'url': reverse('%s:models' % self.namespace, current_app=self.app_name, kwargs={'app_label': app_label}),
-				'type': 'remoting',
-			}
-			model_actions = {}
-			for model_name, admin in models.items():
-				model_methods = []
-				for method in [admin.get_method(method_name) for method_name in admin.methods]:
-					if method.restricted and not self.has_permission(request):
-						continue
-					model_methods.append({
-						'name': method.name,
-						'len': method.argc,
-						'formHandler': method.form_handler,
-					})
-				if model_methods:
-					model_actions[model_name] = model_methods
-			if model_actions:
-				app_provider['actions'] = model_actions
-				providers.append(app_provider)
-		
-		plugin_provider = {
-			'namespace': 'Gilbert.api',
-			'url': reverse('%s:router' % self.namespace, current_app=self.app_name),
-			'type': 'remoting',
+	def login(self, request):
+		context = {
+			'gilbert': self,
+			'form_url': request.get_full_path(),
 		}
-		plugin_actions = {}
-		for plugin_name, plugin in self.plugin_registry.items():
-			plugin_methods = []
-			for method in [plugin.get_method(method_name) for method_name in plugin.methods]:
-				if method.restricted and not self.has_permission(request):
-					continue
-				plugin_methods.append({
-					'name': method.name,
-					'len': method.argc,
-					'formHandler': method.form_handler,
-				})
-			if plugin_methods:
-				plugin_actions[plugin_name] = plugin_methods
-		if plugin_actions:
-			plugin_provider['actions'] = plugin_actions
-			providers.append(plugin_provider)
+		context.update(csrf(request))
 		
-		return HttpResponse(''.join(['Ext.Direct.addProvider('+json.dumps(provider, separators=(',', ':'))+');' for provider in providers]), mimetype='text/javascript')
+		if request.POST:
+			if request.session.test_cookie_worked():
+				request.session.delete_test_cookie()
+				username = request.POST.get('username', None)
+				password = request.POST.get('password', None)
+				user = authenticate(username=username, password=password)
+				if user is not None:
+					if user.is_active and user.is_staff:
+						login(request, user)
+						return HttpResponseRedirect(request.get_full_path())
+					else:
+						context.update({
+							'error_message_short': 'Not staff',
+							'error_message': 'You do not have access to this page.',
+						})
+				else:
+					context.update({
+						'error_message_short': 'Invalid credentials',
+						'error_message': 'Unable to authenticate using the provided credentials. Please try again.',
+					})
+			else:
+				context.update({
+					'error_message_short': 'Cookies disabled',
+					'error_message': 'Please enable cookies, reload this page, and try logging in again.',
+				})
+		
+		request.session.set_test_cookie()
+		return render_to_response('gilbert/login.html', context, context_instance=RequestContext(request))
+	
+	def index(self, request):
+		return render_to_response('gilbert/index.html', {
+			'gilbert': self,
+			'plugins': self.core_router.plugins # needed as the template language will not traverse callables
+		}, context_instance=RequestContext(request))
+	
+	def api(self, request):
+		providers = []
+		model_registry = {}
+		
+		for app_label, router in self.model_routers.items():
+			if request.user.has_module_perms(app_label):
+				providers.append(router.spec)
+				model_registry[app_label] = dict((model_name, admin) for model_name, admin in router.models.items() if admin.has_permission(request))
+		
+		providers.append(self.core_router.spec)
+		
+		context = {
+			'gilbert': self,
+			'providers': [json.dumps(provider, separators=(',', ':')) for provider in providers],
+			'model_registry': model_registry,
+		}
+		context.update(csrf(request))
+		
+		return render_to_response('gilbert/api.js', context, mimetype='text/javascript')
+	
+	def icons(self, request):
+		icon_names = []
+		
+		for plugin in self.core_router.plugins:
+			icon_names.extend(plugin.icon_names)
+		
+		for router in self.model_routers.values():
+			for admin in router.models.values():
+				icon_names.extend(admin.icon_names)
+		
+		return render_to_response('gilbert/icons.css', {
+			'icon_names': set(icon_names),
+		}, mimetype='text/css')
 	
 	def router(self, request, app_label=None, extra_context=None):
-		submitted_form = False
-		if request.META['CONTENT_TYPE'].startswith('application/x-www-form-urlencoded'):
-			submitted_form = True
-		
-		if submitted_form:
-			ext_request = {
-				'action': request.POST.get('extAction'),
-				'method': request.POST.get('extMethod'),
-				'type': request.POST.get('extType'),
-				'tid': request.POST.get('extTID'),
-				'upload': request.POST.get('extUpload', False),
-				'data': None,
-			}
-			response = self.handle_ext_request(request, ext_request, app_label)
+		if app_label is None:
+			return self.core_router.render_to_response(request)
 		else:
-			ext_requests = json.loads(request.raw_post_data)
-			if type(ext_requests) is dict:
-				ext_requests['upload'] = False
-				response = self.handle_ext_request(request, ext_requests, app_label)
-			else:
-				responses = []
-				for ext_request in ext_requests:
-					ext_request['upload'] = False
-					responses.append(self.handle_ext_request(request, ext_request, app_label))
-				response = responses
-		
-		if submitted_form:
-			if ext_request['upload'] is True:
-				return HttpResponse(('<html><body><textarea>%s</textarea></body></html>' % json.dumps(response)))
-		return HttpResponse(json.dumps(response), content_type=('application/json; charset=%s' % settings.DEFAULT_CHARSET))
-	
-	def handle_ext_request(self, request, ext_request, app_label=None):
-		try:
-			plugin = None
-			
-			if app_label is not None:
-				try:
-					plugin = self.model_registry[app_label][ext_request['action']]
-				except KeyError:
-					raise NotImplementedError('A model named \'%s\' has not been registered' % ext_request['action'])
-			else:
-				try:
-					plugin = self.plugin_registry[ext_request['action']]
-				except KeyError:
-					raise NotImplementedError('Gilbert does not provide a class named \'%s\'' % ext_request['action'])
-			
-			method = plugin.get_method(ext_request['method'])
-			
-			if method is None or (method.restricted and not self.has_permission(request)):
-				raise NotImplementedError('The method named \'%s\' is not available' % method.name)
-			
-			return {'type': 'rpc', 'tid': ext_request['tid'], 'action': ext_request['action'], 'method': ext_request['method'], 'result': method(request, *(ext_request['data'] or []))}
-		except:
-			exc_type, exc_value, exc_traceback = sys.exc_info()
-			return {'type': 'exception', 'tid': ext_request['tid'], 'message': ('%s: %s' % (exc_type, exc_value)), 'where': format_tb(exc_traceback)[0]}
+			return self.model_routers[app_label].render_to_response(request)
 
 
 site = GilbertSite()

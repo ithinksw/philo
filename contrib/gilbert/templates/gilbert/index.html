@@ -1,86 +1,46 @@
-{% load staticmedia %}<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
-<head>{% block head %}
-	<title>{% block title %}{{ gilbert.title }}{% endblock %}</title>
+{% extends 'gilbert/base.html' %}
+{% load staticmedia %}
+
+{% block css %}{{ block.super }}
+	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/extjs/examples/ux/fileuploadfield/css/fileuploadfield.css' %}" />
+	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/superboxselect/superboxselect.css' %}" />
+	<link rel="stylesheet" type="text/css" href="{% url gilbert:icons %}" />
 	
-	{% block css %}
-	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/extjs/resources/css/ext-all-notheme.css' %}" />
-	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/murano/murano.css' %}" />
-	<link rel="stylesheet" type="text/css" href="{% url gilbert:css %}" />
-	{% for plugin in gilbert.plugin_registry.values %}{% for css in plugin.css %}
-	<link rel="stylesheet" type="text/css" href="{{ css }}" />
+	{% for router in gilbert.model_routers.values %}{% for admin in router.models.values %}{% for css_url in admin.index_css_urls %}
+	<link rel="stylesheet" type="text/css" href="{{ css_url }}" />
+	{% endfor %}{% endfor %}{% endfor %}
+	
+	{% for plugin in plugins %}{% for css_url in plugin.index_css_urls %}
+	<link rel="stylesheet" type="text/css" href="{{ css_url }}" />
 	{% endfor %}{% endfor %}
-	{% endblock %}
+{% endblock %}
 	
-	{% block js %}
-	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/adapter/ext/ext-base.js' %}"></script>
-	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/ext-all.js' %}"></script>
-	<script type="text/javascript">
-		Ext.BLANK_IMAGE_URL = '{% mediaurl "gilbert/extjs/resources/images/default/s.gif" %}';
-	</script>
-	<script type="text/javascript" src="{% mediaurl 'gilbert/Gilbert.lib.js' %}"></script>
+{% block js %}{{ block.super }}
+	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/examples/ux/FieldLabeler.js' %}"></script>
+	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/examples/ux/fileuploadfield/FileUploadField.js' %}"></script>
+	<script type="text/javascript" src="{% mediaurl 'gilbert/superboxselect/SuperBoxSelect.js' %}"></script>
+	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/examples/ux/Reorderer.js' %}"></script>
+	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/examples/ux/ToolbarReorderer.js' %}"></script>
+	
+	<script type="text/javascript" src="{% mediaurl 'gilbert/lib/app.js' %}"></script>
+	<script type="text/javascript" src="{% mediaurl 'gilbert/lib/models.js' %}"></script>
+	<script type="text/javascript" src="{% mediaurl 'gilbert/lib/plugins.js' %}"></script>
+	<script type="text/javascript" src="{% mediaurl 'gilbert/lib/ui/forms.js' %}"></script>
+	<script type="text/javascript" src="{% mediaurl 'gilbert/lib/ui/windows.js' %}"></script>
+	<script type="text/javascript" src="{% mediaurl 'gilbert/gilbert.js' %}"></script>
+	
 	<script type="text/javascript" src="{% url gilbert:api %}"></script>
-	<script type="text/javascript">
-		GILBERT_LOGGED_IN = {% if logged_in %}true{% else %}false{% endif %};
-		GILBERT_PLUGINS = [];
-	</script>
-	{% for plugin in gilbert.plugin_registry.values %}{% for js in plugin.js %}
-	<script type="text/javascript" src="{{ js }}"></script>
-	{% endfor %}{% endfor %}
-	<script type="text/javascript">
-		Ext.onReady(function() {
-			GILBERT_APPLICATION = new Gilbert.lib.Application({
-				user: '{% filter force_escape %}{% firstof user.get_full_name user.username %}{% endfilter %}',
-				plugins: [new (function() {
-					return {
-						init: function(application) {
-							var plugin = this;
-							application.mainmenu.insert(0, {
-								xtype: 'button',
-								text: '<span style="font-weight: bolder; text-transform: uppercase;">Gilbert</span>',
-								handler: function(button, event) {
-									plugin.showAbout(button);
-								},
-							});
-							application.mainmenu.insert(1, {
-								xtype: 'tbseparator',
-							});
-						},
-						showAbout: function(sender) {
-							if (!this.about_window) {
-								var about_window = this.about_window = new Ext.Window({
-									height: 176,
-									width: 284,
-									header: false,
-									html: '<h1>{{ gilbert.title }}</h1><h2>Version {{ gilbert.version }}</h2>',
-									bodyStyle: 'background: none; font-size: larger; line-height: 1.4em; text-align: center;',
-									modal: true,
-									closeAction: 'hide',
-									renderTo: Ext.getBody(),
-									closable: false,
-									resizable: false,
-									draggable: false,
-									fbar: [{
-										text: 'OK',
-										handler: function(button, event) {
-											about_window.hide();
-										}
-									}],
-									defaultButton: 0,
-								});
-							}
-							this.about_window.render(Ext.getBody());
-							this.about_window.center();
-							this.about_window.show();
-						},
-					}
-				})()].concat(GILBERT_PLUGINS),
-			});
-		});
-	</script>
-	{% endblock %}
 	
-{% endblock %}</head>
-<body style="background-image: url({% mediaurl 'gilbert/wallpaper.jpg' %});">{% block body %}{% endblock %}</body>
-</html>
+	{% for router in gilbert.model_routers.values %}{% for admin in router.models.values %}{% for js_url in admin.index_js_urls %}
+	<script type="text/javascript" src="{{ js_url }}"></script>
+	{% endfor %}{% endfor %}{% endfor %}
+	
+	{% for plugin in plugins %}{% for js_url in plugin.index_js_urls %}
+	<script type="text/javascript" src="{{ js_url }}"></script>
+	{% endfor %}{% endfor %}
+{% endblock %}
+	
+{% block extrahead %}
+	{% for router in gilbert.model_routers.values %}{% for admin in router.models.values %}{{ admin.index_extrahead }}{% endfor %}{% endfor %}
+	{% for plugin in plugins %}{{ plugin.index_extrahead }}{% endfor %}
+{% endblock %}

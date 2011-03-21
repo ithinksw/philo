@@ -13,12 +13,12 @@ def autodiscover():
 	for app in settings.INSTALLED_APPS:
 		mod = import_module(app)
 		try:
-			before_import_model_registry = copy.copy(site.model_registry)
-			before_import_plugin_registry = copy.copy(site.plugin_registry)
+			before_import_model_routers = copy.copy(site.model_routers)
+			before_import_core_router = copy.copy(site.core_router)
 			import_module('%s.gilbert' % app)
 		except:
-			site.model_registry = before_import_model_registry
-			site.plugin_registry = before_import_plugin_registry
+			site.model_routers = before_import_model_routers
+			site.core_router = before_import_core_router
 			
 			if module_has_submodule(mod, 'gilbert'):
 				raise

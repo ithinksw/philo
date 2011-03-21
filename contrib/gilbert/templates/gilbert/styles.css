@@ -1,1 +1,0 @@
-{% for icon, url in icons.items %}.{{icon}}{background:url({{ url }}) left center no-repeat !important;}{% endfor %}

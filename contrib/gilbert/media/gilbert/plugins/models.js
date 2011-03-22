@@ -6,13 +6,13 @@ Ext.override(Gilbert.lib.models.Model, {
 		var model = this;
 		var config = config;
 		model.api.get_form({}, function (formspec) {
-			/*var formspec = formspec;
+			var formspec = formspec;
 			for (var item_index in formspec.items) {
 				var item = formspec.items[item_index];
 				Ext.apply(item, {
 					anchor: '100%',
 				});
-			}*/
+			}
 			var form_panel = new Gilbert.lib.ui.DjangoForm(Ext.applyIf(Ext.applyIf(config||{},{
 				title: 'New '+model.verbose_name,
 				header: false,
@@ -30,13 +30,13 @@ Ext.override(Gilbert.lib.models.Model, {
 		var model = this;
 		var config = config;
 		model.api.get_form({'pk': pk}, function (formspec) {
-			/*var formspec = formspec;
+			var formspec = formspec;
 			for (var item_index in formspec.items) {
 				var item = formspec.items[item_index];
 				Ext.apply(item, {
 					anchor: '100%',
 				});
-			}*/
+			}
 			callback(new Gilbert.lib.ui.DjangoForm(Ext.applyIf(Ext.applyIf(config||{},{
 				title: 'Editing '+model.verbose_name+' ('+pk+')',
 				header: false,
@@ -51,99 +51,6 @@ Ext.override(Gilbert.lib.models.Model, {
 				},
 			}), formspec)));
 		});
-	},
-});
-
-
-Gilbert.lib.plugins.models.ui.DestructionConsequencesWindow = Ext.extend(Ext.Window, {
-	constructor: function (consequences, confirm_handler, cancel_handler, config) {
-		var convert_consequences_array = function (consequences) {
-			var last_parent = consequences[0];
-			Ext.each(consequences, function (consequence, index) {
-				if (index != 0) {
-					if (!Ext.isArray(consequence)) {
-						last_parent = consequence;
-					} else {
-						last_parent['children'] = convert_consequences_array(consequence);
-						delete consequences[index];
-					}
-				}
-			});
-			new_consequences = [];
-			Ext.each(consequences, function (consequence) {
-				if (consequence) {
-					var new_consequence = {};
-					if (!consequence['children']) {
-						new_consequence['leaf'] = true;
-					} else {
-						new_consequence['leaf'] = false;
-						new_consequence['children'] = consequence['children'];
-					}
-					var app_label = consequence['app_label'];
-					var name = consequence['name'];
-					var model = Gilbert.get_model(app_label, name);
-					if (model) {
-						new_consequence['text'] = consequence['__unicode__'];
-						new_consequence['iconCls'] = model.iconCls;
-					} else {
-						new_consequence['text'] = '(' + consequence['name'] + ') ' + consequence['__unicode__'];
-						new_consequence['iconCls'] = 'icon-block';
-					}
-					new_consequence['disabled'] = true;
-					new_consequences.push(new_consequence);
-				}
-			});
-			return new_consequences;
-		};
-		
-		var tree = this.tree = new Ext.tree.TreePanel({
-			loader: new Ext.tree.TreeLoader(),
-			enableDD: false,
-			animate: false,
-			trackMouseOver: false,
-			autoScroll: true,
-			root: {
-				'disabled': true,
-				'text': 'To be deleted',
-				'iconCls': 'icon-minus',
-				'leaf': false,
-				'children': convert_consequences_array(consequences),
-			},
-			useArrows: true,
-			rootVisible: false,
-			region: 'center',
-		});
-		
-		Gilbert.lib.plugins.models.ui.DestructionConsequencesWindow.superclass.constructor.call(this, Ext.applyIf(config||{}, {
-			layout: 'border',
-			width: 300,
-			height: 300,
-			modal: true,
-			title: 'Confirm deletion',
-			iconCls: 'icon-minus',
-			items: [
-				{
-					region: 'north',
-					xtype: 'panel',
-					html: 'Are you sure you want to delete these items?',
-					bodyStyle: 'padding: 15px;',
-				},
-				tree,
-			],
-			bbar: [
-				{
-					xtype: 'button',
-					text: 'Cancel',
-					handler: cancel_handler,
-				},
-				'->',
-				{
-					xtype: 'button',
-					text: 'Confirm',
-					handler: confirm_handler,
-				},
-			],
-		}));
 	},
 });
 
@@ -176,9 +83,7 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 			viewConfig: {
 				forceFit: true,
 			},
-			selModel: new Ext.grid.RowSelectionModel({
-				//singleSelect: true,
-			}),
+			selModel: new Ext.grid.RowSelectionModel(),
 			bbar: new Ext.PagingToolbar({
 				pageSize: 25,
 				store: store,
@@ -203,7 +108,7 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 		});
 		
 		var new_action = this.new_action = new Ext.Action({
-			text: 'New '+model.verbose_name.capfirst(),
+			text: 'New ' + model.verbose_name,
 			iconCls: 'icon-plus',
 			handler: function () {
 				plugin.create_instance_window(model, undefined, function (win) {
@@ -216,6 +121,7 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 		});
 		
 		var edit_action = this.edit_action = new Ext.Action({
+			disabled: true,
 			text: 'Edit',
 			iconCls: 'icon-pencil',
 			handler: function () {
@@ -231,6 +137,7 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 		});
 		
 		var delete_action = this.delete_action = new Ext.Action({
+			disabled: true,
 			text: 'Delete',
 			iconCls: 'icon-minus',
 			handler: function () {
@@ -240,14 +147,101 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 					pks.push(record.id);
 				});
 				model.api.data_destroy_consequences(pks, function (consequences) {
-					var consequences_win = new Gilbert.lib.plugins.models.ui.DestructionConsequencesWindow(consequences, function () {
-						consequences_win.close();
-						store.remove(records);
-						store.save();
-						store.reload();
-					}, function () {
-						consequences_win.close();
+					var convert_consequences_array = function (consequences) {
+						var last_parent = consequences[0];
+						Ext.each(consequences, function (consequence, index) {
+							if (index != 0) {
+								if (!Ext.isArray(consequence)) {
+									last_parent = consequence;
+								} else {
+									last_parent['children'] = convert_consequences_array(consequence);
+									delete consequences[index];
+								}
+							}
+						});
+						new_consequences = [];
+						Ext.each(consequences, function (consequence) {
+							if (consequence) {
+								var new_consequence = {};
+								if (!consequence['children']) {
+									new_consequence['leaf'] = true;
+								} else {
+									new_consequence['leaf'] = false;
+									new_consequence['children'] = consequence['children'];
+								}
+								var app_label = consequence['app_label'];
+								var name = consequence['name'];
+								var model = Gilbert.get_model(app_label, name);
+								if (model) {
+									new_consequence['text'] = consequence['__unicode__'];
+									new_consequence['iconCls'] = model.iconCls;
+								} else {
+									new_consequence['text'] = '(' + consequence['name'] + ') ' + consequence['__unicode__'];
+									new_consequence['iconCls'] = 'icon-block';
+								}
+								new_consequence['disabled'] = true;
+								new_consequences.push(new_consequence);
+							}
+						});
+						return new_consequences;
+					};
+					
+					var tree = this.tree = new Ext.tree.TreePanel({
+						loader: new Ext.tree.TreeLoader(),
+						enableDD: false,
+						animate: false,
+						trackMouseOver: false,
+						autoScroll: true,
+						root: {
+							'disabled': true,
+							'text': 'To be deleted',
+							'iconCls': 'icon-minus',
+							'leaf': false,
+							'children': convert_consequences_array(consequences),
+						},
+						useArrows: true,
+						rootVisible: false,
+						region: 'center',
 					});
+					
+					var consequences_win = application.create_window({
+						layout: 'border',
+						width: 300,
+						height: 300,
+						modal: true,
+						title: 'Delete ' + model.verbose_name_plural,
+						iconCls: 'icon-minus',
+						items: [
+							{
+								region: 'north',
+								xtype: 'panel',
+								html: 'Are you sure you want to delete these ' + model.verbose_name_plural + '?',
+								bodyStyle: 'padding: 15px;',
+							},
+							tree,
+						],
+						bbar: [
+							{
+								xtype: 'button',
+								text: 'Cancel',
+								handler: function () {
+									consequences_win.close();
+								},
+							},
+							'->',
+							{
+								xtype: 'button',
+								text: 'Yes',
+								handler: function () {
+									consequences_win.close();
+									store.remove(records);
+									store.save();
+									store.reload();
+								},
+							},
+						],
+					});
+					
 					consequences_win.show();
 				});
 			}
@@ -255,7 +249,10 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 		
 		grid.on('cellcontextmenu', function (grid, rowIndex, cellIndex, e) {
 			e.stopEvent();
-			grid.getSelectionModel().selectRow(rowIndex);
+			selmodel = grid.getSelectionModel();
+			if (!selmodel.isSelected(rowIndex)) {
+				selmodel.selectRow(rowIndex, false);
+			}
 			var contextmenu = new Ext.menu.Menu({
 				items: [
 					edit_action,
@@ -265,6 +262,16 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 			contextmenu.showAt(e.xy);
 		});
 		
+		grid.getSelectionModel().on('selectionchange', function (selmodel) {
+			if (selmodel.hasSelection()) {
+				edit_action.setDisabled(false);
+				delete_action.setDisabled(false);
+			} else {
+				edit_action.setDisabled(true);
+				delete_action.setDisabled(true);
+			}
+		});
+		
 		Gilbert.lib.plugins.models.ui.ModelPanel.superclass.constructor.call(this, Ext.applyIf(config||{}, {
 			layout: 'fit',
 			tbar: new Ext.Toolbar({
@@ -272,7 +279,6 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 					new_action,
 					{ xtype: 'tbseparator' },
 					edit_action,
-					{ xtype: 'tbseparator' },
 					delete_action,
 					'->',
 					{

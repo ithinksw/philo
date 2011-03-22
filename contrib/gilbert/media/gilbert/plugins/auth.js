@@ -32,39 +32,44 @@ Gilbert.lib.plugins.auth.Plugin = Ext.extend(Gilbert.lib.plugins.Plugin, {
 							for (var item_index in formspec.items) {
 								var item = formspec.items[item_index];
 								Ext.apply(item, {
-									plugins: [ Ext.ux.FieldLabeler ],
+									anchor: '100%',
 								});
 							}
+							var change_password_form = new Gilbert.lib.ui.DjangoForm(Ext.applyIf({
+								title: 'Change password',
+								header: false,
+								iconCls: 'icon-key--pencil',
+								bodyStyle: 'padding: 10px;',
+								baseCls: 'x-plain',
+								autoScroll: true,
+								api: {
+									submit: Gilbert.api.plugins.auth.save_passwd_form,
+								},
+							}, formspec));
 							var change_password_window = application.create_window({
 								layout: 'fit',
-								resizable: true,
-								title: 'Change password',
-								iconCls: 'icon-key--pencil',
+								title: change_password_form.title,
+								iconCls: change_password_form.iconCls,
+								bodyStyle: 'padding: 5px; background: solid;',
 								width: 360,
-								height: 100,
-								items: change_password_form = new Ext.FormPanel(Ext.applyIf({
-									layout: {
-										type: 'vbox',
-										align: 'stretch',
-									},
-									baseCls: 'x-plain',
-									bodyStyle: 'padding: 5px;',
-									frame: true,
-									buttons: [{
+								height: 240,
+								maximizable: false,
+								items: [change_password_form],
+								bbar: [
+									'->',
+									{
 										text: 'Change password',
 										iconCls: 'icon-key--pencil',
 										handler: function(button, event) {
 											change_password_form.getForm().submit({
 												success: function(form, action) {
 													Ext.MessageBox.alert('Password changed', 'Your password has been changed.');
+													change_password_window.close();
 												},
 											});
 										},
-									}],
-									api: {
-										submit: Gilbert.api.plugins.auth.save_passwd_form,
-									},
-								}, formspec))
+									}
+								],
 							});
 							change_password_window.doLayout();
 							change_password_window.show(button.el);

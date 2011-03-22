@@ -40,10 +40,10 @@ class Auth(Plugin):
 	@ext_method(form_handler=True)
 	def save_passwd_form(self, request):
 		form = PasswordChangeForm(request.user, data=request.POST)
-		try:
+		if form.is_valid():
 			form.save()
 			return True, None
-		except:
+		else:
 			return False, form.errors
 	
 	@ext_method

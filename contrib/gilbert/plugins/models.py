@@ -215,10 +215,10 @@ class ModelAdmin(Plugin):
 		
 		form = self.form_class(request.POST, request.FILES, instance=instance)
 		
-		try:
+		if form.is_valid():
 			saved = form.save()
 			return True, None, saved.pk
-		except ValueError:
+		else:
 			return False, form.errors
 	
 	def data_serialize_object(self, obj):

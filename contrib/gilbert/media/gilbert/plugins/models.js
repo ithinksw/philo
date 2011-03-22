@@ -231,7 +231,7 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 							'->',
 							{
 								xtype: 'button',
-								text: 'Yes',
+								text: 'Delete',
 								handler: function () {
 									consequences_win.close();
 									store.remove(records);

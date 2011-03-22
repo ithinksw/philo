@@ -204,19 +204,23 @@ Gilbert.lib.app.Application = Ext.extend(Ext.util.Observable, {
 		});
 		Gilbert.api.plugins.auth.get_preference('gilbert.theme', function (theme) {
 			if (theme) {
-				var link_element = document.getElementById('gilbert.theme.' + theme);
-				if (link_element) {
-					Ext.each(document.getElementsByClassName('gilbert.theme'), function (theme_element) {
-						if (theme_element != link_element) {
-							theme_element.disabled = true;
-						} else {
-							theme_element.disabled = false;
-						}
-					});
-				}
+				outer._set_theme(theme);
 			}
 			outer.init();
 		});
+	},
+	
+	_set_theme: function(theme) {
+		var link_element = document.getElementById('gilbert.theme.' + theme);
+		if (link_element) {
+			Ext.each(document.getElementsByClassName('gilbert.theme'), function (theme_element) {
+				if (theme_element != link_element) {
+					theme_element.disabled = true;
+				} else {
+					theme_element.disabled = false;
+				}
+			});
+		}
 	},
 	
 	init: function () {

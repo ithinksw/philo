@@ -18,7 +18,7 @@ class Auth(Plugin):
 	def icon_names(self):
 		return super(Auth, self).icon_names + [
 			'user-silhouette',
-			'switch',
+			'mask',
 			'key--pencil',
 			'door-open-out',
 		]

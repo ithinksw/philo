@@ -1,23 +1,12 @@
 Ext.ns('Gilbert.lib.plugins.auth');
 
 
-Gilbert.lib.plugins.auth.PreferencesWindow = Ext.extend(Ext.Window, {
-	constructor: function (config, application) {
-		Gilbert.lib.plugins.auth.PreferencesWindow.superclass.constructor.call(this, Ext.applyIf(config||{},{
-			width: 320,
-			height: 200,
-			title: 'Preferences',
-		}));
-	}
-});
-
-
 Gilbert.lib.plugins.auth.Plugin = Ext.extend(Gilbert.lib.plugins.Plugin, {
 	
 	init: function (application) {
 		Gilbert.lib.plugins.auth.Plugin.superclass.init.call(this, application);
 		
-		var preferences_window = new Gilbert.lib.plugins.auth.PreferencesWindow({}, application);
+		var outer = this;
 		
 		Gilbert.api.plugins.auth.whoami(function (whoami) {
 			application.mainmenu.add({
@@ -29,11 +18,9 @@ Gilbert.lib.plugins.auth.Plugin = Ext.extend(Gilbert.lib.plugins.Plugin, {
 				iconCls: 'icon-user-silhouette',
 				text: '<span style="font-weight: bolder;">' + whoami + '</span>',
 				menu: [{
-						text: 'Preferences...',
-						iconCls: 'icon-switch',
-						handler: function (button, event) {
-							preferences_window.show();
-						},
+						text: 'Theme',
+						iconCls: 'icon-mask',
+						menu: outer.build_theme_menu(),
 					},{
 						xtype: 'menuseparator',
 					},{
@@ -102,7 +89,44 @@ Gilbert.lib.plugins.auth.Plugin = Ext.extend(Gilbert.lib.plugins.Plugin, {
 			application.do_layout();
 		});
 	},
-
+	
+	build_theme_menu: function () {
+		var application = this.application;
+		
+		var theme_switcher = function (menuitem) {
+			var theme_name = menuitem.theme_name;
+			Gilbert.api.plugins.auth.set_preference('gilbert.theme', theme_name, function () {
+				application._set_theme(theme_name);
+				application.do_layout();
+				application.windows.each(function (win) {
+					win.doLayout();
+				});
+			});
+		};
+		
+		var menu = [];
+		
+		Ext.each(document.getElementsByClassName('gilbert.theme'), function (theme_element) {
+			var theme_id = theme_element.id;
+			var theme_name = theme_id.match(/gilbert.theme.(.*)/)[1];
+			var current_theme = false;
+			if (!theme_element.disabled) {
+				current_theme = true;
+			}
+			
+			
+			menu.push({
+				text: theme_name.capfirst(),
+				checked: current_theme,
+				group: 'theme',
+				theme_name: theme_name,
+				handler: theme_switcher,
+			});
+		});
+		
+		return menu;
+	},
+	
 });
 
 

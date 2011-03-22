@@ -292,6 +292,9 @@ Gilbert.lib.app.Application = Ext.extend(Ext.util.Observable, {
 			minimizable: true,
 			constrainHeader: true,
 		}));
+		
+		win.setPosition(Math.floor(Math.random() * ((this.desktop.getInnerWidth() - win.width) - 1)), Math.floor(Math.random() * ((this.desktop.getInnerHeight() - win.height) - 1)));
+		
 		win.render(this.desktop.el);
 		if (win.modal) {
 			win.on('show', function () {

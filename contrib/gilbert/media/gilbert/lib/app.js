@@ -293,8 +293,6 @@ Gilbert.lib.app.Application = Ext.extend(Ext.util.Observable, {
 			constrainHeader: true,
 		}));
 		
-		win.setPosition(Math.floor(Math.random() * ((this.desktop.getInnerWidth() - win.width) - 1)), Math.floor(Math.random() * ((this.desktop.getInnerHeight() - win.height) - 1)));
-		
 		win.render(this.desktop.el);
 		if (win.modal) {
 			win.on('show', function () {
@@ -312,6 +310,8 @@ Gilbert.lib.app.Application = Ext.extend(Ext.util.Observable, {
 				this.mainmenu.show();
 				this.do_layout();
 			}, this);
+		} else {
+			win.setPosition(Math.floor(Math.random() * ((this.desktop.getInnerWidth() - win.width) - 1)), Math.floor(Math.random() * ((this.desktop.getInnerHeight() - win.height) - 1)));
 		}
 		this.taskbar.register_window(win);
 		this.fireEvent('window_created', win);

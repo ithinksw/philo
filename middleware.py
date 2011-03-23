@@ -25,18 +25,17 @@ class LazyNode(object):
 			except Node.DoesNotExist:
 				node = None
 			else:
-				if subpath and not node.handles_subpath(subpath):
-					node = None
-			
-			if node:
 				if subpath is None:
 					subpath = ""
 				subpath = "/" + subpath
 				
-				if trailing_slash and subpath[-1] != "/":
-					subpath += "/"
-				
-				node.subpath = subpath
+				if not node.handles_subpath(subpath):
+					node = None
+				else:
+					if trailing_slash and subpath[-1] != "/":
+						subpath += "/"
+					
+					node.subpath = subpath
 			
 			request._found_node = node
 		

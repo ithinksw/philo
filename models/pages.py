@@ -131,7 +131,7 @@ class Template(TreeModel):
 		return contentlet_specs, contentreference_specs
 	
 	def __unicode__(self):
-		return self.get_path(pathsep=u' › ', field='name')
+		return self.name
 	
 	class Meta:
 		app_label = 'philo'

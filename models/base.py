@@ -271,9 +271,9 @@ class EntityOptions(object):
 
 class EntityBase(models.base.ModelBase):
 	def __new__(cls, name, bases, attrs):
+		entity_meta = attrs.pop('EntityMeta', None)
 		new = super(EntityBase, cls).__new__(cls, name, bases, attrs)
-		entity_options = attrs.pop('EntityMeta', None)
-		setattr(new, '_entity_meta', EntityOptions(entity_options))
+		new.add_to_class('_entity_meta', EntityOptions(entity_meta))
 		entity_class_prepared.send(sender=new)
 		return new
 

@@ -1,4 +1,4 @@
-from django.forms.models import ModelFormMetaclass, ModelForm
+from django.forms.models import ModelFormMetaclass, ModelForm, ModelFormOptions
 from django.utils.datastructures import SortedDict
 from philo.utils import fattr
 
@@ -6,7 +6,7 @@ from philo.utils import fattr
 __all__ = ('EntityForm',)
 
 
-def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widgets=None, formfield_callback=lambda f, **kwargs: f.formfield(**kwargs)):
+def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widgets=None, formfield_callback=None):
 	field_list = []
 	ignored = []
 	opts = entity_model._entity_meta
@@ -21,7 +21,14 @@ def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widge
 			kwargs = {'widget': widgets[f.name]}
 		else:
 			kwargs = {}
-		formfield = formfield_callback(f, **kwargs)
+		
+		if formfield_callback is None:
+			formfield = f.formfield(**kwargs)
+		elif not callable(formfield_callback):
+			raise TypeError('formfield_callback must be a function or callable')
+		else:
+			formfield = formfield_callback(f, **kwargs)
+		
 		if formfield:
 			field_list.append((f.name, formfield))
 		else:
@@ -35,31 +42,66 @@ def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widge
 	return field_dict
 
 
-# BEGIN HACK - This will not be required after http://code.djangoproject.com/ticket/14082 has been resolved
-
-class EntityFormBase(ModelForm):
-	pass
-
-_old_metaclass_new = ModelFormMetaclass.__new__
-
-def _new_metaclass_new(cls, name, bases, attrs):
-	formfield_callback = attrs.get('formfield_callback', lambda f, **kwargs: f.formfield(**kwargs))
-	new_class = _old_metaclass_new(cls, name, bases, attrs)
-	opts = new_class._meta
-	if issubclass(new_class, EntityFormBase) and opts.model:
-		# "override" proxy fields with declared fields by excluding them if there's a name conflict.
-		exclude = (list(opts.exclude or []) + new_class.declared_fields.keys()) or None
-		proxy_fields = proxy_fields_for_entity_model(opts.model, opts.fields, exclude, opts.widgets, formfield_callback) # don't pass in formfield_callback
+class EntityFormMetaclass(ModelFormMetaclass):
+	def __new__(cls, name, bases, attrs):
+		try:
+			parents = [b for b in bases if issubclass(b, EntityForm)]
+		except NameError:
+			# We are defining EntityForm itself
+			parents = None
+		sup = super(EntityFormMetaclass, cls)
+		
+		if not parents:
+			# Then there's no business trying to use proxy fields.
+			return sup.__new__(cls, name, bases, attrs)
+		
+		# Preemptively make a meta so we can screen out any proxy fields.
+		# After http://code.djangoproject.com/ticket/14082 has been resolved,
+		# perhaps switch to setting proxy fields as "declared"?
+		_opts = ModelFormOptions(attrs.get('Meta', None))
+		
+		# Make another copy of opts to spoof the proxy fields not being there.
+		opts = ModelFormOptions(attrs.get('Meta', None))
+		if opts.model:
+			formfield_callback = attrs.get('formfield_callback', None)
+			proxy_fields = proxy_fields_for_entity_model(opts.model, opts.fields, opts.exclude, opts.widgets, formfield_callback)
+		else:
+			proxy_fields = {}
+		
+		# Screen out all proxy fields from the meta
+		opts.fields = list(opts.fields or [])
+		opts.exclude = list(opts.exclude or [])
+		
+		for field in proxy_fields.keys():
+			try:
+				opts.fields.remove(field)
+			except ValueError:
+				pass
+			try:
+				opts.exclude.remove(field)
+			except ValueError:
+				pass
+		opts.fields = opts.fields or None
+		opts.exclude = opts.exclude or None
+		
+		# Put in the new Meta.
+		attrs['Meta'] = opts
+		
+		new_class = sup.__new__(cls, name, bases, attrs)
+		
+		intersections = set(new_class.declared_fields.keys()) & set(proxy_fields.keys())
+		for key in intersections:
+			proxy_fields.pop(key)
+		
 		new_class.proxy_fields = proxy_fields
+		new_class._meta = _opts
 		new_class.base_fields.update(proxy_fields)
-	return new_class
-
-ModelFormMetaclass.__new__ = staticmethod(_new_metaclass_new)
-
-# END HACK
+		return new_class
 
 
-class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it weren't for the above HACK
+class EntityForm(ModelForm):
+	__metaclass__ = EntityFormMetaclass
+	
 	def __init__(self, *args, **kwargs):
 		initial = kwargs.pop('initial', None)
 		instance = kwargs.get('instance', None)

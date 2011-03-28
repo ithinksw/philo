@@ -6,10 +6,10 @@ from django.db.models import Count
 from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from django.utils.functional import update_wrapper
 from django.utils.translation import ugettext_lazy as _
 from philo.admin import EntityAdmin
 from philo.contrib.sobol.models import Search, ResultURL, SearchView
+from functools import update_wrapper
 
 
 class ResultURLInline(admin.TabularInline):

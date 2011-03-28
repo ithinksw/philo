@@ -1,8 +1,8 @@
 from django.conf import settings
 from django.http import QueryDict
 from django.utils.encoding import smart_str
-from django.utils.hashcompat import sha_constructor
 from django.utils.http import urlquote_plus, urlquote
+from hashlib import sha1
 
 
 SEARCH_ARG_GET_KEY = 'q'
@@ -11,7 +11,7 @@ HASH_REDIRECT_GET_KEY = 's'
 
 
 def make_redirect_hash(search_arg, url):
-	return sha_constructor(smart_str(search_arg + url + settings.SECRET_KEY)).hexdigest()[::2]
+	return sha1(smart_str(search_arg + url + settings.SECRET_KEY)).hexdigest()[::2]
 
 
 def check_redirect_hash(hash, search_arg, url):

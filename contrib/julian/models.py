@@ -6,6 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models.query import QuerySet
 from django.http import HttpResponse, Http404
 from django.utils.encoding import force_unicode
 from philo.contrib.julian.feedgenerator import ICalendarFeed
@@ -73,6 +74,20 @@ class TimedModel(models.Model):
 		abstract = True
 
 
+class EventManager(models.Manager):
+	def get_query_set(self):
+		return EventQuerySet(self.model)
+
+class EventQuerySet(QuerySet):
+	def upcoming(self):
+		return self.filter(start_date__gte=datetime.date.today())
+	def current(self):
+		return self.filter(start_date__lte=datetime.date.today(), end_date__gte=datetime.date.today())
+	def single_day(self):
+		return self.filter(start_date__exact=models.F('end_date'))
+	def multiday(self):
+		return self.exclude(start_date__exact=models.F('end_date'))
+
 class Event(Entity, TimedModel):
 	name = models.CharField(max_length=255)
 	slug = models.SlugField(max_length=255, unique_for_date='start_date')
@@ -93,6 +108,8 @@ class Event(Entity, TimedModel):
 	created = models.DateTimeField(auto_now_add=True)
 	last_modified = models.DateTimeField(auto_now=True)
 	uuid = models.TextField() # Format?
+	
+	objects = EventManager()
 	
 	def __unicode__(self):
 		return self.name

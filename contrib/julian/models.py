@@ -76,7 +76,17 @@ class TimedModel(models.Model):
 
 class EventManager(models.Manager):
 	def get_query_set(self):
-		return self.model.QuerySet(self.model)
+		return EventQuerySet(self.model)
+
+class EventQuerySet(QuerySet):
+	def upcoming(self):
+		return self.filter(start_date__gte=datetime.date.today())
+	def current(self):
+		return self.filter(start_date__lte=datetime.date.today(), end_date__gte=datetime.date.today())
+	def single_day(self):
+		return self.filter(start_date__exact=models.F('end_date'))
+	def multiday(self):
+		return self.exclude(start_date__exact=models.F('end_date'))
 
 class Event(Entity, TimedModel):
 	name = models.CharField(max_length=255)
@@ -100,20 +110,6 @@ class Event(Entity, TimedModel):
 	uuid = models.TextField() # Format?
 	
 	objects = EventManager()
-	
-	class QuerySet(QuerySet):
-			
-		def upcoming(self):
-			return self.filter(start_date__gte=datetime.date.today())
-			
-		def current(self):
-			return self.filter(start_date__lte=datetime.date.today(), end_date__gte=datetime.date.today())
-			
-		def single_day(self):
-			return self.filter(start_date__exact=models.F('end_date'))
-	
-		def multiday(self):
-			return self.exclude(start_date__exact=models.F('end_date'))
 	
 	def __unicode__(self):
 		return self.name

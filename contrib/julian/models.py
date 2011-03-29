@@ -3,6 +3,7 @@ from django.conf.urls.defaults import url, patterns, include
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.generic import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import RegexValidator
 from django.db import models
@@ -14,16 +15,29 @@ from philo.contrib.penfield.models import FeedView, FEEDS
 from philo.exceptions import ViewCanNotProvideSubpath
 from philo.models import Tag, Entity, Page, TemplateField
 from philo.utils import ContentTypeRegistryLimiter
-import re, datetime, calendar
+import datetime, calendar
 
 
-# TODO: Could this regex more closely match the Formal Public Identifier spec?
-# http://xml.coverpages.org/tauber-fpi.html
-FPI_REGEX = re.compile(r"(|\+//|-//)[^/]+//[^/]+//[A-Z]{2}")
+__all__ = ('register_location_model', 'unregister_location_model', 'Location', 'TimedModel', 'Event', 'Calendar', 'CalendarView',)
 
 
 ICALENDAR = ICalendarFeed.mime_type
 FEEDS[ICALENDAR] = ICalendarFeed
+try:
+	DEFAULT_SITE = Site.objects.get_current()
+except:
+	DEFAULT_SITE = None
+_languages = dict(settings.LANGUAGES)
+try:
+	_languages[settings.LANGUAGE_CODE]
+	DEFAULT_LANGUAGE = settings.LANGUAGE_CODE
+except KeyError:
+	try:
+		lang = settings.LANGUAGE_CODE.split('-')[0]
+		_languages[lang]
+		DEFAULT_LANGUAGE = lang
+	except KeyError:
+		DEFAULT_LANGUAGE = None
 
 
 location_content_type_limiter = ContentTypeRegistryLimiter()
@@ -119,13 +133,16 @@ class Calendar(Entity):
 	name = models.CharField(max_length=100)
 	slug = models.SlugField(max_length=100)
 	description = models.TextField(blank=True)
-	events = models.ManyToManyField(Event, related_name='calendars')
+	events = models.ManyToManyField(Event, related_name='calendars', blank=True)
 	
-	# TODO: Can we auto-generate this on save based on site id and calendar name and settings language?
-	uuid = models.TextField("Calendar UUID", unique=True, help_text="Should conform to Formal Public Identifier format. See <a href='http://en.wikipedia.org/wiki/Formal_Public_Identifier'>Wikipedia</a>.", validators=[RegexValidator(FPI_REGEX)])
+	site = models.ForeignKey(Site, default=DEFAULT_SITE)
+	language = models.CharField(max_length=5, choices=settings.LANGUAGES, default=DEFAULT_LANGUAGE)
 	
 	def __unicode__(self):
 		return self.name
+	
+	class Meta:
+		unique_together = ('name', 'site', 'language')
 
 
 class CalendarView(FeedView):
@@ -382,7 +399,8 @@ class CalendarView(FeedView):
 	
 	def feed_guid(self, obj):
 		# Is this correct? Should I have a different id for different subfeeds?
-		return obj.uuid
+		# See http://xml.coverpages.org/tauber-fpi.html for format.
+		return "-//%s//%s %s//%s" % (obj.site.name.upper(), self.feed_type.upper(), obj.name.upper(), obj.language.upper())
 	
 	def description(self, obj):
 		return obj.description

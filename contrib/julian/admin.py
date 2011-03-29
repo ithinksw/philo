@@ -40,7 +40,7 @@ class CalendarAdmin(EntityAdmin):
 			'fields': ('name', 'description', 'events')
 		}),
 		('Advanced', {
-			'fields': ('slug', 'uuid'),
+			'fields': ('slug', 'site', 'language',),
 			'classes': COLLAPSE_CLASSES
 		})
 	)
@@ -70,6 +70,8 @@ class CalendarViewAdmin(EntityAdmin):
 			'classes': COLLAPSE_CLASSES
 		})
 	)
+	raw_id_fields = ('index_page', 'event_detail_page', 'timespan_page', 'tag_page', 'location_page', 'owner_page', 'location_archive_page', 'tag_archive_page', 'owner_archive_page', 'item_title_template', 'item_description_template',)
+	related_lookup_fields = {'fk': raw_id_fields}
 
 
 admin.site.register(Location, LocationAdmin)

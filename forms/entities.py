@@ -42,6 +42,26 @@ def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widge
 	return field_dict
 
 
+# HACK until http://code.djangoproject.com/ticket/14082 is resolved.
+_old = ModelFormMetaclass.__new__
+def _new(cls, name, bases, attrs):
+	if cls == ModelFormMetaclass:
+		m = attrs.get('__metaclass__', None)
+		if m is None:
+			parents = [b for b in bases if issubclass(b, ModelForm)]
+			for c in parents:
+				if c.__metaclass__ != ModelFormMetaclass:
+					m = c.__metaclass__
+					break
+	
+		if m is not None:
+			return m(name, bases, attrs)
+	
+	return _old(cls, name, bases, attrs)
+ModelFormMetaclass.__new__ = staticmethod(_new)
+# END HACK
+
+
 class EntityFormMetaclass(ModelFormMetaclass):
 	def __new__(cls, name, bases, attrs):
 		try:
@@ -55,47 +75,20 @@ class EntityFormMetaclass(ModelFormMetaclass):
 			# Then there's no business trying to use proxy fields.
 			return sup.__new__(cls, name, bases, attrs)
 		
-		# Preemptively make a meta so we can screen out any proxy fields.
-		# After http://code.djangoproject.com/ticket/14082 has been resolved,
-		# perhaps switch to setting proxy fields as "declared"?
-		_opts = ModelFormOptions(attrs.get('Meta', None))
-		
-		# Make another copy of opts to spoof the proxy fields not being there.
+		# Fake a declaration of all proxy fields so they'll be handled correctly.
 		opts = ModelFormOptions(attrs.get('Meta', None))
+		
 		if opts.model:
 			formfield_callback = attrs.get('formfield_callback', None)
 			proxy_fields = proxy_fields_for_entity_model(opts.model, opts.fields, opts.exclude, opts.widgets, formfield_callback)
 		else:
 			proxy_fields = {}
 		
-		# Screen out all proxy fields from the meta
-		opts.fields = list(opts.fields or [])
-		opts.exclude = list(opts.exclude or [])
+		new_attrs = proxy_fields.copy()
+		new_attrs.update(attrs)
 		
-		for field in proxy_fields.keys():
-			try:
-				opts.fields.remove(field)
-			except ValueError:
-				pass
-			try:
-				opts.exclude.remove(field)
-			except ValueError:
-				pass
-		opts.fields = opts.fields or None
-		opts.exclude = opts.exclude or None
-		
-		# Put in the new Meta.
-		attrs['Meta'] = opts
-		
-		new_class = sup.__new__(cls, name, bases, attrs)
-		
-		intersections = set(new_class.declared_fields.keys()) & set(proxy_fields.keys())
-		for key in intersections:
-			proxy_fields.pop(key)
-		
+		new_class = sup.__new__(cls, name, bases, new_attrs)
 		new_class.proxy_fields = proxy_fields
-		new_class._meta = _opts
-		new_class.base_fields.update(proxy_fields)
 		return new_class
 
 

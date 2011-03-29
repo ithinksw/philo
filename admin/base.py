@@ -133,15 +133,6 @@ class EntityAdmin(admin.ModelAdmin):
 		#	kwargs['widget'] = widgets.FilteredSelectMultiple(db_field.verbose_name, (db_field.name in self.filter_vertical))
 		
 		return db_field.formfield(**kwargs)
-	
-	def get_form(self, request, obj=None, **kwargs):
-		"""
-		Ensures that the form's proxy fields are included in its base fields.
-		This will not be required after http://code.djangoproject.com/ticket/14082 has been resolved
-		"""
-		form = super(EntityAdmin, self).get_form(request, obj, **kwargs)
-		form.base_fields.update(form.proxy_fields)
-		return form
 
 
 class TreeAdmin(MPTTModelAdmin):

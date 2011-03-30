@@ -32,9 +32,12 @@ class Migration(SchemaMigration):
             ('owner', self.gf('django.db.models.fields.related.ForeignKey')(related_name='owned_events', to=orm['auth.User'])),
             ('created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
             ('last_modified', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
-            ('uuid', self.gf('django.db.models.fields.TextField')()),
+            ('site', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sites.Site'])),
         ))
         db.send_create_signal('julian', ['Event'])
+
+        # Adding unique constraint on 'Event', fields ['site', 'created']
+        db.create_unique('julian_event', ['site_id', 'created'])
 
         # Adding M2M table for field tags on 'Event'
         db.create_table('julian_event_tags', (
@@ -97,6 +100,9 @@ class Migration(SchemaMigration):
         
         # Removing unique constraint on 'Calendar', fields ['name', 'site', 'language']
         db.delete_unique('julian_calendar', ['name', 'site_id', 'language'])
+
+        # Removing unique constraint on 'Event', fields ['site', 'created']
+        db.delete_unique('julian_event', ['site_id', 'created'])
 
         # Deleting model 'Location'
         db.delete_table('julian_location')
@@ -189,7 +195,7 @@ class Migration(SchemaMigration):
             'timespan_page': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'calendar_timespan_related'", 'null': 'True', 'to': "orm['philo.Page']"})
         },
         'julian.event': {
-            'Meta': {'object_name': 'Event'},
+            'Meta': {'unique_together': "(('site', 'created'),)", 'object_name': 'Event'},
             'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'description': ('philo.models.fields.TemplateField', [], {}),
             'end_date': ('django.db.models.fields.DateField', [], {}),
@@ -201,11 +207,11 @@ class Migration(SchemaMigration):
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'owned_events'", 'to': "orm['auth.User']"}),
             'parent_event': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['julian.Event']", 'null': 'True', 'blank': 'True'}),
+            'site': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['sites.Site']"}),
             'slug': ('django.db.models.fields.SlugField', [], {'max_length': '255', 'db_index': 'True'}),
             'start_date': ('django.db.models.fields.DateField', [], {}),
             'start_time': ('django.db.models.fields.TimeField', [], {'null': 'True', 'blank': 'True'}),
-            'tags': ('django.db.models.fields.related.ManyToManyField', [], {'blank': 'True', 'related_name': "'events'", 'null': 'True', 'symmetrical': 'False', 'to': "orm['philo.Tag']"}),
-            'uuid': ('django.db.models.fields.TextField', [], {})
+            'tags': ('django.db.models.fields.related.ManyToManyField', [], {'blank': 'True', 'related_name': "'events'", 'null': 'True', 'symmetrical': 'False', 'to': "orm['philo.Tag']"})
         },
         'julian.location': {
             'Meta': {'object_name': 'Location'},

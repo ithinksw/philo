@@ -41,13 +41,6 @@ ITEM_ICAL_MAP = {
 
 
 class ICalendarFeed(SyndicationFeed):
-	#def __init__(self, title, link, description, language=None, author_email=None,
-	#		author_name=None, author_link=None, subtitle=None, categories=None,
-	#		feed_url=None, feed_copyright=None, feed_guid=None, ttl=None, **kwargs):
-	#	super(ICalendarFeed, self).__init__(title, link, description, language,
-	#		author_email, author_name, author_link, subtitle, categories,
-	#		feed_url, feed_copyright, feed_guid, ttl, **kwargs)
-	#	
 	mime_type = 'text/calendar'
 	
 	def add_item(self, *args, **kwargs):

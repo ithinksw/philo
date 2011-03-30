@@ -19,7 +19,7 @@ class EventAdmin(EntityAdmin):
 			'fields': (('start_date', 'start_time'), ('end_date', 'end_time'),),
 		}),
 		('Advanced', {
-			'fields': ('parent_event', 'uuid',),
+			'fields': ('parent_event', 'site',),
 			'classes': COLLAPSE_CLASSES
 		})
 	)

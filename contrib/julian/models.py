@@ -121,12 +121,20 @@ class Event(Entity, TimedModel):
 	
 	created = models.DateTimeField(auto_now_add=True)
 	last_modified = models.DateTimeField(auto_now=True)
-	uuid = models.TextField() # Format?
+	
+	site = models.ForeignKey(Site, default=DEFAULT_SITE)
+	
+	@property
+	def uuid(self):
+		return "%s@%s" % (self.created.isoformat(), getattr(self.site, 'domain', 'None'))
 	
 	objects = EventManager()
 	
 	def __unicode__(self):
 		return self.name
+	
+	class Meta:
+		unique_together = ('site', 'created')
 
 
 class Calendar(Entity):
@@ -140,6 +148,11 @@ class Calendar(Entity):
 	
 	def __unicode__(self):
 		return self.name
+	
+	@property
+	def fpi(self):
+		# See http://xml.coverpages.org/tauber-fpi.html or ISO 9070:1991 for format information.
+		return "-//%s//%s//%s" % (self.site.name, self.name, self.language.split('-')[0].upper())
 	
 	class Meta:
 		unique_together = ('name', 'site', 'language')
@@ -398,9 +411,7 @@ class CalendarView(FeedView):
 		return ""
 	
 	def feed_guid(self, obj):
-		# Is this correct? Should I have a different id for different subfeeds?
-		# See http://xml.coverpages.org/tauber-fpi.html for format.
-		return "-//%s//%s %s//%s" % (obj.site.name.upper(), self.feed_type.upper(), obj.name.upper(), obj.language.upper())
+		return obj.fpi
 	
 	def description(self, obj):
 		return obj.description

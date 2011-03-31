@@ -167,6 +167,4 @@ def navigation_host(node, key):
 	try:
 		return Navigation.objects.filter(node__in=node.get_ancestors(include_self=True), key=key).order_by('-node__level')[0].node
 	except:
-		if settings.TEMPLATE_DEBUG:
-			raise
 		return node

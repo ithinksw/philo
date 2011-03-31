@@ -7,6 +7,7 @@ from datetime import date
 from django.conf import settings
 from django.utils.http import int_to_base36, base36_to_int
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from hashlib import sha1
 
 
 REGISTRATION_TIMEOUT_DAYS = getattr(settings, 'WALDO_REGISTRATION_TIMEOUT_DAYS', 1)
@@ -52,8 +53,7 @@ class RegistrationTokenGenerator(PasswordResetTokenGenerator):
 		# By hashing on the internal state of the user and using state that is
 		# sure to change, we produce a hash that will be invalid as soon as it
 		# is used.
-		from django.utils.hashcompat import sha_constructor
-		hash = sha_constructor(settings.SECRET_KEY + unicode(user.id) + unicode(user.is_active) + user.last_login.strftime('%Y-%m-%d %H:%M:%S') + unicode(timestamp)).hexdigest()[::2]
+		hash = sha1(settings.SECRET_KEY + unicode(user.id) + unicode(user.is_active) + user.last_login.strftime('%Y-%m-%d %H:%M:%S') + unicode(timestamp)).hexdigest()[::2]
 		return '%s-%s' % (ts_b36, hash)
 
 
@@ -98,8 +98,7 @@ class EmailTokenGenerator(PasswordResetTokenGenerator):
 	def _make_token_with_timestamp(self, user, email, timestamp):
 		ts_b36 = int_to_base36(timestamp)
 		
-		from django.utils.hashcompat import sha_constructor
-		hash = sha_constructor(settings.SECRET_KEY + unicode(user.id) + user.email + email + unicode(timestamp)).hexdigest()[::2]
+		hash = sha1(settings.SECRET_KEY + unicode(user.id) + user.email + email + unicode(timestamp)).hexdigest()[::2]
 		return '%s-%s' % (ts_b36, hash)
 
 

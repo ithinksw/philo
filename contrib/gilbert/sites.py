@@ -225,6 +225,7 @@ class GilbertSite(object):
 		
 		return render_to_response('gilbert/icons.css', {
 			'icon_names': set(icon_names),
+			'STATIC_URL': settings.STATIC_URL
 		}, mimetype='text/css')
 	
 	def router(self, request, app_label=None, extra_context=None):

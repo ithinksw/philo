@@ -1,31 +1,26 @@
+from django.conf import settings
+from django.contrib.auth import authenticate, login
+from django.core.context_processors import csrf
 from django.conf.urls.defaults import url, patterns, include
 from django.core.urlresolvers import reverse
+from django.db.models.base import ModelBase
+from django.forms.models import model_to_dict
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
-from django.conf import settings
+from django.template import RequestContext
 from django.utils import simplejson as json
 from django.utils.datastructures import SortedDict
-
-from django.db.models.base import ModelBase
-from philo.utils import fattr
-from .exceptions import AlreadyRegistered, NotRegistered
-from django.forms.models import model_to_dict
-import sys
-from inspect import getargspec
 from django.views.decorators.cache import never_cache
+from philo.utils import fattr
 from . import __version__ as gilbert_version
-import staticmedia
-import os
-import datetime
+from .exceptions import AlreadyRegistered, NotRegistered
 from .extdirect import ExtAction, ExtRouter
-
-from functools import partial
-from django.http import HttpResponse, HttpResponseRedirect
-from django.template import RequestContext
-from django.core.context_processors import csrf
-from django.utils.functional import update_wrapper
-from django.contrib.auth import authenticate, login
-from .plugins.models import Models, ModelAdmin
 from .plugins.auth import Auth
+from .plugins.models import Models, ModelAdmin
+from inspect import getargspec
+from functools import partial, update_wrapper
+import sys, os, datetime
+
 
 
 __all__ = ('GilbertSite', 'site')

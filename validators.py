@@ -3,6 +3,7 @@ from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from django.template import Template, Parser, Lexer, TOKEN_BLOCK, TOKEN_VAR, TemplateSyntaxError
 from django.utils import simplejson as json
+from django.utils.html import escape, mark_safe
 import re
 from philo.utils import LOADED_TEMPLATE_ATTR
 
@@ -116,6 +117,16 @@ class TemplateValidationParser(Parser):
 		raise ValidationError('Tag "%s" is not permitted here.' % command)
 
 
+def linebreak_iter(template_source):
+	# Cribbed from django/views/debug.py
+	yield 0
+	p = template_source.find('\n')
+	while p >= 0:
+		yield p+1
+		p = template_source.find('\n', p+1)
+	yield len(template_source) + 1
+
+
 class TemplateValidator(object): 
 	def __init__(self, allow=None, disallow=None, secure=True):
 		self.allow = allow
@@ -128,6 +139,14 @@ class TemplateValidator(object):
 		except ValidationError:
 			raise
 		except Exception, e:
+			if hasattr(e, 'source') and isinstance(e, TemplateSyntaxError):
+				origin, (start, end) = e.source
+				template_source = origin.reload()
+				upto = 0
+				for num, next in enumerate(linebreak_iter(template_source)):
+					if start >= upto and end <= next:
+						raise ValidationError(mark_safe("Template code invalid: \"%s\" (%s:%d).<br />%s" % (escape(template_source[start:end]), origin.loadname, num, e)))
+					upto = next
 			raise ValidationError("Template code invalid. Error was: %s: %s" % (e.__class__.__name__, e))
 	
 	def validate_template(self, template_string):

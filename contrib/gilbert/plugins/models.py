@@ -10,7 +10,7 @@ from django.utils import simplejson as json
 from django.utils.encoding import smart_unicode
 from .base import Plugin
 from ..extdirect import ext_action, ext_method
-import operator, staticmedia
+import operator
 
 
 @ext_action(name='models')
@@ -24,8 +24,8 @@ class Models(Plugin):
 	@property
 	def index_js_urls(self):
 		return super(Models, self).index_js_urls + [
-			staticmedia.url('gilbert/extjs/examples/ux/SearchField.js'),
-			staticmedia.url('gilbert/plugins/models.js'),
+			settings.STATIC_URL + 'gilbert/extjs/examples/ux/SearchField.js',
+			settings.STATIC_URL + 'gilbert/plugins/models.js',
 		]
 	
 	@property

@@ -1,9 +1,8 @@
 {% extends 'gilbert/base.html' %}
-{% load staticmedia %}
 
 {% block css %}{{ block.super }}
-	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/extjs/examples/ux/fileuploadfield/css/fileuploadfield.css' %}" />
-	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/superboxselect/superboxselect.css' %}" />
+	<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}gilbert/extjs/examples/ux/fileuploadfield/css/fileuploadfield.css" />
+	<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}gilbert/superboxselect/superboxselect.css" />
 	<link rel="stylesheet" type="text/css" href="{% url gilbert:icons %}" />
 	
 	{% for router in gilbert.model_routers.values %}{% for admin in router.models.values %}{% for css_url in admin.index_css_urls %}
@@ -16,18 +15,18 @@
 {% endblock %}
 	
 {% block js %}{{ block.super }}
-	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/examples/ux/FieldLabeler.js' %}"></script>
-	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/examples/ux/fileuploadfield/FileUploadField.js' %}"></script>
-	<script type="text/javascript" src="{% mediaurl 'gilbert/superboxselect/SuperBoxSelect.js' %}"></script>
-	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/examples/ux/Reorderer.js' %}"></script>
-	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/examples/ux/ToolbarReorderer.js' %}"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/extjs/examples/ux/FieldLabeler.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/extjs/examples/ux/fileuploadfield/FileUploadField.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/superboxselect/SuperBoxSelect.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/extjs/examples/ux/Reorderer.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/extjs/examples/ux/ToolbarReorderer.js"></script>
 	
-	<script type="text/javascript" src="{% mediaurl 'gilbert/lib/app.js' %}"></script>
-	<script type="text/javascript" src="{% mediaurl 'gilbert/lib/models.js' %}"></script>
-	<script type="text/javascript" src="{% mediaurl 'gilbert/lib/plugins.js' %}"></script>
-	<script type="text/javascript" src="{% mediaurl 'gilbert/lib/ui/forms.js' %}"></script>
-	<script type="text/javascript" src="{% mediaurl 'gilbert/lib/ui/windows.js' %}"></script>
-	<script type="text/javascript" src="{% mediaurl 'gilbert/gilbert.js' %}"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/lib/app.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/lib/models.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/lib/plugins.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/lib/ui/forms.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/lib/ui/windows.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/gilbert.js"></script>
 	
 	<script type="text/javascript" src="{% url gilbert:api %}"></script>
 	

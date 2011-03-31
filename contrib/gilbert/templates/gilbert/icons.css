@@ -1,6 +1,5 @@
-{% load staticmedia %}
 {% for icon_name in icon_names %}
 .icon-{{ icon_name }} {
-	background: url({% mediaurl 'gilbert/fugue-icons/icons-shadowless' %}/{{ icon_name }}.png) 0 no-repeat !important;
+	background: url({{ STATIC_URL }}gilbert/fugue-icons/icons-shadowless/{{ icon_name }}.png) 0 no-repeat !important;
 }
 {% endfor %}

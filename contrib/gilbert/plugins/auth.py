@@ -1,6 +1,6 @@
+from django.conf import settings
 from django.contrib.auth import logout
 from django.contrib.auth.forms import PasswordChangeForm
-import staticmedia
 from .base import Plugin
 from ..extdirect import ext_action, ext_method
 from ..models import UserPreferences
@@ -11,7 +11,7 @@ class Auth(Plugin):
 	@property
 	def index_js_urls(self):
 		return super(Auth, self).index_js_urls + [
-			staticmedia.url('gilbert/plugins/auth.js'),
+			settings.STATIC_URL + 'gilbert/plugins/auth.js',
 		]
 	
 	@property

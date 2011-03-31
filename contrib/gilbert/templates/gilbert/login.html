@@ -1,21 +1,20 @@
 {% extends 'gilbert/base.html' %}
-{% load staticmedia %}
 
 {% block css %}{{ block.super }}
-	<link rel="stylesheet" type="text/css" href="{% mediaurl 'gilbert/extjs/examples/ux/statusbar/css/statusbar.css' %}" />
+	<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}gilbert/extjs/examples/ux/statusbar/css/statusbar.css" />
 	<style type="text/css">
 		.icon-door-open-in {
-			background: url({% mediaurl 'gilbert/fugue-icons/icons-shadowless' %}/door-open-in.png) no-repeat !important;
+			background: url({{ STATIC_URL }}gilbert/fugue-icons/icons-shadowless/door-open-in.png) no-repeat !important;
 		}
 		.x-statusbar .x-status-error {
 			cursor: help;
-			background-image: url({% mediaurl 'gilbert/fugue-icons/icons-shadowless' %}/exclamation-red.png) !important;
+			background-image: url({{ STATIC_URL }}gilbert/fugue-icons/icons-shadowless/exclamation-red.png) !important;
 		}
 	</style>
 {% endblock %}
 
 {% block js %}{{ block.super }}
-	<script type="text/javascript" src="{% mediaurl 'gilbert/extjs/examples/ux/statusbar/StatusBar.js' %}"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/extjs/examples/ux/statusbar/StatusBar.js"></script>
 	<script type="text/javascript" charset="utf-8">
 		Ext.onReady(function () {
 			

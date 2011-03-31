@@ -1,13 +1,13 @@
-import sys
-import datetime
+from django.db.models import Q
+from django.http import HttpResponse
+from django.utils import simplejson as json
+from django.utils.encoding import smart_str
+from django.views.debug import ExceptionReporter
 from inspect import isclass, ismethod, isfunction, getmembers, getargspec
 from traceback import format_tb
 from abc import ABCMeta, abstractproperty
 from collections import Callable, Sized, Mapping
-from django.utils import simplejson as json
-from django.views.debug import ExceptionReporter
-from django.http import HttpResponse
-from django.db.models import Q
+import sys, datetime
 
 
 # __all__ = ('ext_action', 'ext_method', 'is_ext_action', 'is_ext_method', 'ExtAction', 'ExtMethod')
@@ -225,7 +225,7 @@ class ExtMethod(Callable, Sized):
 		
 		keywords = {}
 		if self.accepts_keywords:
-			keywords = args.pop()
+			keywords = dict([(smart_str(k, 'ascii'), v) for k,v in args.pop().items()])
 		
 		varargs = []
 		if self.accepts_varargs:

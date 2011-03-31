@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.db.models.fields.related import ManyToOneRel
 from django.db.models.fields.files import FieldFile, ImageFieldFile, FileField
 from django.forms.models import ModelForm, modelform_factory
+from django.template.defaultfilters import capfirst
 from django.utils import simplejson as json
 from django.utils.encoding import smart_unicode
 from .base import Plugin
@@ -126,7 +127,7 @@ class ModelAdmin(Plugin):
 				'editable': False,
 			}
 			header, attr = label_for_field(field_name, self.model, model_admin=self, return_attr=True)
-			column['header'] = header
+			column['header'] = capfirst(header)
 			if (field_name in self.sortable_fields) or (getattr(attr, 'admin_order_field', None) in self.sortable_fields):
 				column['sortable'] = True
 			if field_name in self.data_editable_columns:
@@ -170,17 +171,20 @@ class ModelAdmin(Plugin):
 			raise PermissionDenied
 		return self.model._default_manager.all()
 	
+	def queryset(self, request):
+		return self.model._default_manager.get_query_set()
+	
 	@ext_method
 	def filter(self, request, **kwargs):
 		if not self.has_read_permission(request):
 			raise PermissionDenied
-		return self.model._default_manager.all().filter(**kwargs)
+		return self.queryset(request).filter(**kwargs)
 	
 	@ext_method
 	def get(self, request, **kwargs):
 		if not self.has_read_permission(request):
 			raise PermissionDenied
-		return self.model._default_manager.all().values().get(**kwargs)
+		return self.queryset(request).values().get(**kwargs)
 	
 	@property
 	def form_class(self):

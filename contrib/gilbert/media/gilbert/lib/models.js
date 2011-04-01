@@ -44,9 +44,10 @@ Gilbert.lib.models.Model = Ext.extend(Object, {
 
 Gilbert.lib.models.ModelInstance = Ext.extend(Object, {
 	
-	constructor: function (model, pk) {
+	constructor: function (model, pk, __unicode__) {
 		this.model = model;
 		this.pk = pk;
+		this.__unicode__ = __unicode__
 	},
 	
 });
@@ -56,7 +57,7 @@ Ext.data.Types.GILBERTMODELFOREIGNKEY = {
 	
 	convert: function (v, data) {
 		if (v) {
-			return new Gilbert.lib.models.ModelInstance(Gilbert.get_model(v.app_label, v.name), v.pk);
+			return new Gilbert.lib.models.ModelInstance(Gilbert.get_model(v.app_label, v.name), v.pk, v.__unicode__);
 		} else {
 			return null;
 		}

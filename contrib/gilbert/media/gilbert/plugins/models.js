@@ -262,6 +262,16 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 			contextmenu.showAt(e.xy);
 		});
 		
+		grid.on('rowdblclick', function(grid, rowIndex, e) {
+			var record = grid.getStore().getAt(rowIndex)
+			plugin.create_instance_window(model, record.id, function (win) {
+				win.on('saved', function () {
+					store.reload();
+				});
+				win.show();
+			});
+		});
+		
 		grid.getSelectionModel().on('selectionchange', function (selmodel) {
 			if (selmodel.hasSelection()) {
 				edit_action.setDisabled(false);
@@ -328,6 +338,8 @@ Gilbert.lib.plugins.models.Plugin = Ext.extend(Gilbert.lib.plugins.Plugin, {
 		application.on('model_registered', function (model) {
 			this.handle_new_model(model);
 		}, this);
+		
+		this.instance_windows = {}
 	},
 	
 	handle_new_model: function (model) {
@@ -387,6 +399,11 @@ Gilbert.lib.plugins.models.Plugin = Ext.extend(Gilbert.lib.plugins.Plugin, {
 	},
 	
 	create_instance_window: function (model, pk, callback, config, cls) {
+		var win = this.instance_windows[[model.app_label, model.name, pk]];
+		if (win != undefined){
+			win.show()
+			return
+		}
 		var pk = pk;
 		var callback = callback;
 		var application = this.application;
@@ -394,7 +411,7 @@ Gilbert.lib.plugins.models.Plugin = Ext.extend(Gilbert.lib.plugins.Plugin, {
 		
 		var form_callback = function (form) {
 			var oldform = form;
-			var win = application.create_window({
+			var win = outer.instance_windows[[model.app_label, model.name, pk]] = application.create_window({
 				layout: 'fit',
 				title: form.title,
 				iconCls: form.iconCls,
@@ -458,6 +475,9 @@ Gilbert.lib.plugins.models.Plugin = Ext.extend(Gilbert.lib.plugins.Plugin, {
 					},
 				],
 			});
+			win.on('close', function(){
+				delete outer.instance_windows[[model.app_label, model.name, pk]];
+			});
 			win.addEvents({
 				'saved': true,
 			});
@@ -479,5 +499,5 @@ Gilbert.lib.plugins.models.Plugin = Ext.extend(Gilbert.lib.plugins.Plugin, {
 
 
 Gilbert.on('ready', function (application) {
-	application.register_plugin('auth', new Gilbert.lib.plugins.models.Plugin());
+	application.register_plugin('models', new Gilbert.lib.plugins.models.Plugin());
 });

@@ -65,7 +65,7 @@ class ModelAdmin(Plugin):
 	def data_serialize_model_instance(cls, obj):
 		return {
 			'app_label': obj._meta.app_label,
-			'name': obj._meta.object_name,
+			'name': obj._meta.module_name,
 			'pk': obj.pk,
 			'__unicode__': unicode(obj),
 		}

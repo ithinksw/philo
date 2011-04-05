@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.admin.util import lookup_field, label_for_field, display_for_field, NestedObjects
 from django.core.exceptions import PermissionDenied
+from django.db import router
 from django.db.models import Q
 from django.db.models.fields.related import ManyToOneRel
 from django.db.models.fields.files import FieldFile, ImageFieldFile, FileField
@@ -378,9 +379,8 @@ class ModelAdmin(Plugin):
 			pks = [pks]
 		objs = [self.model._default_manager.all().get(pk=pk) for pk in pks]
 		
-		collector = NestedObjects()
-		
-		for obj in objs:
-			obj._collect_sub_objects(collector)
+		using = router.db_for_write(self.model)
+		collector = NestedObjects(using=using)
+		collector.collect(objs)
 		
 		return collector.nested(self.data_serialize_model_instance)

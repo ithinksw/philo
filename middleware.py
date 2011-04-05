@@ -24,16 +24,18 @@ class LazyNode(object):
 				node, subpath = Node.objects.get_with_path(path, root=getattr(current_site, 'root_node', None), absolute_result=False)
 			except Node.DoesNotExist:
 				node = None
-			
-			if node:
+			else:
 				if subpath is None:
 					subpath = ""
 				subpath = "/" + subpath
 				
-				if trailing_slash and subpath[-1] != "/":
-					subpath += "/"
-				
-				node.subpath = subpath
+				if not node.handles_subpath(subpath):
+					node = None
+				else:
+					if trailing_slash and subpath[-1] != "/":
+						subpath += "/"
+					
+					node.subpath = subpath
 			
 			request._found_node = node
 		
@@ -46,7 +48,10 @@ class RequestNodeMiddleware(object):
 		request.__class__.node = LazyNode()
 	
 	def process_view(self, request, view_func, view_args, view_kwargs):
-		request._cached_node_path = view_kwargs.get('path', '/')
+		try:
+			request._cached_node_path = view_kwargs['path']
+		except KeyError:
+			pass
 	
 	def process_exception(self, request, exception):
 		if settings.DEBUG or not hasattr(request, 'node') or not request.node:

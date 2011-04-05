@@ -1,4 +1,4 @@
-from django.forms.models import ModelFormMetaclass, ModelForm
+from django.forms.models import ModelFormMetaclass, ModelForm, ModelFormOptions
 from django.utils.datastructures import SortedDict
 from philo.utils import fattr
 
@@ -6,7 +6,7 @@ from philo.utils import fattr
 __all__ = ('EntityForm',)
 
 
-def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widgets=None, formfield_callback=lambda f, **kwargs: f.formfield(**kwargs)):
+def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widgets=None, formfield_callback=None):
 	field_list = []
 	ignored = []
 	opts = entity_model._entity_meta
@@ -21,7 +21,14 @@ def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widge
 			kwargs = {'widget': widgets[f.name]}
 		else:
 			kwargs = {}
-		formfield = formfield_callback(f, **kwargs)
+		
+		if formfield_callback is None:
+			formfield = f.formfield(**kwargs)
+		elif not callable(formfield_callback):
+			raise TypeError('formfield_callback must be a function or callable')
+		else:
+			formfield = formfield_callback(f, **kwargs)
+		
 		if formfield:
 			field_list.append((f.name, formfield))
 		else:
@@ -35,31 +42,59 @@ def proxy_fields_for_entity_model(entity_model, fields=None, exclude=None, widge
 	return field_dict
 
 
-# BEGIN HACK - This will not be required after http://code.djangoproject.com/ticket/14082 has been resolved
-
-class EntityFormBase(ModelForm):
-	pass
-
-_old_metaclass_new = ModelFormMetaclass.__new__
-
-def _new_metaclass_new(cls, name, bases, attrs):
-	formfield_callback = attrs.get('formfield_callback', lambda f, **kwargs: f.formfield(**kwargs))
-	new_class = _old_metaclass_new(cls, name, bases, attrs)
-	opts = new_class._meta
-	if issubclass(new_class, EntityFormBase) and opts.model:
-		# "override" proxy fields with declared fields by excluding them if there's a name conflict.
-		exclude = (list(opts.exclude or []) + new_class.declared_fields.keys()) or None
-		proxy_fields = proxy_fields_for_entity_model(opts.model, opts.fields, exclude, opts.widgets, formfield_callback) # don't pass in formfield_callback
-		new_class.proxy_fields = proxy_fields
-		new_class.base_fields.update(proxy_fields)
-	return new_class
-
-ModelFormMetaclass.__new__ = staticmethod(_new_metaclass_new)
-
+# HACK until http://code.djangoproject.com/ticket/14082 is resolved.
+_old = ModelFormMetaclass.__new__
+def _new(cls, name, bases, attrs):
+	if cls == ModelFormMetaclass:
+		m = attrs.get('__metaclass__', None)
+		if m is None:
+			parents = [b for b in bases if issubclass(b, ModelForm)]
+			for c in parents:
+				if c.__metaclass__ != ModelFormMetaclass:
+					m = c.__metaclass__
+					break
+	
+		if m is not None:
+			return m(name, bases, attrs)
+	
+	return _old(cls, name, bases, attrs)
+ModelFormMetaclass.__new__ = staticmethod(_new)
 # END HACK
 
 
-class EntityForm(EntityFormBase): # Would inherit from ModelForm directly if it weren't for the above HACK
+class EntityFormMetaclass(ModelFormMetaclass):
+	def __new__(cls, name, bases, attrs):
+		try:
+			parents = [b for b in bases if issubclass(b, EntityForm)]
+		except NameError:
+			# We are defining EntityForm itself
+			parents = None
+		sup = super(EntityFormMetaclass, cls)
+		
+		if not parents:
+			# Then there's no business trying to use proxy fields.
+			return sup.__new__(cls, name, bases, attrs)
+		
+		# Fake a declaration of all proxy fields so they'll be handled correctly.
+		opts = ModelFormOptions(attrs.get('Meta', None))
+		
+		if opts.model:
+			formfield_callback = attrs.get('formfield_callback', None)
+			proxy_fields = proxy_fields_for_entity_model(opts.model, opts.fields, opts.exclude, opts.widgets, formfield_callback)
+		else:
+			proxy_fields = {}
+		
+		new_attrs = proxy_fields.copy()
+		new_attrs.update(attrs)
+		
+		new_class = sup.__new__(cls, name, bases, new_attrs)
+		new_class.proxy_fields = proxy_fields
+		return new_class
+
+
+class EntityForm(ModelForm):
+	__metaclass__ = EntityFormMetaclass
+	
 	def __init__(self, *args, **kwargs):
 		initial = kwargs.pop('initial', None)
 		instance = kwargs.get('instance', None)

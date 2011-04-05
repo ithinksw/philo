@@ -18,31 +18,30 @@ from philo.signals import page_about_to_render_to_string, page_finished_renderin
 
 
 class LazyContainerFinder(object):
-	def __init__(self, nodes):
+	def __init__(self, nodes, extends=False):
 		self.nodes = nodes
 		self.initialized = False
 		self.contentlet_specs = set()
 		self.contentreference_specs = SortedDict()
 		self.blocks = {}
 		self.block_super = False
+		self.extends = extends
 	
 	def process(self, nodelist):
 		for node in nodelist:
+			if self.extends:
+				if isinstance(node, BlockNode):
+					self.blocks[node.name] = block = LazyContainerFinder(node.nodelist)
+					block.initialize()
+					self.blocks.update(block.blocks)
+				continue
+			
 			if isinstance(node, ContainerNode):
 				if not node.references:
 					self.contentlet_specs.add(node.name)
 				else:
 					if node.name not in self.contentreference_specs.keys():
 						self.contentreference_specs[node.name] = node.references
-				continue
-			
-			if isinstance(node, BlockNode):
-				self.blocks[node.name] = block = LazyContainerFinder(node.nodelist)
-				block.initialize()
-				self.blocks.update(block.blocks)
-				continue
-			
-			if isinstance(node, ExtendsNode):
 				continue
 			
 			if isinstance(node, VariableNode):
@@ -97,7 +96,7 @@ class Template(TreeModel):
 			
 			if extends:
 				if extends.nodelist:
-					nodelists.append(LazyContainerFinder(extends.nodelist))
+					nodelists.append(LazyContainerFinder(extends.nodelist, extends=True))
 				loaded_template = getattr(extends, LOADED_TEMPLATE_ATTR)
 				nodelists.extend(build_extension_tree(loaded_template.nodelist))
 			else:
@@ -131,7 +130,7 @@ class Template(TreeModel):
 		return contentlet_specs, contentreference_specs
 	
 	def __unicode__(self):
-		return self.get_path(pathsep=u' › ', field='name')
+		return self.name
 	
 	class Meta:
 		app_label = 'philo'

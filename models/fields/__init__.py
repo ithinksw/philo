@@ -51,8 +51,16 @@ class JSONField(models.TextField):
 		models.signals.pre_init.connect(self.fix_init_kwarg, sender=cls)
 	
 	def fix_init_kwarg(self, sender, args, kwargs, **signal_kwargs):
+		# Anything passed in as self.name is assumed to come from a serializer and
+		# will be treated as a json string.
 		if self.name in kwargs:
-			kwargs[self.attname] = json.dumps(kwargs.pop(self.name))
+			value = kwargs.pop(self.name)
+			
+			# Hack to handle the xml serializer's handling of "null"
+			if value is None:
+				value = 'null'
+			
+			kwargs[self.attname] = value
 	
 	def formfield(self, *args, **kwargs):
 		kwargs["form_class"] = JSONFormField

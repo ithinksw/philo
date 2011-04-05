@@ -28,7 +28,7 @@ def node_view(request, path=None, **kwargs):
 	subpath = request.node.subpath
 	
 	# Explicitly disallow trailing slashes if we are otherwise at a node's url.
-	if request.path and request.path != "/" and request.path[-1] == "/" and subpath == "/":
+	if request._cached_node_path != "/" and request._cached_node_path[-1] == "/" and subpath == "/":
 		return HttpResponseRedirect(node.get_absolute_url())
 	
 	if not node.handles_subpath(subpath):

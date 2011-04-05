@@ -55,6 +55,16 @@ Ext.override(Gilbert.lib.models.Model, {
 });
 
 
+Gilbert.lib.plugins.models.ui.ForeignKeyColumn = Ext.extend(Ext.grid.Column, {
+	renderer: function(v) {
+		return v.__unicode__
+	}
+})
+
+
+Ext.grid.Column.types['foreignkeycolumn'] = Gilbert.lib.plugins.models.ui.ForeignKeyColumn
+
+
 Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 	constructor: function (model, plugin, config) {
 		var model = this.model = model;

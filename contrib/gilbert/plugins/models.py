@@ -120,6 +120,7 @@ class ModelAdmin(Plugin):
 	@property
 	def data_columns_spec(self):
 		spec = []
+		
 		for field_name in self.data_columns:
 			column = {
 				'dataIndex': field_name,
@@ -132,6 +133,8 @@ class ModelAdmin(Plugin):
 				column['sortable'] = True
 			if field_name in self.data_editable_columns:
 				column['editable'] = True
+			if field_name in [field.name for field in self.model_meta.fields if isinstance(field.rel, ManyToOneRel)]:
+				column['xtype'] = 'foreignkeycolumn'
 			spec.append(column)
 		return spec
 	

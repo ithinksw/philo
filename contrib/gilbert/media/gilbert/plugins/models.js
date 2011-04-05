@@ -38,7 +38,7 @@ Ext.override(Gilbert.lib.models.Model, {
 				});
 			}
 			callback(new Gilbert.lib.ui.DjangoForm(Ext.applyIf(Ext.applyIf(config||{},{
-				title: 'Editing '+model.verbose_name+' ('+pk+')',
+				title: 'Editing '+model.verbose_name.capfirst()+' ('+pk+')',
 				header: false,
 				iconCls: 'icon-pencil',
 				baseCls: 'x-plain',
@@ -196,6 +196,15 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 						return new_consequences;
 					};
 					
+					var new_consequences = convert_consequences_array(consequences);
+					var nested_consequences = false;
+					for(var i=0;i<new_consequences.length;i++){
+						if (!new_consequences[i]['leaf']) {
+							nested_consequences = true;
+							break;
+						}
+					}
+					
 					var tree = this.tree = new Ext.tree.TreePanel({
 						loader: new Ext.tree.TreeLoader(),
 						enableDD: false,
@@ -207,7 +216,7 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 							'text': 'To be deleted',
 							'iconCls': 'icon-minus',
 							'leaf': false,
-							'children': convert_consequences_array(consequences),
+							'children': new_consequences,
 						},
 						useArrows: true,
 						rootVisible: false,
@@ -225,7 +234,7 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 							{
 								region: 'north',
 								xtype: 'panel',
-								html: 'Are you sure you want to delete these ' + model.verbose_name_plural + '?',
+								html: 'Are you sure you want to delete these ' + model.verbose_name_plural + '?' + (nested_consequences ? ' Nested objects will also be deleted.' : ''),
 								bodyStyle: 'padding: 15px;',
 							},
 							tree,
@@ -300,13 +309,13 @@ Gilbert.lib.plugins.models.ui.ModelPanel = Ext.extend(Ext.Panel, {
 					{ xtype: 'tbseparator' },
 					edit_action,
 					delete_action,
-					'->',
-					{
-						text: 'Advanced',
-						iconCls: 'icon-gear',
-						disabled: true,
-						menu: [],
-					},
+					//'->',
+					//{
+					//	text: 'Advanced',
+					//	iconCls: 'icon-gear',
+					//	disabled: true,
+					//	menu: [],
+					//},
 				],
 			}),
 			items: [grid],

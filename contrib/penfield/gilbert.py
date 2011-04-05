@@ -9,7 +9,7 @@ class BlogAdmin(ModelAdmin):
 
 class BlogEntryAdmin(ModelAdmin):
 	search_fields = ('title', 'content',)
-	data_columns = ('title', 'author', 'date',)
+	data_columns = ('title', 'author', 'blog', 'date',)
 
 
 site.register_model(Blog, BlogAdmin, icon_name='blog')

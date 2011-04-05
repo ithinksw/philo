@@ -361,7 +361,7 @@ else:
 		def parse_response(self, response, limit=None):
 			strainer = self.strainer
 			soup = BeautifulSoup(response, parseOnlyThese=strainer)
-			return self.parse_results(soup[:limit])
+			return self.parse_results(soup.findAll(recursive=False, limit=limit))
 		
 		def parse_results(self, results):
 			"""

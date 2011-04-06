@@ -31,54 +31,50 @@ class AttributeInline(generic.GenericTabularInline):
 		template = 'admin/philo/edit_inline/tabular_attribute.html'
 
 
-def hide_proxy_fields(cls, attname, proxy_field_set):
-	val_set = set(getattr(cls, attname))
-	if proxy_field_set & val_set:
-		cls._hidden_attributes[attname] = list(val_set)
-		setattr(cls, attname, list(val_set - proxy_field_set))
+# HACK to bypass model validation for proxy fields
+class SpoofedHiddenFields(object):
+	def __init__(self, proxy_fields, value):
+		self.value = value
+		self.spoofed = list(set(value) - set(proxy_fields))
+	
+	def __get__(self, instance, owner):
+		if instance is None:
+			return self.spoofed
+		return self.value
+
+
+class SpoofedAddedFields(SpoofedHiddenFields):
+	def __init__(self, proxy_fields, value):
+		self.value = value
+		self.spoofed = list(set(value) | set(proxy_fields))
+
+
+def hide_proxy_fields(cls, attname):
+	val = getattr(cls, attname, [])
+	proxy_fields = getattr(cls, 'proxy_fields')
+	if val:
+		setattr(cls, attname, SpoofedHiddenFields(proxy_fields, val))
+
+def add_proxy_fields(cls, attname):
+	val = getattr(cls, attname, [])
+	proxy_fields = getattr(cls, 'proxy_fields')
+	setattr(cls, attname, SpoofedAddedFields(proxy_fields, val))
 
 
 class EntityAdminMetaclass(admin.ModelAdmin.__metaclass__):
 	def __new__(cls, name, bases, attrs):
-		# HACK to bypass model validation for proxy fields by masking them as readonly fields
 		new_class = super(EntityAdminMetaclass, cls).__new__(cls, name, bases, attrs)
-		form = getattr(new_class, 'form', None)
-		if form:
-			opts = form._meta
-			if issubclass(form, EntityForm) and opts.model:
-				proxy_fields = proxy_fields_for_entity_model(opts.model).keys()
-				
-				# Store readonly fields iff they have been declared.
-				if 'readonly_fields' in attrs or not hasattr(new_class, '_real_readonly_fields'):
-					new_class._real_readonly_fields = new_class.readonly_fields
-				
-				readonly_fields = new_class.readonly_fields
-				new_class.readonly_fields = list(set(readonly_fields) | set(proxy_fields))
-				
-				# Additional HACKS to handle raw_id_fields and other attributes that the admin
-				# uses model._meta.get_field to validate.
-				new_class._hidden_attributes = {}
-				proxy_fields = set(proxy_fields)
-				hide_proxy_fields(new_class, 'raw_id_fields', proxy_fields)
-		#END HACK
+		hide_proxy_fields(new_class, 'raw_id_fields')
+		add_proxy_fields(new_class, 'readonly_fields')
 		return new_class
-
+# END HACK
 
 class EntityAdmin(admin.ModelAdmin):
 	__metaclass__ = EntityAdminMetaclass
 	form = EntityForm
 	inlines = [AttributeInline]
 	save_on_top = True
-	
-	def __init__(self, *args, **kwargs):
-		# HACK PART 2 restores the actual readonly fields etc. on __init__.
-		if hasattr(self, '_real_readonly_fields'):
-			self.readonly_fields = self.__class__._real_readonly_fields
-		if hasattr(self, '_hidden_attributes'):
-			for name, value in self._hidden_attributes.items():
-				setattr(self, name, value)
-		# END HACK
-		super(EntityAdmin, self).__init__(*args, **kwargs)
+	proxy_fields = []
 	
 	def formfield_for_dbfield(self, db_field, **kwargs):
 		"""

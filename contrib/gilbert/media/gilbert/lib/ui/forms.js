@@ -322,7 +322,7 @@ Gilbert.lib.ui.DateTimeField = Ext.extend(Ext.form.Field, {
 		// render DateField and TimeField
 		// create bounding table
 		var t;
-		if ('below' === this.timePosition || 'bellow' === this.timePosition) {
+		if ('below' === this.timePosition) {
 			t = Ext.DomHelper.append(ct, {
 				tag: 'table',
 				style: 'border-collapse:collapse',
@@ -582,7 +582,18 @@ Gilbert.lib.ui.DateTimeField = Ext.extend(Ext.form.Field, {
 	 */
 	,
 	isValid: function() {
-		return this.df.isValid() && this.tf.isValid();
+		var valid = true;
+		var msg = "Both fields must be supplied."
+		if (!(this.df.isValid() && this.tf.isValid())) valid = false;
+		if (Boolean(this.df.getValue()) != Boolean(this.tf.getValue())) {
+			valid = false;
+			if (!this.df.getValue()){
+				if (!(this.tf.hasFocus || this.df.hasFocus)) this.df.markInvalid(msg);
+			} else {
+				if (!(this.tf.hasFocus || this.df.hasFocus)) this.tf.markInvalid(msg);
+			};
+		};
+		return valid;
 	}
 	// eo function isValid
 	// }}}
@@ -838,9 +849,6 @@ Gilbert.lib.ui.DateTimeField = Ext.extend(Ext.form.Field, {
 		if (d) {
 			if (! (this.dateValue instanceof Date)) {
 				this.initDateValue();
-				if (!this.tf.getValue()) {
-					this.setTime(this.dateValue);
-				}
 			}
 			this.dateValue.setMonth(0);
 			// because of leap years
@@ -850,7 +858,6 @@ Gilbert.lib.ui.DateTimeField = Ext.extend(Ext.form.Field, {
 		}
 		else {
 			this.dateValue = '';
-			this.setTime('');
 		}
 	}
 	// eo function updateDate
@@ -868,7 +875,6 @@ Gilbert.lib.ui.DateTimeField = Ext.extend(Ext.form.Field, {
 		}
 		if (t && !this.df.getValue()) {
 			this.initDateValue();
-			this.setDate(this.dateValue);
 		}
 		if (this.dateValue instanceof Date) {
 			if (t) {
@@ -919,7 +925,18 @@ Gilbert.lib.ui.DateTimeField = Ext.extend(Ext.form.Field, {
 	 */
 	,
 	validate: function() {
-		return this.df.validate() && this.tf.validate();
+		var valid = true;
+		var msg = "Both fields must be supplied."
+		if (!(this.df.validate() && this.tf.validate())) valid = false;
+		if (Boolean(this.df.getValue()) != Boolean(this.tf.getValue())) {
+			valid = false;
+			if (!this.df.getValue()){
+				if (!(this.tf.hasFocus || this.df.hasFocus)) this.df.markInvalid(msg);
+			} else {
+				if (!(this.tf.hasFocus || this.df.hasFocus)) this.tf.markInvalid(msg);
+			};
+		};
+		return valid;
 	}
 	// eo function validate
 	// }}}

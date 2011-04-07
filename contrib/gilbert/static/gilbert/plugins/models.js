@@ -418,11 +418,13 @@ Gilbert.lib.plugins.models.Plugin = Ext.extend(Gilbert.lib.plugins.Plugin, {
 	},
 	
 	create_instance_window: function (model, pk, callback, config, cls) {
-		var win = this.instance_windows[[model.app_label, model.name, pk]];
-		if (win != undefined){
-			win.show()
-			return
-		}
+		if (pk != undefined) {
+			var win = this.instance_windows[[model.app_label, model.name, pk]];
+			if (win != undefined){
+				win.show();
+				return;
+			};
+		};
 		var pk = pk;
 		var callback = callback;
 		var application = this.application;
@@ -430,7 +432,7 @@ Gilbert.lib.plugins.models.Plugin = Ext.extend(Gilbert.lib.plugins.Plugin, {
 		
 		var form_callback = function (form) {
 			var oldform = form;
-			var win = outer.instance_windows[[model.app_label, model.name, pk]] = application.create_window({
+			var win = application.create_window({
 				layout: 'fit',
 				title: form.title,
 				iconCls: form.iconCls,
@@ -494,9 +496,12 @@ Gilbert.lib.plugins.models.Plugin = Ext.extend(Gilbert.lib.plugins.Plugin, {
 					},
 				],
 			});
-			win.on('close', function(){
-				delete outer.instance_windows[[model.app_label, model.name, pk]];
-			});
+			if (pk != undefined) {
+				outer.instance_windows[[model.app_label, model.name, pk]] = win
+				win.on('close', function(){
+					delete outer.instance_windows[[model.app_label, model.name, pk]];
+				});
+			}
 			win.addEvents({
 				'saved': true,
 			});

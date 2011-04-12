@@ -79,10 +79,10 @@ class TimedModel(models.Model):
 			raise ValidationError("A %s cannot end before it starts." % self.__class__.__name__)
 	
 	def get_start(self):
-		return self.start_date
+		return datetime.datetime.combine(self.start_date, self.start_time) if self.start_time else self.start_date
 	
 	def get_end(self):
-		return self.end_date
+		return datetime.datetime.combine(self.end_date, self.end_time) if self.end_time else self.end_date
 	
 	class Meta:
 		abstract = True

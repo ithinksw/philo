@@ -25,9 +25,10 @@ __all__ = (
 
 SEARCH_CACHE_KEY = 'philo_sobol_search_results'
 DEFAULT_RESULT_TEMPLATE_STRING = "{% if url %}<a href='{{ url }}'>{% endif %}{{ title }}{% if url %}</a>{% endif %}"
+DEFAULT_RESULT_TEMPLATE = Template(DEFAULT_RESULT_TEMPLATE_STRING)
 
 # Determines the timeout on the entire result cache.
-MAX_CACHE_TIMEOUT = 60*60*24*7
+MAX_CACHE_TIMEOUT = 60*24*7
 
 
 class RegistrationError(Exception):
@@ -94,7 +95,10 @@ class Result(object):
 		return self.search.get_result_title(self.result)
 	
 	def get_url(self):
-		return "?%s" % self.search.get_result_querydict(self.result).urlencode()
+		qd = self.search.get_result_querydict(self.result)
+		if qd is None:
+			return ""
+		return "?%s" % qd.urlencode()
 	
 	def get_template(self):
 		return self.search.get_result_template(self.result)
@@ -210,13 +214,16 @@ class BaseSearch(object):
 		raise NotImplementedError
 	
 	def get_result_querydict(self, result):
-		return make_tracking_querydict(self.search_arg, self.get_result_url(result))
+		url = self.get_result_url(result)
+		if url is None:
+			return None
+		return make_tracking_querydict(self.search_arg, url)
 	
 	def get_result_template(self, result):
 		if hasattr(self, 'result_template'):
 			return loader.get_template(self.result_template)
 		if not hasattr(self, '_result_template'):
-			self._result_template = Template(DEFAULT_RESULT_TEMPLATE_STRING)
+			self._result_template = DEFAULT_RESULT_TEMPLATE
 		return self._result_template
 	
 	def get_result_extra_context(self, result):
@@ -299,7 +306,7 @@ class GoogleSearch(JSONSearch):
 	query_format_str = "?v=1.0&q=%s"
 	# TODO: Change this template to reflect the app's actual name.
 	result_template = 'search/googlesearch.html'
-	timeout = 60
+	_cache_timeout = 60
 	
 	def parse_response(self, response, limit=None):
 		responseData = json.loads(response.read())['responseData']
@@ -379,5 +386,5 @@ else:
 		
 		def parse_response(self, response, limit=None):
 			strainer = self.strainer
-			soup = BeautifulStoneSoup(page, selfClosingTags=self._self_closing_tags, parseOnlyThese=strainer)
-			return self.parse_results(soup[:limit])
+			soup = BeautifulStoneSoup(response, selfClosingTags=self._self_closing_tags, parseOnlyThese=strainer)
+			return self.parse_results(soup.findAll(recursive=False, limit=limit))

@@ -42,8 +42,9 @@ class SearchRegistry(object):
 	def register(self, search, slug=None):
 		slug = slug or search.slug
 		if slug in self._registry:
-			if self._registry[slug] != search:
-				raise RegistrationError("A different search is already registered as `%s`")
+			registered = self._registry[slug]
+			if registered.__module__ != search.__module__:
+				raise RegistrationError("A different search is already registered as `%s`" % slug)
 		else:
 			self._registry[slug] = search
 	

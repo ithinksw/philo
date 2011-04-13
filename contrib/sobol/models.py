@@ -130,13 +130,13 @@ class Click(models.Model):
 class SearchView(MultiView):
 	results_page = models.ForeignKey(Page, related_name='search_results_related')
 	searches = SlugMultipleChoiceField(choices=registry.iterchoices())
-	enable_ajax_api = models.BooleanField("Enable AJAX API", default=True)
+	enable_ajax_api = models.BooleanField("Enable AJAX API", default=True, help_text="Search results will be available <i>only</i> by AJAX, not as template variables.")
 	placeholder_text = models.CharField(max_length=75, default="Search")
 	
 	search_form = SearchForm
 	
 	def __unicode__(self):
-		return u"%s (%s)" % (self.placeholder_text, u", ".join([display for slug, display in registry.iterchoices()]))
+		return u"%s (%s)" % (self.placeholder_text, u", ".join([display for slug, display in registry.iterchoices() if slug in self.searches]))
 	
 	def get_reverse_params(self, obj):
 		raise ViewCanNotProvideSubpath
@@ -198,7 +198,7 @@ class SearchView(MultiView):
 					})
 				else:
 					context.update({
-						'searches': [{'verbose_name': verbose_name, 'url': self.reverse('ajax_api_view', kwargs={'slug': slug}, node=request.node)} for slug, verbose_name in registry.iterchoices()]
+						'searches': [{'verbose_name': verbose_name, 'url': self.reverse('ajax_api_view', kwargs={'slug': slug}, node=request.node)} for slug, verbose_name in registry.iterchoices() if slug in self.searches]
 					})
 		else:
 			form = SearchForm()

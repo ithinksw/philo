@@ -175,7 +175,7 @@ class BaseSearch(object):
 					limit = self.result_limit
 					if limit is not None:
 						limit += 1
-					results = self.get_results(self.result_limit)
+					results = self.get_results(limit)
 				except:
 					if settings.DEBUG:
 						raise
@@ -251,9 +251,6 @@ class BaseSearch(object):
 
 class DatabaseSearch(BaseSearch):
 	model = None
-	
-	def has_more_results(self):
-		return self.get_queryset().count() > self.result_limit
 	
 	def search(self, limit=None):
 		if not hasattr(self, '_qs'):

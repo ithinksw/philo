@@ -1,0 +1,56 @@
+@import "reset",
+		"var",
+		"compass/css3/images",
+		"compass/css3/border-radius",
+		"compass/css3/box-shadow";
+		
+html{
+	background: $bgcolor;
+	height:100%;
+}
+
+body{
+	@include background(
+		image-url("bg.png"),
+		radial-gradient(rgba(0,0,0,0), rgba(0,0,0,.5) 800px, rgba(0,0,0,.9) 900px)
+	);
+	padding:1px;
+	margin:-1px;
+	min-height:100%;
+	font-family:Helvetica, Arial, sans-serif;
+	font-size:13px;
+	line-height:15px;
+}
+
+#container{
+	width: $containerwidth;
+	margin:40px auto;
+}
+
+#nameplate{
+	color:#FFF;
+	font-size:80px;
+	line-height:80px;
+	text-align:center;
+	text-shadow:1px 1px 0 rgba(0,0,0,.6);
+}
+
+#content{
+	background:$contentbg;
+	@include border-radius(4px);
+	@include box-shadow(rgba(0,0,0,.35) 0 0 36px, rgba(0,0,0,.1) 0 10px 10px inset);
+	border:$contentborderwidth solid $contentbg;
+	padding:$contentpadding;
+	margin-top:20px;
+}
+
+#pagefooter{
+	font-size:12px;
+	color: lighten($bgcolor, 40%);
+	text-shadow:0 -1px 0 rgba(0,0,0,.5);
+	width:600px;
+	margin:20px auto;
+	p{
+		margin-bottom:15px;
+	}
+}

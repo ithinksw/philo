@@ -1,0 +1,110 @@
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline; }
+
+body {
+  line-height: 1; }
+
+ol, ul {
+  list-style: none; }
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0; }
+
+caption, th, td {
+  text-align: left;
+  font-weight: normal;
+  vertical-align: middle; }
+
+q, blockquote {
+  quotes: none; }
+  q:before, q:after, blockquote:before, blockquote:after {
+    content: "";
+    content: none; }
+
+a img {
+  border: none; }
+
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+  display: block; }
+
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+  display: block; }
+
+blockquote, q {
+  quotes: none; }
+  blockquote:before, blockquote:after, q:before, q:after {
+    content: "";
+    content: none; }
+
+html {
+  background: #2a486d;
+  height: 100%; }
+
+body {
+  background: url('../img/bg.png?1303763277'), -webkit-gradient(radial, 50% 50%, 0, 50% 50%, 900, color-stop(0%, rgba(0, 0, 0, 0)), color-stop(88.889%, rgba(0, 0, 0, 0.5)), color-stop(100%, rgba(0, 0, 0, 0.9)));
+  background: url('../img/bg.png?1303763277'), -webkit-radial-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5) 800px, rgba(0, 0, 0, 0.9) 900px);
+  background: url('../img/bg.png?1303763277'), -moz-radial-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5) 800px, rgba(0, 0, 0, 0.9) 900px);
+  background: url('../img/bg.png?1303763277'), -o-radial-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5) 800px, rgba(0, 0, 0, 0.9) 900px);
+  background: url('../img/bg.png?1303763277'), radial-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5) 800px, rgba(0, 0, 0, 0.9) 900px);
+  padding: 1px;
+  margin: -1px;
+  min-height: 100%;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 15px; }
+
+#container {
+  width: 920px;
+  margin: 40px auto; }
+
+#nameplate {
+  color: #FFF;
+  font-size: 80px;
+  line-height: 80px;
+  text-align: center;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.6); }
+
+#content {
+  background: white;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -o-border-radius: 4px;
+  -ms-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  -moz-box-shadow: rgba(0, 0, 0, 0.35) 0 0 36px, rgba(0, 0, 0, 0.1) 0 10px 10px inset;
+  -webkit-box-shadow: rgba(0, 0, 0, 0.35) 0 0 36px, rgba(0, 0, 0, 0.1) 0 10px 10px inset;
+  -o-box-shadow: rgba(0, 0, 0, 0.35) 0 0 36px, rgba(0, 0, 0, 0.1) 0 10px 10px inset;
+  box-shadow: rgba(0, 0, 0, 0.35) 0 0 36px, rgba(0, 0, 0, 0.1) 0 10px 10px inset;
+  border: 1px solid white;
+  padding: 19px;
+  margin-top: 20px; }
+
+#pagefooter {
+  font-size: 12px;
+  color: #8faed4;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.5);
+  width: 600px;
+  margin: 20px auto; }
+  #pagefooter p {
+    margin-bottom: 15px; }

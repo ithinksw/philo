@@ -10,6 +10,7 @@ class CollectionMemberInline(admin.TabularInline):
 	classes = COLLAPSE_CLASSES
 	allow_add = True
 	fields = ('member_content_type', 'member_object_id', 'index')
+	sortable_field_name = 'index'
 
 
 class CollectionAdmin(admin.ModelAdmin):

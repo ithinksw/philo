@@ -198,7 +198,7 @@ class SearchView(MultiView):
 					})
 				else:
 					context.update({
-						'searches': [{'verbose_name': verbose_name, 'url': self.reverse('ajax_api_view', kwargs={'slug': slug}, node=request.node)} for slug, verbose_name in registry.iterchoices() if slug in self.searches]
+						'searches': [{'verbose_name': verbose_name, 'slug': slug, 'url': self.reverse('ajax_api_view', kwargs={'slug': slug}, node=request.node), 'result_template': registry[slug].result_template} for slug, verbose_name in registry.iterchoices() if slug in self.searches]
 					})
 		else:
 			form = SearchForm()

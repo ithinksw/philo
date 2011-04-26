@@ -300,10 +300,21 @@ class JSONSearch(URLSearch):
 
 class GoogleSearch(JSONSearch):
 	search_url = "http://ajax.googleapis.com/ajax/services/search/web"
-	query_format_str = "?v=1.0&q=%s"
 	# TODO: Change this template to reflect the app's actual name.
 	result_template = 'search/googlesearch.html'
 	_cache_timeout = 60
+	verbose_name = "Google search (current site)"
+	
+	@property
+	def query_format_str(self):
+		default_args = self.default_args
+		if default_args:
+			default_args += " "
+		return "?v=1.0&q=%s%%s" % urlquote_plus(default_args).replace('%', '%%')
+	
+	@property
+	def default_args(self):
+		return "site:%s" % Site.objects.get_current().domain
 	
 	def parse_response(self, response, limit=None):
 		responseData = json.loads(response.read())['responseData']

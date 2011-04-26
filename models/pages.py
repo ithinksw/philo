@@ -171,6 +171,9 @@ class Page(View):
 		return self.title
 	
 	def clean_fields(self, exclude=None):
+		if exclude is None:
+			exclude = []
+		
 		try:
 			super(Page, self).clean_fields(exclude)
 		except ValidationError, e:

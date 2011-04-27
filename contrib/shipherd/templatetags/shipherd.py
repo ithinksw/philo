@@ -60,10 +60,6 @@ class LazyNavigationRecurser(object):
 			context['item'] = item
 			context['children'] = self.__class__(self.template_nodes, item.get_children(), context, request)
 			
-			# Django 1.2.X compatibility - a lazy recurser will not be called if accessed as a template variable.
-			if django_version < (1,3):
-				context['children'] = context['children']()
-			
 			# Then render the nodelist bit by bit.
 			for node in self.template_nodes:
 				bits.append(node.render(context))

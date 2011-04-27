@@ -109,8 +109,7 @@ class SlugMultipleChoiceField(models.Field):
 				del kwargs[k]
 		
 		defaults.update(kwargs)
-		# Django 1.2 does not supply MultipleChoiceField
-		form_class = getattr(forms, 'TypedMultipleChoiceField', forms.MultipleChoiceField)
+		form_class = forms.TypedMultipleChoiceField
 		return form_class(**defaults)
 	
 	def validate(self, value, model_instance):

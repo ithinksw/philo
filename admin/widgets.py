@@ -48,15 +48,12 @@ class TagFilteredSelectMultiple(FilteredSelectMultiple):
 	catalog has been loaded in the page
 	"""
 	class Media:
-		js = (settings.ADMIN_MEDIA_PREFIX + "js/core.js",
-			  settings.ADMIN_MEDIA_PREFIX + "js/SelectBox.js",
-			  settings.ADMIN_MEDIA_PREFIX + "js/SelectFilter2.js")
-		
-		if 'staticmedia' in settings.INSTALLED_APPS:
-			import staticmedia
-			js += (staticmedia.url('admin/js/TagCreation.js'),)
-		else:
-			js += (settings.ADMIN_MEDIA_PREFIX + "js/TagCreation.js",)
+		js = (
+			settings.ADMIN_MEDIA_PREFIX + "js/core.js",
+			settings.ADMIN_MEDIA_PREFIX + "js/SelectBox.js",
+			settings.ADMIN_MEDIA_PREFIX + "js/SelectFilter2.js",
+			settings.ADMIN_MEDIA_PREFIX + "js/TagCreation.js",
+		)
 
 	def render(self, name, value, attrs=None, choices=()):
 		if attrs is None: attrs = {}

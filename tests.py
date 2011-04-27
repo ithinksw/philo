@@ -1,13 +1,17 @@
-from django.test import TestCase
+import sys
+import traceback
+
 from django import template
 from django.conf import settings
 from django.db import connection
 from django.template import loader
 from django.template.loaders import cached
+from django.test import TestCase
+from django.test.utils import setup_test_template_loader
+
+from philo.contrib.penfield.models import Blog, BlogView, BlogEntry
 from philo.exceptions import AncestorDoesNotExist
 from philo.models import Node, Page, Template
-from philo.contrib.penfield.models import Blog, BlogView, BlogEntry
-import sys, traceback
 
 
 class TemplateTestCase(TestCase):
@@ -17,19 +21,15 @@ class TemplateTestCase(TestCase):
 		"Tests to make sure that embed behaves with complex includes and extends"
 		template_tests = self.get_template_tests()
 		
-		# Register our custom template loader. Shamelessly cribbed from django core regressiontests.
-		def test_template_loader(template_name, template_dirs=None):
-			"A custom template loader that loads the unit-test templates."
-			try:
-				return (template_tests[template_name][0] , "test:%s" % template_name)
-			except KeyError:
-				raise template.TemplateDoesNotExist, template_name
+		# Register our custom template loader. Shamelessly cribbed from django/tests/regressiontests/templates/tests.py:384.
+		cache_loader = setup_test_template_loader(
+			dict([(name, t[0]) for name, t in template_tests.iteritems()]),
+			use_cached_loader=True,
+		)
 		
-		cache_loader = cached.Loader(('test_template_loader',))
-		cache_loader._cached_loaders = (test_template_loader,)
-		
-		old_template_loaders = loader.template_source_loaders
-		loader.template_source_loaders = [cache_loader]
+		failures = []
+		tests = template_tests.items()
+		tests.sort()
 		
 		# Turn TEMPLATE_DEBUG off, because tests assume that.
 		old_td, settings.TEMPLATE_DEBUG = settings.TEMPLATE_DEBUG, False
@@ -38,9 +38,6 @@ class TemplateTestCase(TestCase):
 		old_invalid = settings.TEMPLATE_STRING_IF_INVALID
 		expected_invalid_str = 'INVALID'
 		
-		failures = []
-		tests = template_tests.items()
-		tests.sort()
 		# Run tests
 		for name, vals in tests:
 			xx, context, result = vals

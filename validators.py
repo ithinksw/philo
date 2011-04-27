@@ -118,7 +118,7 @@ class TemplateValidationParser(Parser):
 
 
 def linebreak_iter(template_source):
-	# Cribbed from django/views/debug.py
+	# Cribbed from django/views/debug.py:18
 	yield 0
 	p = template_source.find('\n')
 	while p >= 0:

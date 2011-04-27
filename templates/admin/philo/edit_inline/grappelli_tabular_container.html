@@ -20,12 +20,13 @@
 			{% endfor %}{% endspaceless %}
 		{% endfor %}
 		{% for form in inline_admin_formset.formset.forms %}
-			<div class="row cells-{{ form.fields.keys|length }}{% if not form.fields.keys|length_is:"2" %} cells{% endif %}{% if form.errors %} errors{% endif %} {% for field in form %}{{ field.field.name }} {% endfor %}{% comment %} {% if forloop.last %} empty-form{% endif %}{% endcomment %}">
+			<div class="row cells-{{ form.fields|length }} cells{% if form.errors %} errors{% endif %}{% for field in form %} {{ field.field.name }}{% endfor %}">
 				{{ form.non_field_errors }}
-				<div{% if not form.fields.keys|length_is:"2" %} class="cell"{% endif %}>
-					<div class="column span-4"><label class='required' for="{{ form.content.auto_id }}{{ form.content_id.auto_id }}">{{ form.verbose_name|capfirst }}:</label></div>
+				<div>
 				{% for field in form %}
 					{% if not field.is_hidden %}
+					{% comment %}This will be true for one field: the content/content reference{% endcomment %}
+					<div class="column span-4"><label class='required' for="{{ form.content.auto_id }}{{ form.content_id.auto_id }}">{{ form.verbose_name|capfirst }}:</label></div>
 					<div class="column span-flexible">
 						{{ field }}
 						{{ field.errors }}

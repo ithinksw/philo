@@ -46,6 +46,12 @@ class PageAdmin(ViewAdmin):
 	list_filter = ('template',)
 	search_fields = ['title', 'contentlets__content']
 	inlines = [ContentletInline, ContentReferenceInline] + ViewAdmin.inlines
+	
+	def response_add(self, request, obj, post_url_continue='../%s/'):
+		# Shamelessly cribbed from django/contrib/auth/admin.py:143
+		if '_addanother' not in request.POST and '_popup' not in request.POST:
+			request.POST['_continue'] = 1
+		return super(PageAdmin, self).response_add(request, obj, post_url_continue)
 
 
 class TemplateAdmin(TreeAdmin):

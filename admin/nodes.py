@@ -1,12 +1,14 @@
 from django.contrib import admin
 from philo.admin.base import EntityAdmin, TreeEntityAdmin, COLLAPSE_CLASSES
 from philo.models import Node, Redirect, File
+from mptt.admin import MPTTModelAdmin
 
 
 class NodeAdmin(TreeEntityAdmin):
 	list_display = ('slug', 'view', 'accepts_subpath')
+	raw_id_fields = ('parent',)
 	related_lookup_fields = {
-		'fk': [],
+		'fk': raw_id_fields,
 		'm2m': [],
 		'generic': [['view_content_type', 'view_object_id']]
 	}
@@ -14,6 +16,9 @@ class NodeAdmin(TreeEntityAdmin):
 	def accepts_subpath(self, obj):
 		return obj.accepts_subpath
 	accepts_subpath.boolean = True
+	
+	def formfield_for_foreignkey(self, db_field, request, **kwargs):
+		return super(MPTTModelAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class ViewAdmin(EntityAdmin):

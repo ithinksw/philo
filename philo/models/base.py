@@ -38,18 +38,12 @@ class Titled(models.Model):
 		abstract = True
 
 
+#: An instance of :class:`ContentTypeRegistryLimiter` which is used to track the content types which can be related to by ForeignKeyValues and ManyToManyValues.
 value_content_type_limiter = ContentTypeRegistryLimiter()
-"""
-An instance of :class:`ContentTypeRegistryLimiter` which is used to track the content types which can be related to by ForeignKeyValues and ManyToManyValues.
-
-"""
 
 
 def register_value_model(model):
-	"""
-	Registers a model as a valid content type for a :class:`ForeignKeyValue` or :class:`ManyToManyValue` through the :data:`value_content_type_limiter`.
-	
-	"""
+	"""Registers a model as a valid content type for a :class:`ForeignKeyValue` or :class:`ManyToManyValue` through the :data:`value_content_type_limiter`."""
 	value_content_type_limiter.register_class(model)
 
 
@@ -57,10 +51,7 @@ register_value_model(Tag)
 
 
 def unregister_value_model(model):
-	"""
-	Registers a model as a valid content type for a :class:`ForeignKeyValue` or :class:`ManyToManyValue` through the :data:`value_content_type_limiter`.
-	
-	"""
+	"""Registers a model as a valid content type for a :class:`ForeignKeyValue` or :class:`ManyToManyValue` through the :data:`value_content_type_limiter`."""
 	value_content_type_limiter.unregister_class(model)
 
 
@@ -71,11 +62,10 @@ class AttributeValue(models.Model):
 	AttributeValue subclasses are expected to supply access to a clean version of their value through an attribute called "value".
 	
 	"""
-	attribute_set = generic.GenericRelation('Attribute', content_type_field='value_content_type', object_id_field='value_object_id')
-	"""
-	:class:`GenericRelation` to :class:`Attribute`
 	
-	"""
+	#: :class:`GenericRelation` to :class:`Attribute`
+	attribute_set = generic.GenericRelation('Attribute', content_type_field='value_content_type', object_id_field='value_object_id')
+	
 	def set_value(self, value):
 		"""Given a ``value``, sets the appropriate fields so that it can be correctly stored in the database."""
 		raise NotImplementedError
@@ -87,6 +77,7 @@ class AttributeValue(models.Model):
 		:returns: A dictionary mapping field names to formfields.
 		
 		"""
+		
 		raise NotImplementedError
 	
 	def construct_instance(self, **kwargs):
@@ -100,11 +91,8 @@ class AttributeValue(models.Model):
 		abstract = True
 
 
+#: An instance of :class:`ContentTypeSubclassLimiter` which is used to track the content types which are considered valid value models for an :class:`Attribute`.
 attribute_value_limiter = ContentTypeSubclassLimiter(AttributeValue)
-"""
-An instance of :class:`ContentTypeSubclassLimiter` which is used to track the content types which are considered valid value models for an :class:`Attribute`.
-
-"""
 
 
 class JSONValue(AttributeValue):
@@ -249,31 +237,21 @@ class ManyToManyValue(AttributeValue):
 
 
 class Attribute(models.Model):
-	"""
-	Represents an arbitrary key/value pair on an arbitrary :class:`Model` where the key consists of word characters and the value is a subclass of :class:`AttributeValue`.
-	
-	"""
+	"""Represents an arbitrary key/value pair on an arbitrary :class:`Model` where the key consists of word characters and the value is a subclass of :class:`AttributeValue`."""
 	entity_content_type = models.ForeignKey(ContentType, related_name='attribute_entity_set', verbose_name='Entity type')
 	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID', db_index=True)
-	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
-	"""
-	:class:`GenericForeignKey` to anything (generally an instance of an Entity subclass).
 	
-	"""
+	#: :class:`GenericForeignKey` to anything (generally an instance of an Entity subclass).
+	entity = generic.GenericForeignKey('entity_content_type', 'entity_object_id')
 	
 	value_content_type = models.ForeignKey(ContentType, related_name='attribute_value_set', limit_choices_to=attribute_value_limiter, verbose_name='Value type', null=True, blank=True)
 	value_object_id = models.PositiveIntegerField(verbose_name='Value ID', null=True, blank=True, db_index=True)
+	
+	#: :class:`GenericForeignKey` to an instance of a subclass of :class:`AttributeValue` as determined by the :data:`attribute_value_limiter`.
 	value = generic.GenericForeignKey('value_content_type', 'value_object_id')
-	"""
-	:class:`GenericForeignKey` to an instance of a subclass of :class:`AttributeValue` as determined by the :data:`attribute_value_limiter`.
 	
-	"""
-	
+	#: :class:`CharField` containing a key (up to 255 characters) consisting of alphanumeric characters and underscores.
 	key = models.CharField(max_length=255, validators=[RegexValidator("\w+")], help_text="Must contain one or more alphanumeric characters or underscores.", db_index=True)
-	"""
-	:class:`CharField` containing a key (up to 255 characters) consisting of alphanumeric characters and underscores.
-	
-	"""
 	
 	def __unicode__(self):
 		return u'"%s": %s' % (self.key, self.value)
@@ -346,7 +324,9 @@ class Entity(models.Model):
 			u'eggs'
 			>>> entity.attributes['spam']
 			u'eggs'
+		
 		"""
+		
 		return QuerySetMapper(self.attribute_set.all())
 	
 	class Meta:
@@ -372,6 +352,7 @@ class TreeManager(models.Manager):
 		:returns: An instance if absolute_result is True or (instance, remaining_path) otherwise.
 		
 		"""
+		
 		segments = path.split(pathsep)
 		
 		# Clean out blank segments. Handles multiple consecutive pathseps.
@@ -477,6 +458,7 @@ class TreeModel(MPTTModel):
 		:returns: A string representation of an object's path.
 		
 		"""
+		
 		if root == self:
 			return ''
 		
@@ -508,10 +490,8 @@ class TreeEntityBase(MPTTModelBase, EntityBase):
 
 
 class TreeEntity(Entity, TreeModel):
-	"""
-	An abstract subclass of Entity which represents a tree relationship.
+	"""An abstract subclass of Entity which represents a tree relationship."""
 	
-	"""
 	__metaclass__ = TreeEntityBase
 	
 	@property
@@ -530,6 +510,7 @@ class TreeEntity(Entity, TreeModel):
 			u'eggs'
 		
 		"""
+		
 		if self.parent:
 			return QuerySetMapper(self.attribute_set.all(), passthrough=self.parent.attributes)
 		return super(TreeEntity, self).attributes

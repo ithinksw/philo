@@ -1,6 +1,6 @@
-[submodule "contrib/gilbert/static/gilbert/extjs"]
+[submodule "philo/contrib/gilbert/static/gilbert/extjs"]
 	path = contrib/gilbert/static/gilbert/extjs
 	url = git://git.ithinksw.org/extjs.git
-[submodule "contrib/gilbert/static/gilbert/fugue-icons"]
+[submodule "philo/contrib/gilbert/static/gilbert/fugue-icons"]
 	path = contrib/gilbert/static/gilbert/fugue-icons
 	url = git://git.ithinksw.org/fugue-icons.git

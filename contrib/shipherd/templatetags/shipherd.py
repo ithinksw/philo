@@ -72,10 +72,10 @@ class LazyNavigationRecurser(object):
 
 
 class RecurseNavigationNode(template.Node):
-	def __init__(self, template_nodes, instance_var, key):
+	def __init__(self, template_nodes, instance_var, key_var):
 		self.template_nodes = template_nodes
 		self.instance_var = instance_var
-		self.key = key
+		self.key_var = key_var
 	
 	def render(self, context):
 		try:
@@ -84,9 +84,18 @@ class RecurseNavigationNode(template.Node):
 			return ''
 		
 		instance = self.instance_var.resolve(context)
+		key = self.key_var.resolve(context)
+		
+		# Fall back on old behavior if the key doesn't seem to be a variable.
+		if not key:
+			token = self.key_var.token
+			if token[0] not in ["'", '"'] and '.' not in token:
+				key = token
+			else:
+				return settings.TEMPLATE_STRING_IF_INVALID
 		
 		try:
-			items = instance.navigation[self.key]
+			items = instance.navigation[key]
 		except:
 			return settings.TEMPLATE_STRING_IF_INVALID
 		
@@ -139,17 +148,11 @@ def recursenavigation(parser, token):
 		raise template.TemplateSyntaxError(_('%s tag requires two arguments: a node and a navigation section name') % bits[0])
 	
 	instance_var = parser.compile_filter(bits[1])
-	key = bits[2]
+	key_var = parser.compile_filter(bits[2])
 	
-	template_nodes = parser.parse(('recurse', 'endrecursenavigation',))
-	
-	token = parser.next_token()
-	if token.contents == 'recurse':
-		template_nodes.append(RecurseNavigationMarker())
-		template_nodes.extend(parser.parse(('endrecursenavigation')))
-		parser.delete_first_token()
-	
-	return RecurseNavigationNode(template_nodes, instance_var, key)
+	template_nodes = parser.parse(('endrecursenavigation',))
+	token = parser.delete_first_token()
+	return RecurseNavigationNode(template_nodes, instance_var, key_var)
 
 
 @register.filter

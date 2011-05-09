@@ -1,93 +1,25 @@
 Nodes and Views: Building Website structure
 ===========================================
-.. currentmodule:: philo.models
+.. automodule:: philo.models.nodes
 
 Nodes
 -----
 
-:class:`Node`\ s are the basic building blocks of a website using Philo. They define the URL hierarchy and connect each URL to a :class:`View` subclass instance which is used to generate an HttpResponse.
-
-.. class:: Node
-
-   :class:`!Node` subclasses :class:`TreeEntity`. It defines the following additional methods and attributes:
-
-   .. attribute:: view
-
-      :class:`GenericForeignKey` to a non-abstract subclass of :class:`View`
-
-   .. attribute:: accepts_subpath
-
-      A property shortcut for :attr:`self.view.accepts_subpath <View.accepts_subpath>`
-
-   .. method:: render_to_response(request[, extra_context=None])
-
-      This is a shortcut method for :meth:`View.render_to_response`
-
-   .. method:: get_absolute_url([request=None, with_domain=False, secure=False])
-
-      This is essentially a shortcut for calling :meth:`construct_url` without a subpath - which will return the URL of the Node.
-
-   .. method:: construct_url([subpath="/", request=None, with_domain=False, secure=False])
-
-      This method will do its best to construct a URL based on the Node's location. If with_domain is True, that URL will include a domain and a protocol; if secure is True as well, the protocol will be https. The request will be used to construct a domain in cases where a call to :meth:`Site.objects.get_current` fails.
-
-      Node urls will not contain a trailing slash unless a subpath is provided which ends with a trailing slash. Subpaths are expected to begin with a slash, as if returned by :func:`django.core.urlresolvers.reverse`.
-
-      :meth:`construct_url` may raise the following exceptions:
-
-      - :class:`NoReverseMatch` if "philo-root" is not reversable -- for example, if :mod:`philo.urls` is not included anywhere in your urlpatterns.
-      - :class:`Site.DoesNotExist <ObjectDoesNotExist>` if with_domain is True but no :class:`Site` or :class:`RequestSite` can be built.
-      - :class:`AncestorDoesNotExist` if the root node of the site isn't an ancestor of the node constructing the URL.
+.. autoclass:: Node
+	:show-inheritance:
+	:members:
+	:exclude-members: attribute_set
 
 Views
 -----
 
 Abstract View Models
 ++++++++++++++++++++
-.. class:: View
 
-   :class:`!View` is an abstract model that represents an item which can be "rendered", either in response to an :class:`HttpRequest` or as a standalone. It subclasses :class:`Entity`, and defines the following additional methods and attributes:
-
-   .. attribute:: accepts_subpath
-
-      Defines whether this :class:`View` can handle subpaths. Default: ``False``
-
-   .. method:: handles_subpath(subpath)
-
-      Returns True if the the :class:`View` handles the given subpath, and False otherwise.
-
-   .. attribute:: nodes
-
-      A generic relation back to nodes.
-
-   .. method:: reverse([view_name=None, args=None, kwargs=None, node=None, obj=None])
-
-      If :attr:`accepts_subpath` is True, try to reverse a URL using the given parameters using ``self`` as the urlconf.
-
-      If ``obj`` is provided, :meth:`get_reverse_params` will be called and the results will be combined with any ``view_name``, ``args``, and ``kwargs`` that may have been passed in.
-
-      This method will raise the following exceptions:
-
-      - :class:`ViewDoesNotProvideSubpaths` if :attr:`accepts_subpath` is False.
-      - :class:`ViewCanNotProvideSubpath` if a reversal is not possible.
-
-   .. method:: get_reverse_params(obj)
-
-      This method is not implemented on the base class. It should return a ``view_name``, ``args``, ``kwargs`` tuple suitable for reversing a url for the given ``obj`` using ``self`` as the urlconf. If a reversal will not be possible, this method should raise :class:`ViewCanNotProvideSubpath`.
-
-   .. method:: attributes_with_node(node)
-
-      Returns a :class:`QuerySetMapper` using the :class:`node <Node>`'s attributes as a passthrough.
-
-   .. method:: render_to_response(request[, extra_context=None])
-
-      Renders the :class:`View` as an :class:`HttpResponse`. This will raise :const:`philo.exceptions.MIDDLEWARE_NOT_CONFIGURED` if the `request` doesn't have an attached :class:`Node`. This can happen if :class:`philo.middleware.RequestNodeMiddleware` is not in :setting:`settings.MIDDLEWARE_CLASSES` or if it is not functioning correctly.
-
-      :meth:`!render_to_response` will send the :obj:`view_about_to_render <philo.signals.view_about_to_render>` signal, then call :meth:`actually_render_to_response`, and finally send the :obj:`view_finished_rendering <philo.signals.view_finished_rendering>` signal before returning the ``response``.
-
-   .. method:: actually_render_to_response(request[, extra_context=None])
-
-      Concrete subclasses must override this method to provide the business logic for turning a ``request`` and ``extra_context`` into an :class:`HttpResponse`.
+.. autoclass:: View
+	:show-inheritance:
+	:members:
+	:exclude-members: attribute_set
 
 .. class:: MultiView
 

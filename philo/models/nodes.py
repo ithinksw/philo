@@ -23,12 +23,18 @@ _view_content_type_limiter = ContentTypeSubclassLimiter(None)
 
 
 class Node(TreeEntity):
+	"""
+	:class:`Node`\ s are the basic building blocks of a website using Philo. They define the URL hierarchy and connect each URL to a :class:`View` subclass instance which is used to generate an HttpResponse.
+	
+	"""
 	view_content_type = models.ForeignKey(ContentType, related_name='node_view_set', limit_choices_to=_view_content_type_limiter)
 	view_object_id = models.PositiveIntegerField()
+	#: :class:`GenericForeignKey` to a non-abstract subclass of :class:`View`
 	view = generic.GenericForeignKey('view_content_type', 'view_object_id')
 	
 	@property
 	def accepts_subpath(self):
+		"""A property shortcut for :attr:`self.view.accepts_subpath <View.accepts_subpath>`"""
 		if self.view:
 			return self.view.accepts_subpath
 		return False
@@ -37,21 +43,36 @@ class Node(TreeEntity):
 		return self.view.handles_subpath(subpath)
 	
 	def render_to_response(self, request, extra_context=None):
+		"""This is a shortcut method for :meth:`View.render_to_response`"""
 		return self.view.render_to_response(request, extra_context)
 	
 	def get_absolute_url(self, request=None, with_domain=False, secure=False):
+		"""
+		This is essentially a shortcut for calling :meth:`construct_url` without a subpath.
+		
+		:returns: The absolute url of the node on the current site.
+		
+		"""
 		return self.construct_url(request=request, with_domain=with_domain, secure=secure)
 	
 	def construct_url(self, subpath="/", request=None, with_domain=False, secure=False):
 		"""
-		This method will construct a URL based on the Node's location.
-		If a request is passed in, that will be used as a backup in case
-		the Site lookup fails. The Site lookup takes precedence because
-		it's what's used to find the root node. This will raise:
-		- NoReverseMatch if philo-root is not reverseable
-		- Site.DoesNotExist if a domain is requested but not buildable.
-		- AncestorDoesNotExist if the root node of the site isn't an
-		  ancestor of this instance.
+		This method will do its best to construct a URL based on the Node's location. If with_domain is True, that URL will include a domain and a protocol; if secure is True as well, the protocol will be https. The request will be used to construct a domain in cases where a call to :meth:`Site.objects.get_current` fails.
+		
+		Node urls will not contain a trailing slash unless a subpath is provided which ends with a trailing slash. Subpaths are expected to begin with a slash, as if returned by :func:`django.core.urlresolvers.reverse`.
+		
+		:meth:`construct_url` may raise the following exceptions:
+		
+		- :class:`NoReverseMatch` if "philo-root" is not reversable -- for example, if :mod:`philo.urls` is not included anywhere in your urlpatterns.
+		- :class:`Site.DoesNotExist <ObjectDoesNotExist>` if with_domain is True but no :class:`Site` or :class:`RequestSite` can be built.
+		- :class:`~philo.exceptions.AncestorDoesNotExist` if the root node of the site isn't an ancestor of the node constructing the URL.
+		
+		:param string subpath: The subpath to be constructed beyond beyond the node's URL.
+		:param request: :class:`HttpRequest` instance. Will be used to construct a :class:`RequestSite` if :meth:`Site.objects.get_current` fails.
+		:param with_domain: Whether the constructed URL should include a domain name and protocol.
+		:param secure: Whether the protocol, if included, should be http:// or https://.
+		:returns: A constructed url for accessing the given subpath of the current node instance.
+		
 		"""
 		# Try reversing philo-root first, since we can't do anything if that fails.
 		root_url = reverse('philo-root')
@@ -90,18 +111,41 @@ models.ForeignKey(Node, related_name='sites', null=True, blank=True).contribute_
 
 
 class View(Entity):
+	"""
+	:class:`View` is an abstract model that represents an item which can be "rendered", generally in response to an :class:`HttpRequest`.
+	
+	"""
+	#: A generic relation back to nodes.
 	nodes = generic.GenericRelation(Node, content_type_field='view_content_type', object_id_field='view_object_id')
 	
+	#: Property or attribute which defines whether this :class:`View` can handle subpaths. Default: ``False``
 	accepts_subpath = False
 	
 	def handles_subpath(self, subpath):
+		"""Returns True if the the :class:`View` handles the given subpath, and False otherwise."""
 		if not self.accepts_subpath and subpath != "/":
 			return False
 		return True
 	
 	def reverse(self, view_name=None, args=None, kwargs=None, node=None, obj=None):
-		"""Shortcut method to handle the common pattern of getting the
-		absolute url for a view's subpaths."""
+		"""
+		If :attr:`accepts_subpath` is True, try to reverse a URL using the given parameters using ``self`` as the urlconf.
+		
+		If ``obj`` is provided, :meth:`get_reverse_params` will be called and the results will be combined with any ``view_name``, ``args``, and ``kwargs`` that may have been passed in.
+		
+		This method will raise the following exceptions:
+		
+		- :class:`~philo.exceptions.ViewDoesNotProvideSubpaths` if :attr:`accepts_subpath` is False.
+		- :class:`~philo.exceptions.ViewCanNotProvideSubpath` if a reversal is not possible.
+		
+		:param view_name: The name of the view to be reversed.
+		:param args: Extra args for reversing the view.
+		:param kwargs: A dictionary of arguments for reversing the view.
+		:param node: The node whose subpath this is.
+		:param obj: An object to be passed to :meth:`get_reverse_params` to generate a view_name, args, and kwargs for reversal.
+		:returns: A subpath beyond the node that reverses the view, or an absolute url that reverses the view if a node was passed in.
+		
+		"""
 		if not self.accepts_subpath:
 			raise ViewDoesNotProvideSubpaths
 		
@@ -124,7 +168,10 @@ class View(Entity):
 		return subpath
 	
 	def get_reverse_params(self, obj):
-		"""This method should return a view_name, args, kwargs tuple suitable for reversing a url for the given obj using self as the urlconf."""
+		"""
+		This method is not implemented on the base class. It should return a (``view_name``, ``args``, ``kwargs``) tuple suitable for reversing a url for the given ``obj`` using ``self`` as the urlconf. If a reversal will not be possible, this method should raise :class:`~philo.exceptions.ViewCanNotProvideSubpath`.
+		
+		"""
 		raise NotImplementedError("View subclasses must implement get_reverse_params to support subpaths.")
 	
 	def attributes_with_node(self, node):

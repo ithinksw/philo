@@ -10,25 +10,25 @@ Attributes
 ----------
 
 .. autoclass:: Attribute
-   :members:
+	:members:
 
 .. autoclass:: AttributeValue
-   :members:
+	:members:
 
 .. automodule:: philo.models.base
-   :members: attribute_value_limiter
+	:members: attribute_value_limiter
 
 .. autoclass:: JSONValue
-   :show-inheritance:
+	:show-inheritance:
 
 .. autoclass:: ForeignKeyValue
-   :show-inheritance:
+	:show-inheritance:
 
 .. autoclass:: ManyToManyValue
-   :show-inheritance:
+	:show-inheritance:
 
 .. automodule:: philo.models.base
-   :members: value_content_type_limiter
+	:members: value_content_type_limiter
 
 .. autofunction:: register_value_model(model)
 .. autofunction:: unregister_value_model(model)
@@ -37,18 +37,19 @@ Entities
 --------
 
 .. autoclass:: Entity
-   :members:
-   :exclude-members: attribute_set
+	:members:
+	:exclude-members: attribute_set
 
 .. autoclass:: TreeManager
-   :members:
+	:members:
 
 .. autoclass:: TreeEntity
-   :members:
-   :exclude-members: attribute_set
+	:show-inheritance:
+	:members:
+	:exclude-members: attribute_set
 
-   .. attribute:: objects
+	.. attribute:: objects
 
-      An instance of :class:`TreeManager`.
-   
-   .. automethod:: get_path
+		An instance of :class:`TreeManager`.
+	
+	.. automethod:: get_path

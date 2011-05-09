@@ -8,6 +8,7 @@ Contents:
    
    entities
    nodes-and-views
+   collections
 
 
 .. :module: philo.models

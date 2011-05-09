@@ -340,7 +340,7 @@ class TreeManager(models.Manager):
 	
 	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/', field='slug'):
 		"""
-		If ``absolute_result`` is ``True``, returns the object at ``path`` (starting at ``root``) or raises a :exception:`DoesNotExist` exception. Otherwise, returns a tuple containing the deepest object found along ``path`` (or ``root`` if no deeper object is found) and the remainder of the path after that object as a string (or None if there is no remaining path).
+		If ``absolute_result`` is ``True``, returns the object at ``path`` (starting at ``root``) or raises a :class:`DoesNotExist` exception. Otherwise, returns a tuple containing the deepest object found along ``path`` (or ``root`` if no deeper object is found) and the remainder of the path after that object as a string (or None if there is no remaining path).
 		
 		.. note:: If you are looking for something with an exact path, it is faster to use absolute_result=True, unless the path depth is over ~40, in which case the high cost of the absolute query may make a binary search (i.e. non-absolute) faster.
 		

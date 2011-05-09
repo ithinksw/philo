@@ -18,10 +18,14 @@ from philo.validators import json_validator
 
 
 class Tag(models.Model):
+	"""A simple, generic model for tagging."""
+	#: A CharField (max length 255) which contains the name of the tag.
 	name = models.CharField(max_length=255)
+	#: A CharField (max length 255) which contains the tag's unique slug.
 	slug = models.SlugField(max_length=255, unique=True)
 	
 	def __unicode__(self):
+		"""Returns the value of the :attr:`name` field"""
 		return self.name
 	
 	class Meta:

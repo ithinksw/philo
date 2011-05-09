@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from philo.admin import TreeEntityAdmin, COLLAPSE_CLASSES, NodeAdmin, EntityAdmin
 from philo.models import Node
 from philo.contrib.shipherd.models import NavigationItem, Navigation

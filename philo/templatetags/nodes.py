@@ -4,6 +4,7 @@ from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.template.defaulttags import kwarg_re
 from django.utils.encoding import smart_str
+
 from philo.exceptions import ViewCanNotProvideSubpath
 
 

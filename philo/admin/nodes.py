@@ -1,7 +1,8 @@
 from django.contrib import admin
+from mptt.admin import MPTTModelAdmin
+
 from philo.admin.base import EntityAdmin, TreeEntityAdmin, COLLAPSE_CLASSES
 from philo.models import Node, Redirect, File
-from mptt.admin import MPTTModelAdmin
 
 
 class NodeAdmin(TreeEntityAdmin):

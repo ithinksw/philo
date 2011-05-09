@@ -1,10 +1,10 @@
 from django import forms
 from django.conf import settings
 from django.contrib.admin.widgets import FilteredSelectMultiple, url_params_from_lookup_dict
-from django.utils.translation import ugettext as _
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.text import truncate_words
-from django.utils.html import escape
+from django.utils.translation import ugettext as _
 
 
 class ModelLookupWidget(forms.TextInput):

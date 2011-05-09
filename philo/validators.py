@@ -1,10 +1,12 @@
-from django.utils.translation import ugettext_lazy as _
-from django.core.validators import RegexValidator
+import re
+
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.template import Template, Parser, Lexer, TOKEN_BLOCK, TOKEN_VAR, TemplateSyntaxError
 from django.utils import simplejson as json
 from django.utils.html import escape, mark_safe
-import re
+from django.utils.translation import ugettext_lazy as _
+
 from philo.utils import LOADED_TEMPLATE_ATTR
 
 

@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.forms.models import ModelForm, BaseInlineFormSet, BaseModelFormSet
 from django.forms.formsets import TOTAL_FORM_COUNT
 from django.utils.datastructures import SortedDict
+
 from philo.admin.widgets import ModelLookupWidget
 from philo.models import Contentlet, ContentReference
 

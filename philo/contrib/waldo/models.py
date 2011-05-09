@@ -1,3 +1,5 @@
+import urlparse
+
 from django import forms
 from django.conf.urls.defaults import url, patterns, include
 from django.contrib import messages
@@ -15,10 +17,10 @@ from django.utils.http import int_to_base36, base36_to_int
 from django.utils.translation import ugettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
+
 from philo.models import MultiView, Page
 from philo.contrib.waldo.forms import WaldoAuthenticationForm, RegistrationForm, UserAccountForm
 from philo.contrib.waldo.tokens import registration_token_generator, email_token_generator
-import urlparse
 
 
 class LoginMultiView(MultiView):

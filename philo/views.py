@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.urlresolvers import resolve
 from django.http import Http404, HttpResponseRedirect
 from django.views.decorators.vary import vary_on_headers
+
 from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED
 
 

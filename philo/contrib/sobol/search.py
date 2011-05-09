@@ -1,4 +1,5 @@
 #encoding: utf-8
+import datetime
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -9,12 +10,16 @@ from django.utils.http import urlquote_plus
 from django.utils.safestring import mark_safe
 from django.utils.text import capfirst
 from django.template import loader, Context, Template
-import datetime
+
 from philo.contrib.sobol.utils import make_tracking_querydict
 
-try:
-	from eventlet.green import urllib2
-except:
+
+if getattr(settings, 'SOBOL_USE_EVENTLET', False):
+	try:
+		from eventlet.green import urllib2
+	except:
+		import urllib2
+else:
 	import urllib2
 
 

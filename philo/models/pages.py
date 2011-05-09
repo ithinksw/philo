@@ -8,13 +8,14 @@ from django.http import HttpResponse
 from django.template import TemplateDoesNotExist, Context, RequestContext, Template as DjangoTemplate, add_to_builtins as register_templatetags, TextNode, VariableNode
 from django.template.loader_tags import BlockNode, ExtendsNode, BlockContext
 from django.utils.datastructures import SortedDict
+
 from philo.models.base import TreeModel, register_value_model
 from philo.models.fields import TemplateField
 from philo.models.nodes import View
+from philo.signals import page_about_to_render_to_string, page_finished_rendering_to_string
 from philo.templatetags.containers import ContainerNode
 from philo.utils import fattr
 from philo.validators import LOADED_TEMPLATE_ATTR
-from philo.signals import page_about_to_render_to_string, page_finished_rendering_to_string
 
 
 class LazyContainerFinder(object):

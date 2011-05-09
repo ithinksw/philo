@@ -1,12 +1,14 @@
 #encoding: utf-8
+from UserDict import DictMixin
+
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import NoReverseMatch
 from django.core.validators import RegexValidator, MinValueValidator
 from django.db import models
 from django.forms.models import model_to_dict
+
 from philo.models import TreeEntity, Node, TreeManager, Entity, TargetURLModel
 from philo.validators import RedirectValidator
-from UserDict import DictMixin
 
 
 DEFAULT_NAVIGATION_DEPTH = 3

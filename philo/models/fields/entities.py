@@ -15,15 +15,17 @@ Example::
 	class ThingProxy(Thing):
 		improvised = JSONAttribute(models.BooleanField)
 """
+import datetime
 from itertools import tee
+
 from django import forms
 from django.core.exceptions import FieldError
 from django.db import models
 from django.db.models.fields import NOT_PROVIDED
 from django.utils.text import capfirst
-from philo.signals import entity_class_prepared
+
 from philo.models import ManyToManyValue, JSONValue, ForeignKeyValue, Attribute, Entity
-import datetime
+from philo.signals import entity_class_prepared
 
 
 __all__ = ('JSONAttribute', 'ForeignKeyAttribute', 'ManyToManyAttribute')

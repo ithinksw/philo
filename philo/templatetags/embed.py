@@ -1,7 +1,8 @@
 from django import template
-from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.template.loader_tags import ExtendsNode, BlockContext, BLOCK_CONTEXT_KEY, TextNode, BlockNode
+
 from philo.utils import LOADED_TEMPLATE_ATTR
 
 

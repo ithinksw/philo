@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from philo.admin.base import COLLAPSE_CLASSES
 from philo.models import CollectionMember, Collection
 

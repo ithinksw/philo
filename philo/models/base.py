@@ -1,18 +1,20 @@
+from UserDict import DictMixin
+
 from django import forms
-from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import RegexValidator
+from django.db import models
 from django.utils import simplejson as json
 from django.utils.encoding import force_unicode
+from mptt.models import MPTTModel, MPTTModelBase, MPTTOptions
+
 from philo.exceptions import AncestorDoesNotExist
 from philo.models.fields import JSONField
-from philo.utils import ContentTypeRegistryLimiter, ContentTypeSubclassLimiter
 from philo.signals import entity_class_prepared
+from philo.utils import ContentTypeRegistryLimiter, ContentTypeSubclassLimiter
 from philo.validators import json_validator
-from UserDict import DictMixin
-from mptt.models import MPTTModel, MPTTModelBase, MPTTOptions
 
 
 class Tag(models.Model):

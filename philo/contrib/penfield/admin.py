@@ -2,6 +2,7 @@ from django import forms
 from django.contrib import admin
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, QueryDict
+
 from philo.admin import EntityAdmin, AddTagAdmin, COLLAPSE_CLASSES
 from philo.contrib.penfield.models import BlogEntry, Blog, BlogView, Newsletter, NewsletterArticle, NewsletterIssue, NewsletterView
 

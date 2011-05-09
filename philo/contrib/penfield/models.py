@@ -1,3 +1,5 @@
+from datetime import date, datetime
+
 from django.conf import settings
 from django.conf.urls.defaults import url, patterns, include
 from django.contrib.sites.models import Site, RequestSite
@@ -9,13 +11,14 @@ from django.utils import feedgenerator, tzinfo
 from django.utils.datastructures import SortedDict
 from django.utils.encoding import smart_unicode, force_unicode
 from django.utils.html import escape
-from datetime import date, datetime
+
 from philo.contrib.penfield.exceptions import HttpNotAcceptable
 from philo.contrib.penfield.middleware import http_not_acceptable
 from philo.contrib.penfield.validators import validate_pagination_count
 from philo.exceptions import ViewCanNotProvideSubpath
 from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model, TemplateField, Template
 from philo.utils import paginate
+
 try:
 	import mimeparse
 except:

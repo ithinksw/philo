@@ -1,3 +1,6 @@
+import calendar
+import datetime
+
 from django.conf import settings
 from django.conf.urls.defaults import url, patterns, include
 from django.contrib.auth.models import User
@@ -10,12 +13,12 @@ from django.db import models
 from django.db.models.query import QuerySet
 from django.http import HttpResponse, Http404
 from django.utils.encoding import force_unicode
+
 from philo.contrib.julian.feedgenerator import ICalendarFeed
 from philo.contrib.penfield.models import FeedView, FEEDS
 from philo.exceptions import ViewCanNotProvideSubpath
 from philo.models import Tag, Entity, Page, TemplateField
 from philo.utils import ContentTypeRegistryLimiter
-import datetime, calendar
 
 
 __all__ = ('register_location_model', 'unregister_location_model', 'Location', 'TimedModel', 'Event', 'Calendar', 'CalendarView',)

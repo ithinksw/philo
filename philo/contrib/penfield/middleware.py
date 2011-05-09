@@ -1,5 +1,6 @@
 from django.http import HttpResponse
 from django.utils.decorators import decorator_from_middleware
+
 from philo.contrib.penfield.exceptions import HttpNotAcceptable
 
 

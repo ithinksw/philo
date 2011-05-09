@@ -1,8 +1,8 @@
 from django import template
 from django.conf import settings
-from django.utils.safestring import SafeUnicode, mark_safe
-from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils.safestring import SafeUnicode, mark_safe
 
 
 register = template.Library()

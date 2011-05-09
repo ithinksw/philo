@@ -1,3 +1,5 @@
+from functools import update_wrapper
+
 from django.conf import settings
 from django.conf.urls.defaults import patterns, url
 from django.contrib import admin
@@ -7,9 +9,9 @@ from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.utils.translation import ugettext_lazy as _
+
 from philo.admin import EntityAdmin
 from philo.contrib.sobol.models import Search, ResultURL, SearchView
-from functools import update_wrapper
 
 
 class ResultURLInline(admin.TabularInline):

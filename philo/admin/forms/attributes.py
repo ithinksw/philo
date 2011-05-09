@@ -1,6 +1,7 @@
 from django.contrib.contenttypes.generic import BaseGenericInlineFormSet
 from django.contrib.contenttypes.models import ContentType
 from django.forms.models import ModelForm
+
 from philo.models import Attribute
 
 

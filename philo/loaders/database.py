@@ -1,6 +1,7 @@
 from django.template import TemplateDoesNotExist
 from django.template.loader import BaseLoader
 from django.utils.encoding import smart_unicode
+
 from philo.models import Template
 
 

@@ -1,3 +1,6 @@
+import datetime
+
+from django.conf import settings
 from django.conf.urls.defaults import patterns, url
 from django.contrib import messages
 from django.core.exceptions import ValidationError
@@ -5,6 +8,7 @@ from django.db import models
 from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.utils import simplejson as json
 from django.utils.datastructures import SortedDict
+
 from philo.contrib.sobol import registry
 from philo.contrib.sobol.forms import SearchForm
 from philo.contrib.sobol.utils import HASH_REDIRECT_GET_KEY, URL_REDIRECT_GET_KEY, SEARCH_ARG_GET_KEY, check_redirect_hash
@@ -12,11 +16,13 @@ from philo.exceptions import ViewCanNotProvideSubpath
 from philo.models import MultiView, Page
 from philo.models.fields import SlugMultipleChoiceField
 from philo.validators import RedirectValidator
-import datetime
-try:
-	import eventlet
-except:
-	eventlet = False
+
+eventlet = None
+if getattr(settings, 'SOBOL_USE_EVENTLET', False):
+	try:
+		import eventlet
+	except:
+		pass
 
 
 class Search(models.Model):

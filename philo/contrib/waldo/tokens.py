@@ -2,12 +2,12 @@
 Based on django.contrib.auth.tokens
 """
 
-
+from hashlib import sha1
 from datetime import date
+
 from django.conf import settings
 from django.utils.http import int_to_base36, base36_to_int
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from hashlib import sha1
 
 
 REGISTRATION_TIMEOUT_DAYS = getattr(settings, 'WALDO_REGISTRATION_TIMEOUT_DAYS', 1)

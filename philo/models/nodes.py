@@ -122,7 +122,7 @@ class View(Entity):
 	accepts_subpath = False
 	
 	def handles_subpath(self, subpath):
-		"""Returns True if the the :class:`View` handles the given subpath, and False otherwise."""
+		"""Returns True if the :class:`View` handles the given subpath, and False otherwise."""
 		if not self.accepts_subpath and subpath != "/":
 			return False
 		return True
@@ -175,9 +175,19 @@ class View(Entity):
 		raise NotImplementedError("View subclasses must implement get_reverse_params to support subpaths.")
 	
 	def attributes_with_node(self, node):
+		"""
+		Returns a :class:`~philo.models.base.QuerySetMapper` using the :class:`Node`'s attributes as a passthrough.
+		
+		"""
 		return QuerySetMapper(self.attribute_set, passthrough=node.attributes)
 	
 	def render_to_response(self, request, extra_context=None):
+		"""
+		Renders the :class:`View` as an :class:`HttpResponse`. This will raise :const:`~philo.exceptions.MIDDLEWARE_NOT_CONFIGURED` if the `request` doesn't have an attached :class:`Node`. This can happen if the :class:`~philo.middleware.RequestNodeMiddleware` is not in :setting:`settings.MIDDLEWARE_CLASSES` or if it is not functioning correctly.
+		
+		:meth:`render_to_response` will send the :data:`~philo.signals.view_about_to_render` signal, then call :meth:`actually_render_to_response`, and finally send the :data:`~philo.signals.view_finished_rendering` signal before returning the ``response``.
+
+		"""
 		if not hasattr(request, 'node'):
 			raise MIDDLEWARE_NOT_CONFIGURED
 		
@@ -188,6 +198,7 @@ class View(Entity):
 		return response
 	
 	def actually_render_to_response(self, request, extra_context=None):
+		"""Concrete subclasses must override this method to provide the business logic for turning a ``request`` and ``extra_context`` into an :class:`HttpResponse`."""
 		raise NotImplementedError('View subclasses must implement actually_render_to_response.')
 	
 	class Meta:
@@ -198,10 +209,16 @@ _view_content_type_limiter.cls = View
 
 
 class MultiView(View):
+	"""
+	:class:`MultiView` is an abstract model which represents a section of related pages - for example, a :class:`~philo.contrib.penfield.BlogView` might have a foreign key to :class:`Page`\ s for an index, an entry detail, an entry archive by day, and so on. :class:`!MultiView` subclasses :class:`View`, and defines the following additional methods and attributes:
+	
+	"""
+	#: Same as :attr:`View.accepts_subpath`. Default: ``True``
 	accepts_subpath = True
 	
 	@property
 	def urlpatterns(self):
+		"""Returns urlpatterns that point to views (generally methods on the class). :class:`MultiView`\ s can be thought of as "managing" these subpaths."""
 		raise NotImplementedError("MultiView subclasses must implement urlpatterns.")
 	
 	def handles_subpath(self, subpath):
@@ -214,6 +231,10 @@ class MultiView(View):
 		return True
 	
 	def actually_render_to_response(self, request, extra_context=None):
+		"""
+		Resolves the remaining subpath left after finding this :class:`View`'s node using :attr:`self.urlpatterns <urlpatterns>` and renders the view function (or method) found with the appropriate args and kwargs.
+		
+		"""
 		clear_url_caches()
 		subpath = request.node.subpath
 		view, args, kwargs = resolve(subpath, urlconf=self)
@@ -225,17 +246,33 @@ class MultiView(View):
 		return view(request, *args, **kwargs)
 	
 	def get_context(self):
-		"""Hook for providing instance-specific context - such as the value of a Field - to all views."""
+		"""Hook for providing instance-specific context - such as the value of a Field - to any view methods on the instance."""
 		return {}
 	
 	def basic_view(self, field_name):
 		"""
-		Given the name of a field on ``self``, accesses the value of
+		Given the name of a field on the class, accesses the value of
 		that field and treats it as a ``View`` instance. Creates a
 		basic context based on self.get_context() and any extra_context
 		that was passed in, then calls the ``View`` instance's
 		render_to_response() method. This method is meant to be called
 		to return a view function appropriate for urlpatterns.
+		
+		:param field_name: The name of a field on the instance which contains a :class:`View` subclass instance.
+		:returns: A simple view function.
+		
+		Example::
+			
+			class Foo(Multiview):
+				page = models.ForeignKey(Page)
+				
+				@property
+				def urlpatterns(self):
+					urlpatterns = patterns('',
+						url(r'^$', self.basic_view('page'))
+					)
+					return urlpatterns
+		
 		"""
 		field = self._meta.get_field(field_name)
 		view = getattr(self, field.name, None)
@@ -254,8 +291,12 @@ class MultiView(View):
 
 
 class TargetURLModel(models.Model):
+	"""An abstract parent class for models which deal in targeting a url."""
+	#: An optional :class:`ForeignKey` to a :class:`Node`. If provided, that node will be used as the basis for the redirect.
 	target_node = models.ForeignKey(Node, blank=True, null=True, related_name="%(app_label)s_%(class)s_related")
+	#: A :class:`CharField` which may contain an absolute or relative URL. This will be validated with :class:`philo.validators.RedirectValidator`.
 	url_or_subpath = models.CharField(max_length=200, validators=[RedirectValidator()], blank=True, help_text="Point to this url or, if a node is defined and accepts subpaths, this subpath of the node.")
+	#: A :class:`~philo.models.fields.JSONField` instance. If the value of :attr:`reversing_parameters` is not None, the :attr:`url_or_subpath` will be treated as the name of a view to be reversed. The value of :attr:`reversing_parameters` will be passed into the reversal as args if it is a list or as kwargs if it is a dictionary. Otherwise it will be ignored.
 	reversing_parameters = JSONField(blank=True, help_text="If reversing parameters are defined, url_or_subpath will instead be interpreted as the view name to be reversed.")
 	
 	def clean(self):
@@ -284,6 +325,7 @@ class TargetURLModel(models.Model):
 		return self.url_or_subpath, args, kwargs
 	
 	def get_target_url(self):
+		"""Calculates and returns the target url based on the :attr:`target_node`, :attr:`url_or_subpath`, and :attr:`reversing_parameters`."""
 		node = self.target_node
 		if node is not None and node.accepts_subpath and self.url_or_subpath:
 			if self.reversing_parameters is not None:
@@ -308,13 +350,17 @@ class TargetURLModel(models.Model):
 
 
 class Redirect(TargetURLModel, View):
+	"""Represents a 301 or 302 redirect to a different url on an absolute or relative path."""
+	#: A choices tuple of redirect status codes (temporary or permanent).
 	STATUS_CODES = (
 		(302, 'Temporary'),
 		(301, 'Permanent'),
 	)
+	#: An :class:`IntegerField` which uses :attr:`STATUS_CODES` as its choices. Determines whether the redirect is considered temporary or permanent.
 	status_code = models.IntegerField(choices=STATUS_CODES, default=302, verbose_name='redirect type')
 	
 	def actually_render_to_response(self, request, extra_context=None):
+		"""Returns an :class:`HttpResponseRedirect` to :attr:`self.target_url`."""
 		response = HttpResponseRedirect(self.target_url)
 		response.status_code = self.status_code
 		return response
@@ -324,9 +370,10 @@ class Redirect(TargetURLModel, View):
 
 
 class File(View):
-	""" For storing arbitrary files """
-	
+	"""Stores an arbitrary file."""
+	#: Defines the mimetype of the uploaded file. This will not be validated.
 	mimetype = models.CharField(max_length=255)
+	#: Contains the uploaded file. Files are uploaded to ``philo/files/%Y/%m/%d``.
 	file = models.FileField(upload_to='philo/files/%Y/%m/%d')
 	
 	def actually_render_to_response(self, request, extra_context=None):
@@ -339,6 +386,7 @@ class File(View):
 		app_label = 'philo'
 	
 	def __unicode__(self):
+		"""Returns the path of the uploaded file."""
 		return self.file.name
 
 

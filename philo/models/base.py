@@ -40,7 +40,7 @@ class Titled(models.Model):
 		abstract = True
 
 
-#: An instance of :class:`ContentTypeRegistryLimiter` which is used to track the content types which can be related to by ForeignKeyValues and ManyToManyValues.
+#: An instance of :class:`ContentTypeRegistryLimiter` which is used to track the content types which can be related to by :class:`ForeignKeyValue`\ s and :class:`ManyToManyValue`\ s.
 value_content_type_limiter = ContentTypeRegistryLimiter()
 
 

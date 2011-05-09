@@ -1,7 +1,7 @@
 Entities and Attributes
 =======================
 
-.. module:: philo.models.base
+.. automodule:: philo.models.base
 
 One of the core concepts in Philo is the relationship between the :class:`Entity` and :class:`Attribute` classes. :class:`Attribute`\ s represent an arbitrary key/value pair by having one :class:`GenericForeignKey` to an :class:`Entity` and another to an :class:`AttributeValue`.
 
@@ -28,6 +28,7 @@ Attributes
 	:show-inheritance:
 
 .. automodule:: philo.models.base
+	:noindex:
 	:members: value_content_type_limiter
 
 .. autofunction:: register_value_model(model)

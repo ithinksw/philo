@@ -10,6 +10,7 @@ Contents:
    nodes-and-views
    collections
    miscellaneous
+   fields
 
 
 .. automodule:: philo.models

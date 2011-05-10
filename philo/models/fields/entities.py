@@ -1,18 +1,10 @@
 """
-The EntityProxyFields defined in this file can be assigned as fields on
-a subclass of philo.models.Entity. They act like any other model
-fields, but instead of saving their data to the database, they save it
-to attributes related to a model instance. Additionally, a new
-attribute will be created for an instance if and only if the field's
-value has been set. This is relevant i.e. for passthroughs, where the
-value of the field may be defined by some other instance's attributes.
+EntityProxyFields can be assigned as fields on a subclass of philo.models.Entity. They act like any other model fields, but instead of saving their data to the model's table, they save it to attributes related to a model instance. Additionally, a new attribute will be created for an instance if and only if the field's value has been set. This is relevant i.e. for :class:`QuerySetMapper` passthroughs, where even an Attribute with a value of ``None`` must prevent a passthrough.
 
 Example::
 
 	class Thing(Entity):
 		numbers = models.PositiveIntegerField()
-	
-	class ThingProxy(Thing):
 		improvised = JSONAttribute(models.BooleanField)
 """
 import datetime
@@ -126,6 +118,7 @@ class AttributeFieldDescriptor(object):
 
 
 def process_attribute_fields(sender, instance, created, **kwargs):
+	"""This function is attached to each :class:`Entity` subclass's post_save signal. Any :class:`Attribute`\ s managed by EntityProxyFields which have been removed will be deleted, and any new attributes will be created """
 	if ATTRIBUTE_REGISTRY in instance.__dict__:
 		registry = instance.__dict__[ATTRIBUTE_REGISTRY]
 		instance.attribute_set.filter(key__in=[field.attribute_key for field in registry['removed']]).delete()
@@ -182,6 +175,8 @@ class AttributeField(EntityProxyField):
 
 
 class JSONAttribute(AttributeField):
+	"""Handles an :class:`Attribute` with a :class:`JSONValue`."""
+	
 	value_class = JSONValue
 	
 	def __init__(self, field_template=None, **kwargs):
@@ -216,6 +211,7 @@ class JSONAttribute(AttributeField):
 
 
 class ForeignKeyAttribute(AttributeField):
+	"""Handles an :class:`Attribute` with a :class:`ForeignKeyValue`."""
 	value_class = ForeignKeyValue
 	
 	def __init__(self, model, limit_choices_to=None, **kwargs):

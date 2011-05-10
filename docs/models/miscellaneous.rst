@@ -1,4 +1,4 @@
-Miscellaneous Support Models
+Miscellaneous Models
 =============================
 .. currentmodule:: philo.models.nodes
 .. autoclass:: philo.models.nodes.TargetURLModel

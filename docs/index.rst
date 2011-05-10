@@ -13,6 +13,9 @@ Contents:
    
    intro
    models/intro
+   exceptions
+   middleware
+   signals
 
 Indices and tables
 ==================

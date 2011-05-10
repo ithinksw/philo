@@ -133,17 +133,14 @@ class View(Entity):
 		
 		If ``obj`` is provided, :meth:`get_reverse_params` will be called and the results will be combined with any ``view_name``, ``args``, and ``kwargs`` that may have been passed in.
 		
-		This method will raise the following exceptions:
-		
-		- :class:`~philo.exceptions.ViewDoesNotProvideSubpaths` if :attr:`accepts_subpath` is False.
-		- :class:`~philo.exceptions.ViewCanNotProvideSubpath` if a reversal is not possible.
-		
 		:param view_name: The name of the view to be reversed.
 		:param args: Extra args for reversing the view.
 		:param kwargs: A dictionary of arguments for reversing the view.
 		:param node: The node whose subpath this is.
 		:param obj: An object to be passed to :meth:`get_reverse_params` to generate a view_name, args, and kwargs for reversal.
 		:returns: A subpath beyond the node that reverses the view, or an absolute url that reverses the view if a node was passed in.
+		:except philo.exceptions.ViewDoesNotProvideSubpaths: if :attr:`accepts_subpath` is False
+		:except philo.exceptions.ViewCanNotProvideSubpath: if a reversal is not possible.
 		
 		"""
 		if not self.accepts_subpath:

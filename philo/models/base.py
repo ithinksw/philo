@@ -344,7 +344,7 @@ class TreeManager(models.Manager):
 	
 	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/', field='slug'):
 		"""
-		If ``absolute_result`` is ``True``, returns the object at ``path`` (starting at ``root``) or raises a :class:`DoesNotExist` exception. Otherwise, returns a tuple containing the deepest object found along ``path`` (or ``root`` if no deeper object is found) and the remainder of the path after that object as a string (or None if there is no remaining path).
+		If ``absolute_result`` is ``True``, returns the object at ``path`` (starting at ``root``) or raises an :class:`~django.core.exceptions.ObjectDoesNotExist` exception. Otherwise, returns a tuple containing the deepest object found along ``path`` (or ``root`` if no deeper object is found) and the remainder of the path after that object as a string (or None if there is no remaining path).
 		
 		.. note:: If you are looking for something with an exact path, it is faster to use absolute_result=True, unless the path depth is over ~40, in which case the high cost of the absolute query may make a binary search (i.e. non-absolute) faster.
 		
@@ -355,7 +355,8 @@ class TreeManager(models.Manager):
 		:param absolute_result: Whether to return an absolute result or do a binary search
 		:param pathsep: The path separator used in ``path``
 		:param field: The field on the model which should be queried for ``path`` segment matching.
-		:returns: An instance if absolute_result is True or (instance, remaining_path) otherwise.
+		:returns: An instance if ``absolute_result`` is ``True`` or an (instance, remaining_path) tuple otherwise.
+		:raises django.core.exceptions.ObjectDoesNotExist: if no object can be found matching the input parameters.
 		
 		"""
 		

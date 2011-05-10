@@ -5,7 +5,7 @@ Custom Fields
 	:members:
 
 EntityProxyFields
-=================
+-----------------
 
 .. automodule:: philo.models.fields.entities
 	:members:

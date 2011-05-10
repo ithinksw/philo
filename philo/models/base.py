@@ -312,6 +312,48 @@ class EntityBase(models.base.ModelBase):
 		return new
 
 
+class EntityAttributeMapper(object, DictMixin):
+	def __init__(self, entity):
+		self.entity = entity
+	
+	def get_attributes(self):
+		return self.entity.attribute_set.all()
+	
+	def make_cache(self):
+		attributes = self.get_attributes()
+		value_lookups = {}
+		
+		for a in attributes:
+			value_lookups.setdefault(a.value_content_type, []).append(a.value_object_id)
+		
+		values_bulk = {}
+		
+		for ct, pks in value_lookups.items():
+			values_bulk[ct] = ct.model_class().objects.in_bulk(pks)
+		
+		self._cache = dict([(a.key, getattr(values_bulk[a.value_content_type].get(a.value_object_id), 'value', None)) for a in attributes])
+	
+	def __getitem__(self, key):
+		if not hasattr(self, '_cache'):
+			self.make_cache()
+		return self._cache[key]
+	
+	def keys(self):
+		if not hasattr(self, '_cache'):
+			self.make_cache()
+		return self._cache.keys()
+	
+	def items(self):
+		if not hasattr(self, '_cache'):
+			self.make_cache()
+		return self._cache.items()
+	
+	def values(self):
+		if not hasattr(self, '_cache'):
+			self.make_cache()
+		return self._cache.values()
+
+
 class Entity(models.Model):
 	"""An abstract class that simplifies access to related attributes. Most models provided by Philo subclass Entity."""
 	__metaclass__ = EntityBase
@@ -332,8 +374,7 @@ class Entity(models.Model):
 			u'eggs'
 		
 		"""
-		
-		return QuerySetMapper(self.attribute_set.all())
+		return EntityAttributeMapper(self)
 	
 	class Meta:
 		abstract = True
@@ -495,6 +536,13 @@ class TreeEntityBase(MPTTModelBase, EntityBase):
 		return meta.register(cls)
 
 
+class TreeEntityAttributeMapper(EntityAttributeMapper):
+	def get_attributes(self):
+		ancestors = dict(self.entity.get_ancestors(include_self=True).values_list('pk', 'level'))
+		ct = ContentType.objects.get_for_model(self.entity)
+		return sorted(Attribute.objects.filter(entity_content_type=ct, entity_object_id__in=ancestors.keys()), key=lambda x: ancestors[x.entity_object_id])
+
+
 class TreeEntity(Entity, TreeModel):
 	"""An abstract subclass of Entity which represents a tree relationship."""
 	
@@ -518,7 +566,7 @@ class TreeEntity(Entity, TreeModel):
 		"""
 		
 		if self.parent:
-			return QuerySetMapper(self.attribute_set.all(), passthrough=self.parent.attributes)
+			return TreeEntityAttributeMapper(self)
 		return super(TreeEntity, self).attributes
 	
 	class Meta:

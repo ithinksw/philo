@@ -130,20 +130,7 @@ def process_attribute_fields(sender, instance, created, **kwargs):
 				attribute = Attribute()
 				attribute.entity = instance
 				attribute.key = field.attribute_key
-			
-			value_class = field.value_class
-			if isinstance(attribute.value, value_class):
-				value = attribute.value
-			else:
-				if isinstance(attribute.value, models.Model):
-					attribute.value.delete()
-				value = value_class()
-			
-			value.set_value(getattr(instance, field.name, None))
-			value.save()
-			
-			attribute.value = value
-			attribute.save()
+			attribute.set_value(value=getattr(instance, field.name, None), value_class=field.value_class)
 		del instance.__dict__[ATTRIBUTE_REGISTRY]
 
 

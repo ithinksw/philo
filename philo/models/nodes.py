@@ -12,9 +12,9 @@ from django.template import add_to_builtins as register_templatetags
 from django.utils.encoding import smart_str
 
 from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED, ViewCanNotProvideSubpath, ViewDoesNotProvideSubpaths
-from philo.models.base import TreeEntity, Entity, QuerySetMapper, register_value_model
+from philo.models.base import TreeEntity, Entity, register_value_model
 from philo.models.fields import JSONField
-from philo.utils import ContentTypeSubclassLimiter
+from philo.utils import ContentTypeSubclassLimiter, LazyPassthroughAttributeMapper
 from philo.validators import RedirectValidator
 from philo.signals import view_about_to_render, view_finished_rendering
 
@@ -176,10 +176,10 @@ class View(Entity):
 	
 	def attributes_with_node(self, node):
 		"""
-		Returns a :class:`~philo.models.base.QuerySetMapper` using the :class:`Node`'s attributes as a passthrough.
+		Returns a dictionary-like object which can be used to directly retrieve the values of :class:`Attribute`\ s related to the :class:`View`, falling back on similar object which retrieves the values of the passed-in node and its ancestors.
 		
 		"""
-		return QuerySetMapper(self.attribute_set, passthrough=node.attributes)
+		return LazyPassthroughAttributeMapper((self, node))
 	
 	def render_to_response(self, request, extra_context=None):
 		"""

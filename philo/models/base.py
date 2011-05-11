@@ -1,5 +1,3 @@
-from UserDict import DictMixin
-
 from django import forms
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
@@ -13,7 +11,7 @@ from mptt.models import MPTTModel, MPTTModelBase, MPTTOptions
 from philo.exceptions import AncestorDoesNotExist
 from philo.models.fields import JSONField
 from philo.signals import entity_class_prepared
-from philo.utils import ContentTypeRegistryLimiter, ContentTypeSubclassLimiter
+from philo.utils import ContentTypeRegistryLimiter, ContentTypeSubclassLimiter, AttributeMapper, TreeAttributeMapper
 from philo.validators import json_validator
 
 
@@ -262,33 +260,24 @@ class Attribute(models.Model):
 	def __unicode__(self):
 		return u'"%s": %s' % (self.key, self.value)
 	
+	def set_value(self, value, value_class=JSONValue):
+		"""Given a value and a value class, sets up self.value appropriately."""
+		if isinstance(self.value, value_class):
+			val = self.value
+		else:
+			if isinstance(self.value, models.Model):
+				self.value.delete()
+			val = value_class()
+		
+		val.set_value(value)
+		val.save()
+		
+		self.value = val
+		self.save()
+	
 	class Meta:
 		app_label = 'philo'
 		unique_together = (('key', 'entity_content_type', 'entity_object_id'), ('value_content_type', 'value_object_id'))
-
-
-class QuerySetMapper(object, DictMixin):
-	def __init__(self, queryset, passthrough=None):
-		self.queryset = queryset
-		self.passthrough = passthrough
-	
-	def __getitem__(self, key):
-		try:
-			value = self.queryset.get(key__exact=key).value
-		except ObjectDoesNotExist:
-			if self.passthrough is not None:
-				return self.passthrough.__getitem__(key)
-			raise KeyError
-		else:
-			if value is not None:
-				return value.value
-			return value
-	
-	def keys(self):
-		keys = set(self.queryset.values_list('key', flat=True).distinct())
-		if self.passthrough is not None:
-			keys |= set(self.passthrough.keys())
-		return list(keys)
 
 
 class EntityOptions(object):
@@ -318,10 +307,9 @@ class Entity(models.Model):
 	
 	attribute_set = generic.GenericRelation(Attribute, content_type_field='entity_content_type', object_id_field='entity_object_id')
 	
-	@property
-	def attributes(self):
+	def get_attribute_mapper(self, mapper=AttributeMapper):
 		"""
-		Property that returns a dictionary-like object which can be used to retrieve related :class:`Attribute`\ s' values directly.
+		Returns a dictionary-like object which can be used to retrieve related :class:`Attribute`\ s' values directly.
 
 		Example::
 
@@ -332,8 +320,8 @@ class Entity(models.Model):
 			u'eggs'
 		
 		"""
-		
-		return QuerySetMapper(self.attribute_set.all())
+		return mapper(self)
+	attributes = property(get_attribute_mapper)
 	
 	class Meta:
 		abstract = True
@@ -501,10 +489,9 @@ class TreeEntity(Entity, TreeModel):
 	
 	__metaclass__ = TreeEntityBase
 	
-	@property
-	def attributes(self):
+	def get_attribute_mapper(self, mapper=None):
 		"""
-		Property that returns a dictionary-like object which can be used to retrieve related :class:`Attribute`\ s' values directly. If an attribute with a given key is not related to the :class:`Entity`, then the object will check the parent's attributes.
+		Returns a dictionary-like object which can be used to retrieve related :class:`Attribute`\ s' values directly. If an attribute with a given key is not related to the :class:`Entity`, then the object will check the parent's attributes.
 
 		Example::
 
@@ -517,10 +504,13 @@ class TreeEntity(Entity, TreeModel):
 			u'eggs'
 		
 		"""
-		
-		if self.parent:
-			return QuerySetMapper(self.attribute_set.all(), passthrough=self.parent.attributes)
-		return super(TreeEntity, self).attributes
+		if mapper is None:
+			if self.parent:
+				mapper = TreeAttributeMapper
+			else:
+				mapper = AttributeMapper
+		return super(TreeEntity, self).get_attribute_mapper(mapper)
+	attributes = property(get_attribute_mapper)
 	
 	class Meta:
 		abstract = True

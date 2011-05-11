@@ -28,9 +28,8 @@
 {% block content %}
 	<div class="container-grid delete-confirmation">
 		{% for search in queryset %}
-		{% if not forloop.first and not forloop.last %}<h1>{{ search.string }}</h1>{% endif %}
 		<div class="group tabular">
-			<h2>{% blocktrans %}Results{% endblocktrans %}</h2>{% comment %}For the favored results, add a class?{% endcomment %}
+			<h2>{{ search_string }}</h2>
 			<div class="module table">
 				<div class="module thead">
 					<div class="tr">

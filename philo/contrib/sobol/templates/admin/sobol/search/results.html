@@ -23,9 +23,8 @@
 
 {% block content %}
 		{% for search in queryset %}
-		{% if not forloop.first and not forloop.last %}<h1>{{ search.string }}</h1>{% endif %}
 			<fieldset class="module">
-				<h2>{% blocktrans %}Results{% endblocktrans %}</h2>{% comment %}For the favored results, add a class?{% endcomment %}
+				<h2>{{ search.string }}</h2>
 				<table>
 					<thead>
 						<tr>

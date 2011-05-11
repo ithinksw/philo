@@ -11,7 +11,8 @@ from mptt.models import MPTTModel, MPTTModelBase, MPTTOptions
 from philo.exceptions import AncestorDoesNotExist
 from philo.models.fields import JSONField
 from philo.signals import entity_class_prepared
-from philo.utils import ContentTypeRegistryLimiter, ContentTypeSubclassLimiter, AttributeMapper, TreeAttributeMapper
+from philo.utils import ContentTypeRegistryLimiter, ContentTypeSubclassLimiter
+from philo.utils.entities import AttributeMapper, TreeAttributeMapper
 from philo.validators import json_validator
 
 

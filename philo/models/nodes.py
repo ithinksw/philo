@@ -14,7 +14,8 @@ from django.utils.encoding import smart_str
 from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED, ViewCanNotProvideSubpath, ViewDoesNotProvideSubpaths
 from philo.models.base import TreeEntity, Entity, register_value_model
 from philo.models.fields import JSONField
-from philo.utils import ContentTypeSubclassLimiter, LazyPassthroughAttributeMapper
+from philo.utils import ContentTypeSubclassLimiter
+from philo.utils.entities import LazyPassthroughAttributeMapper
 from philo.signals import view_about_to_render, view_finished_rendering
 
 

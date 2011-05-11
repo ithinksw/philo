@@ -17,6 +17,7 @@ Contents:
    middleware
    signals
    validators
+   utilities
 
 Indices and tables
 ==================

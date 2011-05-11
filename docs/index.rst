@@ -16,6 +16,7 @@ Contents:
    exceptions
    middleware
    signals
+   validators
 
 Indices and tables
 ==================

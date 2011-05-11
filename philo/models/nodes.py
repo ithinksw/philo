@@ -15,7 +15,6 @@ from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED, ViewCanNotProvideSubpath
 from philo.models.base import TreeEntity, Entity, QuerySetMapper, register_value_model
 from philo.models.fields import JSONField
 from philo.utils import ContentTypeSubclassLimiter
-from philo.validators import RedirectValidator
 from philo.signals import view_about_to_render, view_finished_rendering
 
 
@@ -291,8 +290,8 @@ class TargetURLModel(models.Model):
 	"""An abstract parent class for models which deal in targeting a url."""
 	#: An optional :class:`ForeignKey` to a :class:`Node`. If provided, that node will be used as the basis for the redirect.
 	target_node = models.ForeignKey(Node, blank=True, null=True, related_name="%(app_label)s_%(class)s_related")
-	#: A :class:`CharField` which may contain an absolute or relative URL. This will be validated with :class:`philo.validators.RedirectValidator`.
-	url_or_subpath = models.CharField(max_length=200, validators=[RedirectValidator()], blank=True, help_text="Point to this url or, if a node is defined and accepts subpaths, this subpath of the node.")
+	#: A :class:`CharField` which may contain an absolute or relative URL, or the name of a node's subpath.
+	url_or_subpath = models.CharField(max_length=200, blank=True, help_text="Point to this url or, if a node is defined and accepts subpaths, this subpath of the node.")
 	#: A :class:`~philo.models.fields.JSONField` instance. If the value of :attr:`reversing_parameters` is not None, the :attr:`url_or_subpath` will be treated as the name of a view to be reversed. The value of :attr:`reversing_parameters` will be passed into the reversal as args if it is a list or as kwargs if it is a dictionary. Otherwise it will be ignored.
 	reversing_parameters = JSONField(blank=True, help_text="If reversing parameters are defined, url_or_subpath will instead be interpreted as the view name to be reversed.")
 	

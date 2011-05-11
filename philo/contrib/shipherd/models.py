@@ -8,7 +8,6 @@ from django.db import models
 from django.forms.models import model_to_dict
 
 from philo.models import TreeEntity, Node, TreeManager, Entity, TargetURLModel
-from philo.validators import RedirectValidator
 
 
 DEFAULT_NAVIGATION_DEPTH = 3

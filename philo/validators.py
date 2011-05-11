@@ -1,7 +1,6 @@
 import re
 
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator
 from django.template import Template, Parser, Lexer, TOKEN_BLOCK, TOKEN_VAR, TemplateSyntaxError
 from django.utils import simplejson as json
 from django.utils.html import escape, mark_safe
@@ -10,6 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 from philo.utils import LOADED_TEMPLATE_ATTR
 
 
+#: Tags which are considered insecure and are therefore always disallowed by secure :class:`TemplateValidator` instances.
 INSECURE_TAGS = (
 	'load',
 	'extends',
@@ -18,34 +18,8 @@ INSECURE_TAGS = (
 )
 
 
-class RedirectValidator(RegexValidator):
-	"""Based loosely on the URLValidator, but no option to verify_exists"""
-	regex = re.compile(
-		r'^(?:https?://' # http:// or https://
-		r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|' #domain...
-		r'localhost|' #localhost...
-		r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
-		r'(?::\d+)?' # optional port
-		r'(?:/?|[/?#]?\S+)|'
-		r'[^?#\s]\S*)$',
-		re.IGNORECASE)
-	message = _(u'Enter a valid absolute or relative redirect target')
-
-
-class URLLinkValidator(RegexValidator):
-	"""Based loosely on the URLValidator, but no option to verify_exists"""
-	regex = re.compile(
-		r'^(?:https?://' # http:// or https://
-		r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|' #domain...
-		r'localhost|' #localhost...
-		r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
-		r'(?::\d+)?' # optional port
-		r'|)' # also allow internal links
-		r'(?:/?|[/?#]?\S+)$', re.IGNORECASE)
-	message = _(u'Enter a valid absolute or relative redirect target')
-
-
 def json_validator(value):
+	"""Validates whether ``value`` is a valid json string."""
 	try:
 		json.loads(value)
 	except Exception, e:
@@ -130,6 +104,14 @@ def linebreak_iter(template_source):
 
 
 class TemplateValidator(object): 
+	"""
+	Validates whether a string represents valid Django template code.
+	
+	:param allow: ``None`` or an iterable of tag names which are explicitly allowed. If provided, tags whose names are not in the iterable will cause a ValidationError to be raised if they are used in the template code.
+	:param disallow: ``None`` or an iterable of tag names which are explicitly allowed. If provided, tags whose names are in the iterable will cause a ValidationError to be raised if they are used in the template code. If a tag's name is in ``allow`` and ``disallow``, it will be disallowed.
+	:param secure: If the validator is set to secure, it will automatically disallow the tag names listed in :const:`INSECURE_TAGS`. Defaults to ``True``.
+	
+	"""
 	def __init__(self, allow=None, disallow=None, secure=True):
 		self.allow = allow
 		self.disallow = disallow

@@ -8,7 +8,8 @@
 		<script src="static/js/init.js"></script>
 	</head>
 	<body>
-		<div id="container">
+		<div id="fork">
+<a href="http://github.com/you"><img style="position: fixed; top: 0; right: 0; border: 0;" src="https://d3nwyuy0nl342s.cloudfront.net/img/e6bef7a091f5f3138b8cd40bc3e114258dd68ddf/687474703a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f7265645f6161303030302e706e67" alt="Fork me on GitHub"></a>		<div id="container">
 			<header id="nameplate">
 				<h1>Philo</h1>
 			</header><!-- /#nameplate -->
@@ -20,13 +21,13 @@
 			
 				<p>Philo allows the creation of complex site structures from Django&#8217;s web-based admin interface (or any other database-editing interface). For a simple site, you will use the following three objects, included in the Philo core.</p>
 			
-				<ul>
-				<li><strong>Nodes</strong> are the basic building blocks of a website using Philo. They define the URL hierarchy and connect each URL to a View subclass instance which is used to generate an HttpResponse.</li>
-				<li><strong>Templates</strong> are Django templates, stored in the database and editable from the Django admin (or similar).</li>
-				<li><strong>Pages</strong> are a simple view subclass which return a basic HTML page according to a template. They have related, editable Contentlets and Content References based on {% container %} tags used in the template.</li>
+				<ul id="modelList">
+					<li><span class="name">Nodes</span> are the basic building blocks of a website using Philo. They define the URL hierarchy and connect each URL to a View subclass instance which is used to generate an HttpResponse.</li>
+					<li><span class="name">Templates</span> are Django templates, stored in the database and editable from the Django admin (or similar).</li>
+					<li><span class="name">Pages</span> are a simple view subclass which return a basic HTML page according to a template. They have related, editable Contentlets and Content References based on <code>{% container %}</code> tags used in the template.</li>
 				</ul>
 			
-				<p>Philo also provides a number of useful template tags, in particular <code>{% container &lt;name&gt; %}</code>, which generates a relationship (and a field in the admin interface) on any pages which use that template.</p>
+				<p>Philo also provides a number of useful template tags, in particular <code>{% container %}</code>, which generates a relationship (and a field in the admin interface) on any pages which use that template.</p>
 			
 				<h2>A Simple Example</h2>
 			
@@ -49,7 +50,7 @@
 			
 				<h2 id="batteries_included">Batteries Included</h2>
 			
-				<p>Following Python and Django&#8217;s <a href="http://docs.python.org/tutorial/stdlib.html#batteries-included">&ldquo;batteries included&rdquo; philosophy</a>, Philo includes a number of optional packages that simplify common website structures. These are stored in philo.contrib and include:</p>
+				<p>Following Python and Django&#8217;s <a href="http://docs.python.org/tutorial/stdlib.html#batteries-included">&ldquo;batteries included&rdquo; philosophy</a>, Philo includes a number of optional packages that simplify common website structures. These are stored in philo.contrib and include the following:</p>
 			
 				<ul id="contribList">
 					<li>

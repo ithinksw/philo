@@ -1,4 +1,5 @@
-@import "reset",
+@import "http://fonts.googleapis.com/css?family=Expletus+Sans",
+		"reset",
 		"var",
 		"compass/typography/vertical_rhythm",
 		"compass/css3/images",
@@ -10,9 +11,7 @@
 @include establish-baseline;
 		
 body{
-	@include background(
-		linear-gradient(top, $page-background, darken($page-background, 10%)) no-repeat fixed
-	);
+	background:$page-background;
 	@include body-text;
 }
 
@@ -36,10 +35,12 @@ a{
 }
 
 #nameplate{
-	@include adjust-font-size-to(40px);
+	@include adjust-font-size-to(60px);
+	margin-bottom:25px;
+	padding-bottom:5px;
 	border-bottom:5px solid $foreground;
 	@include box-shadow(0 1px 0 #FFF);
-	margin-bottom:15px;
+	font-family:$headingfonts;
 }
 
 #content{
@@ -49,6 +50,19 @@ a{
 	h1, h2, h3, h4, h5, h6{
 		font-weight:bold;
 		@include margin-trailer(.5);
+	}
+	h2{
+		@include adjust-font-size-to(20px);
+	}
+	code{
+		background: darken($page-background, 10%);
+		padding:3px;
+		margin:-4px 0;
+		border: 1px solid darken($page-background, 15%);
+		border-radius:3px;
+		@include box-inset;
+		font-family:Menlo, monospace;
+		@include adjust-font-size-to(13px);
 	}
 }
 
@@ -63,14 +77,16 @@ a{
 
 	figure{
 		$border: 1px;
-		border:$border solid lighten($foreground, 10%);
+		border:$border solid darken($foreground, 10%);
 		float:left;
 		width: ($width / 3) - $pad - 2 * $border;
 		margin-right: $pad;
 		overflow:hidden;
 		position:relative;
 		@include transition(width, .25s, linear);
-
+		@include box-inset($outset:rgba(255,255,255,.35));
+		@include border-radius(3px);
+		
 		&.shrunk{
 			width: ($width - 610px) / 2 - $pad - 3 * $border;
 		}
@@ -104,6 +120,17 @@ a{
 	@include clearfix;
 }
 
+#modelList{
+	margin-left: 1.5em;
+	li{
+		@include margin-trailer(.5);
+		list-style-type:disc;
+	}
+	.name{
+		font-weight:bold;
+	}
+}
+
 #contribList{
 	$pad: 10px;
 	$width: $page-width + $pad;
@@ -118,10 +145,16 @@ a{
 	-webkit-font-smoothing: antialiased;
 	
 	li{
-		width: $page-width/2 - $pad * 2;
+		$border: 1px;
+		width: $page-width/2 - $pad * 3 - $border * 2;
 		float:left;
-		padding: 0 $pad;
-		@include margin-trailer;
+		margin: 0 $pad/2 $pad $pad/2;
+		padding: $pad;
+		background: darken($foreground, 5%);
+		border:$border solid darken($foreground, 10%);
+		@include box-inset(rgba(0,0,0,.35), rgba(255,255,255,.15));
+		@include clearfix;
+		@include border-radius(3px);
 	}
 	.name, .description, .status{
 		display:block;
@@ -135,5 +168,6 @@ a{
 	.status{
 		font-style:italic;
 		@include adjust-font-size-to(13px);
+		float:right;
 	}
 }

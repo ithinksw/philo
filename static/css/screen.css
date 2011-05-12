@@ -1,3 +1,4 @@
+@import "http://fonts.googleapis.com/css?family=Expletus+Sans";
 html, body, div, span, applet, object, iframe,
 h1, h2, h3, h4, h5, h6, p, blockquote, pre,
 a, abbr, acronym, address, big, cite, code,
@@ -67,11 +68,7 @@ html > body {
   font-size: 16px; }
 
 body {
-  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #e0e5ef), color-stop(100%, #bec9de)) no-repeat fixed;
-  background: -webkit-linear-gradient(top, #e0e5ef, #bec9de) no-repeat fixed;
-  background: -moz-linear-gradient(top, #e0e5ef, #bec9de) no-repeat fixed;
-  background: -o-linear-gradient(top, #e0e5ef, #bec9de) no-repeat fixed;
-  background: linear-gradient(top, #e0e5ef, #bec9de) no-repeat fixed;
+  background: #e0e5ef;
   color: #333333;
   text-shadow: 0 1px 0 #FFF;
   font-family: Helvetica, Arial, serif; }
@@ -98,20 +95,38 @@ a {
   color: #333333; }
 
 #nameplate {
-  font-size: 2.5em;
+  font-size: 3.75em;
   line-height: 1.25em;
+  margin-bottom: 25px;
+  padding-bottom: 5px;
   border-bottom: 5px solid #333333;
   -moz-box-shadow: 0 1px 0 white;
   -webkit-box-shadow: 0 1px 0 white;
   -o-box-shadow: 0 1px 0 white;
   box-shadow: 0 1px 0 white;
-  margin-bottom: 15px; }
+  font-family: "Expletus Sans", Helvetica, Arial, serif; }
 
 #content p, #content ul, #content ol, #content header {
   margin-bottom: 1.563em; }
 #content h1, #content h2, #content h3, #content h4, #content h5, #content h6 {
   font-weight: bold;
   margin-bottom: 0.781em; }
+#content h2 {
+  font-size: 1.25em;
+  line-height: 1.25em; }
+#content code {
+  background: #bec9de;
+  padding: 3px;
+  margin: -4px 0;
+  border: 1px solid #aebbd5;
+  border-radius: 3px;
+  -moz-box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.15) inset, 0 1px 0 0 white;
+  -webkit-box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.15) inset, 0 1px 0 0 white;
+  -o-box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.15) inset, 0 1px 0 0 white;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.15) inset, 0 1px 0 0 white;
+  font-family: Menlo, monospace;
+  font-size: 0.813em;
+  line-height: 1.923em; }
 
 .three-up {
   background: #333333;
@@ -130,7 +145,7 @@ a {
   overflow: hidden;
   *zoom: 1; }
   .three-up figure {
-    border: 1px solid #4d4d4d;
+    border: 1px solid #1a1a1a;
     float: left;
     width: 241.333px;
     margin-right: 10px;
@@ -147,7 +162,17 @@ a {
     -moz-transition-timing-function: linear;
     -webkit-transition-timing-function: linear;
     -o-transition-timing-function: linear;
-    transition-timing-function: linear; }
+    transition-timing-function: linear;
+    -moz-box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.15) inset, 0 1px 0 0 rgba(255, 255, 255, 0.35);
+    -webkit-box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.15) inset, 0 1px 0 0 rgba(255, 255, 255, 0.35);
+    -o-box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.15) inset, 0 1px 0 0 rgba(255, 255, 255, 0.35);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.15) inset, 0 1px 0 0 rgba(255, 255, 255, 0.35);
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    -o-border-radius: 3px;
+    -ms-border-radius: 3px;
+    -khtml-border-radius: 3px;
+    border-radius: 3px; }
     .three-up figure.shrunk {
       width: 62px; }
     .three-up figure.expanded {
@@ -171,6 +196,14 @@ a {
     font-size: 0.813em;
     line-height: 1.923em; }
 
+#modelList {
+  margin-left: 1.5em; }
+  #modelList li {
+    margin-bottom: 0.781em;
+    list-style-type: disc; }
+  #modelList .name {
+    font-weight: bold; }
+
 #contribList {
   background: #333333;
   margin: 25px -10px;
@@ -191,10 +224,24 @@ a {
   color: white;
   -webkit-font-smoothing: antialiased; }
   #contribList li {
-    width: 355px;
+    width: 343px;
     float: left;
-    padding: 0 10px;
-    margin-bottom: 1.563em; }
+    margin: 0 5px 10px 5px;
+    padding: 10px;
+    background: #262626;
+    border: 1px solid #1a1a1a;
+    -moz-box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.35) inset, 0 1px 0 0 rgba(255, 255, 255, 0.15);
+    -webkit-box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.35) inset, 0 1px 0 0 rgba(255, 255, 255, 0.15);
+    -o-box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.35) inset, 0 1px 0 0 rgba(255, 255, 255, 0.15);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.35) inset, 0 1px 0 0 rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+    *zoom: 1;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    -o-border-radius: 3px;
+    -ms-border-radius: 3px;
+    -khtml-border-radius: 3px;
+    border-radius: 3px; }
   #contribList .name, #contribList .description, #contribList .status {
     display: block; }
   #contribList .name {
@@ -204,4 +251,5 @@ a {
   #contribList .status {
     font-style: italic;
     font-size: 0.813em;
-    line-height: 1.923em; }
+    line-height: 1.923em;
+    float: right; }

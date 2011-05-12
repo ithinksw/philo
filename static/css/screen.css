@@ -73,21 +73,6 @@ body {
   text-shadow: 0 1px 0 #FFF;
   font-family: Helvetica, Arial, serif; }
 
-a {
-  color: black;
-  text-decoration: none;
-  background: #aebbd5;
-  padding: 3px;
-  -moz-border-radius: 3px;
-  -webkit-border-radius: 3px;
-  -o-border-radius: 3px;
-  -ms-border-radius: 3px;
-  -khtml-border-radius: 3px;
-  border-radius: 3px; }
-  a:hover {
-    background: #95a1bb;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65); }
-
 #container {
   width: 750px;
   margin: 20px auto;
@@ -106,6 +91,20 @@ a {
   box-shadow: 0 1px 0 white;
   font-family: "Expletus Sans", Helvetica, Arial, serif; }
 
+#content a {
+  color: black;
+  text-decoration: none;
+  background: #aebbd5;
+  padding: 3px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  -o-border-radius: 3px;
+  -ms-border-radius: 3px;
+  -khtml-border-radius: 3px;
+  border-radius: 3px; }
+  #content a:hover {
+    background: #95a1bb;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65); }
 #content p, #content ul, #content ol, #content header {
   margin-bottom: 1.563em; }
 #content h1, #content h2, #content h3, #content h4, #content h5, #content h6 {

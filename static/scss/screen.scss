@@ -15,18 +15,6 @@ body{
 	@include body-text;
 }
 
-a{
-	color: darken($foreground, 20%);
-	text-decoration:none;
-	background: darken($page-background, 15%);
-	padding:3px;
-	@include border-radius(3px);
-	&:hover{
-		background: desaturate(darken($page-background, 25%), 10%);
-		text-shadow: 0 1px 0 rgba(255,255,255,.65);
-	};
-}
-
 #container{
 	width: $page-width;
 	margin:20px auto;
@@ -44,6 +32,17 @@ a{
 }
 
 #content{
+	a{
+		color: darken($foreground, 20%);
+		text-decoration:none;
+		background: darken($page-background, 15%);
+		padding:3px;
+		@include border-radius(3px);
+		&:hover{
+			background: desaturate(darken($page-background, 25%), 10%);
+			text-shadow: 0 1px 0 rgba(255,255,255,.65);
+		};
+	}
 	p, ul, ol, header{
 		@include margin-trailer;
 	}

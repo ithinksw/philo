@@ -8,16 +8,24 @@ from django.contrib.contenttypes.models import ContentType
 
 
 class AttributeMapper(object, DictMixin):
+	"""
+	Given an :class:`~philo.models.base.Entity` subclass instance, this class allows dictionary-style access to the :class:`~philo.models.base.Entity`'s :class:`~philo.models.base.Attribute`\ s. In order to prevent unnecessary queries, the :class:`AttributeMapper` will cache all :class:`~philo.models.base.Attribute`\ s and the associated python values when it is first accessed.
+	
+	:param entity: The :class:`~philo.models.base.Entity` subclass instance whose :class:`~philo.models.base.Attribute`\ s will be made accessible.
+	
+	"""
 	def __init__(self, entity):
 		self.entity = entity
 		self.clear_cache()
 	
 	def __getitem__(self, key):
+		"""Returns the ultimate python value of the :class:`~philo.models.base.Attribute` with the given ``key`` from the cache, populating the cache if necessary."""
 		if not self._cache_populated:
 			self._populate_cache()
 		return self._cache[key]
 	
 	def __setitem__(self, key, value):
+		"""Given a python value, sets the value of the :class:`~philo.models.base.Attribute` with the given ``key`` to that value."""
 		# Prevent circular import.
 		from philo.models.base import JSONValue, ForeignKeyValue, ManyToManyValue, Attribute
 		old_attr = self.get_attribute(key)
@@ -40,24 +48,29 @@ class AttributeMapper(object, DictMixin):
 		self._attributes_cache[key] = attribute
 	
 	def get_attributes(self):
+		"""Returns an iterable of all of the :class:`~philo.models.base.Entity`'s :class:`~philo.models.base.Attribute`\ s."""
 		return self.entity.attribute_set.all()
 	
-	def get_attribute(self, key):
+	def get_attribute(self, key, default=None):
+		"""Returns the :class:`~philo.models.base.Attribute` instance with the given ``key`` from the cache, populating the cache if necessary, or ``default`` if no such attribute is found."""
 		if not self._cache_populated:
 			self._populate_cache()
-		return self._attributes_cache.get(key, None)
+		return self._attributes_cache.get(key, default)
 	
 	def keys(self):
+		"""Returns the keys from the cache, first populating the cache if necessary."""
 		if not self._cache_populated:
 			self._populate_cache()
 		return self._cache.keys()
 	
 	def items(self):
+		"""Returns the items from the cache, first populating the cache if necessary."""
 		if not self._cache_populated:
 			self._populate_cache()
 		return self._cache.items()
 	
 	def values(self):
+		"""Returns the values from the cache, first populating the cache if necessary."""
 		if not self._cache_populated:
 			self._populate_cache()
 		return self._cache.values()
@@ -82,25 +95,30 @@ class AttributeMapper(object, DictMixin):
 		self._cache_populated = True
 	
 	def clear_cache(self):
+		"""Clears the cache."""
 		self._cache = {}
 		self._attributes_cache = {}
 		self._cache_populated = False
 
 
 class LazyAttributeMapperMixin(object):
+	"""In some cases, it may be that only one attribute value needs to be fetched. In this case, it is more efficient to avoid populating the cache whenever possible. This mixin overrides the :meth:`__getitem__` and :meth:`get_attribute` methods to prevent their populating the cache. If the cache has been populated (i.e. through :meth:`keys`, :meth:`values`, etc.), then the value or attribute will simply be returned from the cache."""
 	def __getitem__(self, key):
 		if key not in self._cache and not self._cache_populated:
 			self._add_to_cache(key)
 		return self._cache[key]
 	
-	def get_attribute(self, key):
+	def get_attribute(self, key, default=None):
 		if key not in self._attributes_cache and not self._cache_populated:
 			self._add_to_cache(key)
-		return self._attributes_cache[key]
+		return self._attributes_cache.get(key, default)
+	
+	def _raw_get_attribute(self, key):
+		return self.get_attributes().get(key=key)
 	
 	def _add_to_cache(self, key):
 		try:
-			attr = self.get_attributes().get(key=key)
+			attr = self._raw_get_attribute(key)
 		except Attribute.DoesNotExist:
 			raise KeyError
 		else:
@@ -115,19 +133,38 @@ class LazyAttributeMapper(LazyAttributeMapperMixin, AttributeMapper):
 
 
 class TreeAttributeMapper(AttributeMapper):
+	"""The :class:`~philo.models.base.TreeEntity` class allows the inheritance of :class:`~philo.models.base.Attribute`\ s down the tree. This mapper will return the most recently declared :class:`~philo.models.base.Attribute` among the :class:`~philo.models.base.TreeEntity`'s ancestors or set an attribute on the :class:`~philo.models.base.Entity` it is attached to."""
 	def get_attributes(self):
+		"""Returns a list of :class:`~philo.models.base.Attribute`\ s sorted by increasing parent level. When used to populate the cache, this will cause :class:`~philo.models.base.Attribute`\ s on the root to be overwritten by those on its children, etc."""
 		from philo.models import Attribute
 		ancestors = dict(self.entity.get_ancestors(include_self=True).values_list('pk', 'level'))
 		ct = ContentType.objects.get_for_model(self.entity)
-		return sorted(Attribute.objects.filter(entity_content_type=ct, entity_object_id__in=ancestors.keys()), key=lambda x: ancestors[x.entity_object_id])
+		attrs = Attribute.objects.filter(entity_content_type=ct, entity_object_id__in=ancestors.keys())
+		return sorted(attrs, key=lambda x: ancestors[x.entity_object_id])
 
 
 class LazyTreeAttributeMapper(LazyAttributeMapperMixin, TreeAttributeMapper):
 	def get_attributes(self):
-		return super(LazyTreeAttributeMapper, self).get_attributes().exclude(key__in=self._cache.keys())
+		from philo.models import Attribute
+		ancestors = dict(self.entity.get_ancestors(include_self=True).values_list('pk', 'level'))
+		ct = ContentType.objects.get_for_model(self.entity)
+		attrs = Attribute.objects.filter(entity_content_type=ct, entity_object_id__in=ancestors.keys()).exclude(key__in=self._cache.keys())
+		return sorted(attrs, key=lambda x: ancestors[x.entity_object_id])
+	
+	def _raw_get_attribute(self, key):
+		from philo.models import Attribute
+		ancestors = dict(self.entity.get_ancestors(include_self=True).values_list('pk', 'level'))
+		ct = ContentType.objects.get_for_model(self.entity)
+		try:
+			attrs = Attribute.objects.filter(entity_content_type=ct, entity_object_id__in=ancestors.keys(), key=key)
+			sorted_attrs = sorted(attrs, key=lambda x: ancestors[x.entity_object_id], reverse=True)
+			return sorted_attrs[0]
+		except IndexError:
+			raise Attribute.DoesNotExist
 
 
 class PassthroughAttributeMapper(AttributeMapper):
+	"""Given an iterable of :class:`Entities <philo.models.base.Entity>`, this mapper will fetch an :class:`AttributeMapper` for each one. Lookups will return the value from the first :class:`AttributeMapper` which has an entry for a given key."""
 	def __init__(self, entities):
 		self._attributes = [e.attributes for e in entities]
 		super(PassthroughAttributeMapper, self).__init__(self._attributes[0].entity)
@@ -153,13 +190,11 @@ class PassthroughAttributeMapper(AttributeMapper):
 
 
 class LazyPassthroughAttributeMapper(LazyAttributeMapperMixin, PassthroughAttributeMapper):
-	def _add_to_cache(self, key):
+	"""The :class:`LazyPassthroughAttributeMapper` is lazy in that it tries to avoid accessing the :class:`AttributeMapper`\ s that it uses for lookups. However, those :class:`AttributeMapper`\ s may or may not be lazy themselves."""
+	def _raw_get_attribute(self, key):
+		from philo.models import Attribute
 		for a in self._attributes:
-			try:
-				self._cache[key] = a[key]
-				self._attributes_cache[key] = a.get_attribute(key)
-			except KeyError:
-				pass
-			else:
-				break
-		return self._cache[key]
+			attr = a.get_attribute(key)
+			if attr is not None:
+				return attr
+		raise Attribute.DoesNotExist

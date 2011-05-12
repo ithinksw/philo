@@ -9,7 +9,13 @@
 		"compass/utilities/general/clearfix";
 		
 @include establish-baseline;
-		
+
+::selection{
+	background: darken(saturate(adjust-hue($page-background, 90deg), 100%), 20%);
+	text-shadow: none !important;
+	color:#FFF !important;
+}
+
 body{
 	background:$page-background;
 	@include body-text;
@@ -62,6 +68,23 @@ body{
 		@include box-inset;
 		font-family:Menlo, monospace;
 		@include adjust-font-size-to(13px);
+	}
+	.codeblock{
+		@extend code;
+		padding: 10px;
+		display:block;
+		code{
+			margin:0;
+			padding:0;
+			@include box-shadow(none);
+			@include border-radius(0);
+			border:none;
+			display:block;
+		}
+		&.shell code::before{
+			content: "$ ";
+			color:lighten($foreground, 10%);
+		}
 	}
 }
 
@@ -168,5 +191,21 @@ body{
 		font-style:italic;
 		@include adjust-font-size-to(13px);
 		float:right;
+	}
+}
+
+footer{
+	margin-top: 25px;
+	padding-top: 20px;
+	border-top:5px solid $foreground;
+	@include box-shadow(0 1px 0 0 #FFF inset);
+	@include adjust-font-size-to(13px);
+	color:lighten($foreground, 20%);
+	a{
+		text-decoration:none;
+		color:darken($page-background, 40%);
+		&:hover{
+			color:darken($page-background, 80%);
+		}
 	}
 }

@@ -1,7 +1,7 @@
 @import "http://fonts.googleapis.com/css?family=Expletus+Sans";
 html, body, div, span, applet, object, iframe,
 h1, h2, h3, h4, h5, h6, p, blockquote, pre,
-a, abbr, acronym, address, big, cite, code,
+a, abbr, acronym, address, big, cite, code, #content .codeblock,
 del, dfn, em, img, ins, kbd, q, s, samp,
 small, strike, strong, sub, sup, tt, var,
 b, u, i, center,
@@ -67,6 +67,11 @@ body {
 html > body {
   font-size: 16px; }
 
+::selection {
+  background: #ff6ae6;
+  text-shadow: none !important;
+  color: #FFF !important; }
+
 body {
   background: #e0e5ef;
   color: #333333;
@@ -113,7 +118,7 @@ body {
 #content h2 {
   font-size: 1.25em;
   line-height: 1.25em; }
-#content code {
+#content code, #content .codeblock {
   background: #bec9de;
   padding: 3px;
   margin: -4px 0;
@@ -131,6 +136,27 @@ body {
   font-family: Menlo, monospace;
   font-size: 0.813em;
   line-height: 1.923em; }
+#content .codeblock {
+  padding: 10px;
+  display: block; }
+  #content .codeblock code, #content .codeblock .codeblock {
+    margin: 0;
+    padding: 0;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    -o-box-shadow: none;
+    box-shadow: none;
+    -moz-border-radius: 0;
+    -webkit-border-radius: 0;
+    -o-border-radius: 0;
+    -ms-border-radius: 0;
+    -khtml-border-radius: 0;
+    border-radius: 0;
+    border: none;
+    display: block; }
+  #content .codeblock.shell code::before, #content .codeblock.shell .codeblock::before {
+    content: "$ ";
+    color: #4d4d4d; }
 
 .three-up {
   background: #333333;
@@ -257,3 +283,20 @@ body {
     font-size: 0.813em;
     line-height: 1.923em;
     float: right; }
+
+footer {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 5px solid #333333;
+  -moz-box-shadow: 0 1px 0 0 white inset;
+  -webkit-box-shadow: 0 1px 0 0 white inset;
+  -o-box-shadow: 0 1px 0 0 white inset;
+  box-shadow: 0 1px 0 0 white inset;
+  font-size: 0.813em;
+  line-height: 1.923em;
+  color: #666666; }
+  footer a {
+    text-decoration: none;
+    color: #5974aa; }
+    footer a:hover {
+      color: #131924; }

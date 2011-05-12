@@ -43,7 +43,7 @@ class Titled(models.Model):
 		abstract = True
 
 
-#: An instance of :class:`ContentTypeRegistryLimiter` which is used to track the content types which can be related to by :class:`ForeignKeyValue`\ s and :class:`ManyToManyValue`\ s.
+#: An instance of :class:`.ContentTypeRegistryLimiter` which is used to track the content types which can be related to by :class:`ForeignKeyValue`\ s and :class:`ManyToManyValue`\ s.
 value_content_type_limiter = ContentTypeRegistryLimiter()
 
 
@@ -310,7 +310,7 @@ class Entity(models.Model):
 	
 	def get_attribute_mapper(self, mapper=AttributeMapper):
 		"""
-		Returns a dictionary-like object which can be used to retrieve related :class:`Attribute`\ s' values directly.
+		Returns an :class:`.AttributeMapper` which can be used to retrieve related :class:`Attribute`\ s' values directly.
 
 		Example::
 
@@ -492,7 +492,7 @@ class TreeEntity(Entity, TreeModel):
 	
 	def get_attribute_mapper(self, mapper=None):
 		"""
-		Returns a dictionary-like object which can be used to retrieve related :class:`Attribute`\ s' values directly. If an attribute with a given key is not related to the :class:`Entity`, then the object will check the parent's attributes.
+		Returns a :class:`.TreeAttributeMapper` or :class:`.AttributeMapper` which can be used to retrieve related :class:`Attribute`\ s' values directly. If an :class:`Attribute` with a given key is not related to the :class:`Entity`, then the mapper will check the parent's attributes.
 
 		Example::
 

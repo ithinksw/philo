@@ -21,7 +21,7 @@ AttributeMappers
 	:show-inheritance:
 
 LazyAttributeMappers
-++++++++++++++++++++
+--------------------
 
 .. autoclass:: LazyAttributeMapperMixin
 	:members:

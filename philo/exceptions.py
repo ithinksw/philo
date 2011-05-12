@@ -6,15 +6,15 @@ MIDDLEWARE_NOT_CONFIGURED = ImproperlyConfigured("""Philo requires the RequestNo
 
 
 class ViewDoesNotProvideSubpaths(Exception):
-	"""Raised by :meth:`View.reverse` when the View does not provide subpaths (the default)."""
+	"""Raised by :meth:`.View.reverse` when the :class:`.View` does not provide subpaths (the default)."""
 	silent_variable_failure = True
 
 
 class ViewCanNotProvideSubpath(Exception):
-	"""Raised by :meth:`View.reverse` when the :class:`View` can not provide a subpath for the supplied arguments."""
+	"""Raised by :meth:`.View.reverse` when the :class:`.View` can not provide a subpath for the supplied arguments."""
 	silent_variable_failure = True
 
 
 class AncestorDoesNotExist(Exception):
-	"""Raised by :meth:`TreeModel.get_path` if the root instance is not an ancestor of the current instance."""
+	"""Raised by :meth:`.TreeEntity.get_path` if the root instance is not an ancestor of the current instance."""
 	pass

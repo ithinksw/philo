@@ -171,12 +171,12 @@ class View(Entity):
 		"""
 		raise NotImplementedError("View subclasses must implement get_reverse_params to support subpaths.")
 	
-	def attributes_with_node(self, node):
+	def attributes_with_node(self, node, mapper=LazyPassthroughAttributeMapper):
 		"""
-		Returns a dictionary-like object which can be used to directly retrieve the values of :class:`Attribute`\ s related to the :class:`View`, falling back on similar object which retrieves the values of the passed-in node and its ancestors.
+		Returns a :class:`LazyPassthroughAttributeMapper` which can be used to directly retrieve the values of :class:`Attribute`\ s related to the :class:`View`, falling back on the :class:`Attribute`\ s of the passed-in :class:`Node` and its ancestors.
 		
 		"""
-		return LazyPassthroughAttributeMapper((self, node))
+		return mapper((self, node))
 	
 	def render_to_response(self, request, extra_context=None):
 		"""

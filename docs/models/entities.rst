@@ -39,7 +39,7 @@ Entities
 
 .. autoclass:: Entity
 	:members:
-	:exclude-members: attribute_set
+	:exclude-members: attribute_set, get_attribute_mapper
 
 .. autoclass:: TreeManager
 	:members:
@@ -47,7 +47,7 @@ Entities
 .. autoclass:: TreeEntity
 	:show-inheritance:
 	:members:
-	:exclude-members: attribute_set
+	:exclude-members: attribute_set, get_attribute_mapper
 
 	.. attribute:: objects
 

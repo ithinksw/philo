@@ -164,7 +164,12 @@ class LazyTreeAttributeMapper(LazyAttributeMapperMixin, TreeAttributeMapper):
 
 
 class PassthroughAttributeMapper(AttributeMapper):
-	"""Given an iterable of :class:`Entities <philo.models.base.Entity>`, this mapper will fetch an :class:`AttributeMapper` for each one. Lookups will return the value from the first :class:`AttributeMapper` which has an entry for a given key."""
+	"""
+	Given an iterable of :class:`Entities <philo.models.base.Entity>`, this mapper will fetch an :class:`AttributeMapper` for each one. Lookups will return the value from the first :class:`AttributeMapper` which has an entry for a given key. Assignments will be made to the first :class:`.Entity` in the iterable.
+	
+	:param entities: An iterable of :class:`.Entity` subclass instances.
+	
+	"""
 	def __init__(self, entities):
 		self._attributes = [e.attributes for e in entities]
 		super(PassthroughAttributeMapper, self).__init__(self._attributes[0].entity)

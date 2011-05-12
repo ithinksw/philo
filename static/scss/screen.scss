@@ -59,7 +59,7 @@ a{
 		padding:3px;
 		margin:-4px 0;
 		border: 1px solid darken($page-background, 15%);
-		border-radius:3px;
+		@include border-radius(3px);
 		@include box-inset;
 		font-family:Menlo, monospace;
 		@include adjust-font-size-to(13px);

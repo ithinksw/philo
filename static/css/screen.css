@@ -74,6 +74,11 @@ html > body {
 
 body {
   background: #e0e5ef;
+  background: -webkit-gradient(linear, 50% 0%, 50% 250, color-stop(0%, #b4bdcf), color-stop(100%, #e0e5ef));
+  background: -webkit-linear-gradient(top, #b4bdcf 0%, #e0e5ef 250px);
+  background: -moz-linear-gradient(top, #b4bdcf 0%, #e0e5ef 250px);
+  background: -o-linear-gradient(top, #b4bdcf 0%, #e0e5ef 250px);
+  background: linear-gradient(top, #b4bdcf 0%, #e0e5ef 250px);
   color: #333333;
   text-shadow: 0 1px 0 #FFF;
   font-family: Helvetica, Arial, serif; }

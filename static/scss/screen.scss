@@ -18,6 +18,9 @@
 
 body{
 	background:$page-background;
+	@include background(
+		linear-gradient(top, desaturate(darken($page-background, 15%), 10%) 0, $page-background 250px)
+	);
 	@include body-text;
 }
 

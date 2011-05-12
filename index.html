@@ -4,6 +4,8 @@
 	<head>
 		<title>Philo</title>
 		<link rel="stylesheet" type="text/css" href="static/css/screen.css" media="screen" />
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.0/jquery.min.js"></script>
+		<script src="static/js/init.js"></script>
 	</head>
 	<body>
 		<div id="container">
@@ -12,14 +14,82 @@
 			</header><!-- /#nameplate -->
 			
 			<div id="content">
-				Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+				<p>Philo is a powerful content-management system built with Django.</p>
+			
+				<h2 id="features">Features</h2>
+			
+				<p>Philo allows the creation of complex site structures from Django&#8217;s web-based admin interface (or any other database-editing interface). For a simple site, you will use the following three objects, included in the Philo core.</p>
+			
+				<ul>
+				<li><strong>Nodes</strong> are the basic building blocks of a website using Philo. They define the URL hierarchy and connect each URL to a View subclass instance which is used to generate an HttpResponse.</li>
+				<li><strong>Templates</strong> are Django templates, stored in the database and editable from the Django admin (or similar).</li>
+				<li><strong>Pages</strong> are a simple view subclass which return a basic HTML page according to a template. They have related, editable Contentlets and Content References based on {% container %} tags used in the template.</li>
+				</ul>
+			
+				<p>Philo also provides a number of useful template tags, in particular <code>{% container &lt;name&gt; %}</code>, which generates a relationship (and a field in the admin interface) on any pages which use that template.</p>
+			
+				<h2>A Simple Example</h2>
+			
+				<div class="three-up">
+					<figure>
+						<img src="static/img/container1.png" />
+						<figcaption>Put container tags in your template.</figcaption>
+					</figure>
+					<figure>
+						<img src="static/img/container2.png" />
+						<figcaption>Edit the contentlets on the page.</figcaption>
+					</figure>
+					<figure>
+						<img src="static/img/container3.png" />
+						<figcaption>See the results on your site!</figcaption>
+					</figure>
+				</div>
+			
+				<p>You can use also collections, redirects, files, content references (all included in the Philo core), as well as the Philo contrib apps and your own code to create and manage more powerful, complex websites.</p>
+			
+				<h2 id="batteries_included">Batteries Included</h2>
+			
+				<p>Following Python and Django&#8217;s <a href="http://docs.python.org/tutorial/stdlib.html#batteries-included">&ldquo;batteries included&rdquo; philosophy</a>, Philo includes a number of optional packages that simplify common website structures. These are stored in philo.contrib and include:</p>
+			
+				<ul id="contribList">
+					<li>
+						<span class="name">Penfield</span>
+						<span class="description">Blog and newsletter management.</span>
+					</li>
+					<li>
+						<span class="name">Shipherd</span>
+						<span class="description">Powerful site-navigation.</span>
+					</li>
+					<li>
+						<span class="name">Sobol</span>
+						<span class="description">Custom search-engines.</span>
+					</li>
+					<li>
+						<span class="name">Waldo</span>
+						<span class="description">Custom authentication systems.</span>
+					</li>
+					<li>
+						<span class="status">(in development)</span>
+						<span class="name">Gilbert</span>
+						<span class="description">Alternative web-based admin.</span>
+					</li>
+					<li>
+						<span class="status">(in development)</span>
+						<span class="name">Julian</span>
+						<span class="description">Calendar and events system.</span>
+					</li>
+					<li>
+						<span class="status">(planned)</span>
+						<span class="description">Forums.</span>
+					</li>
+					<li>
+						<span class="status">(planned)</span>
+						<span class="description">Wikis.</span>
+					</li>
+				</ul>
+				
 			</div><!-- /#content -->
 			
-			<footer id="pagefooter">
-				<p>Copyright &copy; 2009-2010, iThink Software.</p>
-				<p>Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.</p>
-				<p>THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.</p>
-			</footer><!-- /#pagefooter -->
 		</div>
 	</body>
 </html>

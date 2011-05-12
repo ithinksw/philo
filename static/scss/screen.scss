@@ -1,56 +1,139 @@
 @import "reset",
 		"var",
+		"compass/typography/vertical_rhythm",
 		"compass/css3/images",
 		"compass/css3/border-radius",
-		"compass/css3/box-shadow";
+		"compass/css3/box-shadow",
+		"compass/css3/transition",
+		"compass/utilities/general/clearfix";
 		
-html{
-	background: $bgcolor;
-	height:100%;
-}
-
+@include establish-baseline;
+		
 body{
 	@include background(
-		image-url("bg.png"),
-		radial-gradient(rgba(0,0,0,0), rgba(0,0,0,.5) 800px, rgba(0,0,0,.9) 900px)
+		linear-gradient(top, $page-background, darken($page-background, 10%)) no-repeat fixed
 	);
-	padding:1px;
-	margin:-1px;
-	min-height:100%;
-	font-family:Helvetica, Arial, sans-serif;
-	font-size:13px;
-	line-height:15px;
+	@include body-text;
+}
+
+a{
+	color: darken($foreground, 20%);
+	text-decoration:none;
+	background: darken($page-background, 15%);
+	padding:3px;
+	@include border-radius(3px);
+	&:hover{
+		background: desaturate(darken($page-background, 25%), 10%);
+		text-shadow: 0 1px 0 rgba(255,255,255,.65);
+	};
 }
 
 #container{
-	width: $containerwidth;
-	margin:40px auto;
+	width: $page-width;
+	margin:20px auto;
+	background: $content-background;
+	color: $foreground;
 }
 
 #nameplate{
-	color:#FFF;
-	font-size:80px;
-	line-height:80px;
-	text-align:center;
-	text-shadow:1px 1px 0 rgba(0,0,0,.6);
+	@include adjust-font-size-to(40px);
+	border-bottom:5px solid $foreground;
+	@include box-shadow(0 1px 0 #FFF);
+	margin-bottom:15px;
 }
 
 #content{
-	background:$contentbg;
-	@include border-radius(4px);
-	@include box-shadow(rgba(0,0,0,.35) 0 0 36px, rgba(0,0,0,.1) 0 10px 10px inset);
-	border:$contentborderwidth solid $contentbg;
-	padding:$contentpadding;
-	margin-top:20px;
+	p, ul, ol, header{
+		@include margin-trailer;
+	}
+	h1, h2, h3, h4, h5, h6{
+		font-weight:bold;
+		@include margin-trailer(.5);
+	}
 }
 
-#pagefooter{
-	font-size:12px;
-	color: lighten($bgcolor, 40%);
-	text-shadow:0 -1px 0 rgba(0,0,0,.5);
-	width:600px;
-	margin:20px auto;
-	p{
-		margin-bottom:15px;
+.three-up{
+	$pad: 10px;
+	$width: $page-width + $pad;
+	background: $foreground;
+	margin:$base-line-height #{-$pad};
+	padding:$pad;
+	@include border-radius(5px);
+	@include box-shadow(0 1px 0 0 #FFF, 0 2px 4px rgba(0,0,0,.35) inset);
+
+	figure{
+		$border: 1px;
+		border:$border solid lighten($foreground, 10%);
+		float:left;
+		width: ($width / 3) - $pad - 2 * $border;
+		margin-right: $pad;
+		overflow:hidden;
+		position:relative;
+		@include transition(width, .25s, linear);
+
+		&.shrunk{
+			width: ($width - 610px) / 2 - $pad - 3 * $border;
+		}
+		&.expanded{
+			width:600px;
+		}
+		
+		&:last-child{
+			margin-right: 0;
+			float:right; /* keeps the right margin from wiggling */
+		}
+
+		img{
+			display:block;
+		}
+	}
+	
+	figcaption{
+		position:absolute;
+		bottom:0;
+		left:0;
+		right:0;
+		background: rgba(0,0,0,.75);
+		text-shadow:1px 1px 0 #000;
+		padding:0 5px;
+		color:#FFF;
+		width:600px;
+		@include adjust-font-size-to(13px);
+	}
+	
+	@include clearfix;
+}
+
+#contribList{
+	$pad: 10px;
+	$width: $page-width + $pad;
+	background: $foreground;
+	margin:$base-line-height #{-$pad};
+	padding:#{2*$pad} $pad;
+	@include border-radius(5px);
+	@include box-shadow(0 1px 0 0 #FFF, 0 2px 4px rgba(0,0,0,.35) inset);
+	@include clearfix;
+	text-shadow:none;
+	color:lighten($foreground, 80%);
+	-webkit-font-smoothing: antialiased;
+	
+	li{
+		width: $page-width/2 - $pad * 2;
+		float:left;
+		padding: 0 $pad;
+		@include margin-trailer;
+	}
+	.name, .description, .status{
+		display:block;
+	}
+	.name{
+		font-weight:bold;
+	}
+	.description{
+		color:lighten($foreground, 40%);
+	}
+	.status{
+		font-style:italic;
+		@include adjust-font-size-to(13px);
 	}
 }

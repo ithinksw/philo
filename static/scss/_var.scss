@@ -1,8 +1,21 @@
-$bgcolor: #2A486D;
-$bgcolor1: adjust-hue(lighten($bgcolor, 20%), 20deg);
-$bgcolor2: darken($bgcolor, 20%);
-$contentwidth: 900px;
-$contentpadding: 19px;
-$contentborderwidth: 1px;
-$containerwidth: $contentwidth+$contentpadding+$contentborderwidth;
-$contentbg: #FFF;
+/* Compass Vars */
+
+$base-font-size: 16px;
+$base-line-height: 25px;
+
+
+/* Custom Vars */
+$page-width: 750px;
+$page-background: #E0E5EF;
+$content-background: transparent;
+$foreground: #333;
+
+$textfonts: Helvetica, Arial, serif;
+
+/* custom mixins */
+
+@mixin body-text{
+	color:$foreground;
+	text-shadow:0 1px 0 #FFF;
+	font-family: $textfonts;
+}

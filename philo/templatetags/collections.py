@@ -23,7 +23,10 @@ class MembersofNode(template.Node):
 
 def do_membersof(parser, token):
 	"""
-	{% membersof <collection> with <app_label>.<model_name> as <var> %}
+	Usage::
+	
+		{% membersof <collection> with <app_label>.<model_name> as <var> %}
+	
 	"""
 	params=token.split_contents()
 	tag = params[0]

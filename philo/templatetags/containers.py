@@ -61,7 +61,10 @@ class ContainerNode(template.Node):
 
 def do_container(parser, token):
 	"""
-	{% container <name> [[references <type>] as <variable>] %}
+	Usage::
+		
+		{% container <name> [[references <app_label>.<model_name>] as <variable>] %}
+	
 	"""
 	params = token.split_contents()
 	if len(params) >= 2:

@@ -289,9 +289,16 @@ def parse_content_type(bit, tagname):
 
 def do_embed(parser, token):
 	"""
-	The {% embed %} tag can be used in two ways:
-	{% embed <app_label>.<model_name> with <template> %} :: Sets which template will be used to render a particular model.
-	{% embed (<app_label>.<model_name> <object_pk> || <instance>) [<argname>=<value> ...] %} :: Embeds the instance specified by the given parameters in the document with the previously-specified template. Any kwargs provided will be passed into the context of the template.
+	The {% embed %} tag can be used in two ways.
+	
+	To set which template will be used to render a particular model::
+	
+		{% embed <app_label>.<model_name> with <template> %}
+	
+	To embed the instance specified by the given parameters in the document with the previously-specified template (any kwargs provided will be passed into the context of the template)::
+	
+		{% embed (<app_label>.<model_name> <object_pk> || <instance>) [<argname>=<value> ...] %}
+	
 	"""
 	bits = token.split_contents()
 	tag = bits.pop(0)

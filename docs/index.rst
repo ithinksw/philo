@@ -14,10 +14,12 @@ Contents:
    intro
    models/intro
    exceptions
-   middleware
+   handling_requests
    signals
    validators
    utilities
+   templatetags
+   loaders
 
 Indices and tables
 ==================

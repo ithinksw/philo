@@ -52,6 +52,8 @@ Pages
 .. autoclass:: Template
 	:members:
 	:show-inheritance:
+	
+	.. seealso:: :mod:`philo.loaders.database`
 
 .. autoclass:: Contentlet
 	:members:

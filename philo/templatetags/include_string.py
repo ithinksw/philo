@@ -26,7 +26,11 @@ class IncludeStringNode(template.Node):
 def do_include_string(parser, token):
 	"""
 	Include a flat string by interpreting it as a template.
-	{% include_string <template_code> %}
+	
+	Usage::
+	
+		{% include_string <template_code> %}
+	
 	"""
 	bits = token.split_contents()
 	if len(bits) != 2:

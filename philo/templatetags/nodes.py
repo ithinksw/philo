@@ -68,10 +68,13 @@ class NodeURLNode(template.Node):
 @register.tag(name='node_url')
 def do_node_url(parser, token):
 	"""
-	{% node_url [for <node>] [as <var>] %}
-	{% node_url with <obj> [for <node>] [as <var>] %}
-	{% node_url <view_name> [<arg1> [<arg2> ...] ] [for <node>] [as <var>] %}
-	{% node_url <view_name> [<key1>=<value1> [<key2>=<value2> ...] ] [for <node>] [as <var>]%}
+	Usage::
+	
+		{% node_url [for <node>] [as <var>] %}
+		{% node_url with <obj> [for <node>] [as <var>] %}
+		{% node_url <view_name> [<arg1> [<arg2> ...] ] [for <node>] [as <var>] %}
+		{% node_url <view_name> [<key1>=<value1> [<key2>=<value2> ...] ] [for <node>] [as <var>] %}
+	
 	"""
 	params = token.split_contents()
 	tag = params[0]

@@ -1,3 +1,22 @@
+"""
+The node template tags are automatically included as builtins if :mod:`philo` is an installed app.
+
+.. templatetag:: node_url
+
+node_url
+--------
+
+The :ttag:`node_url` tag allows access to :meth:`.View.reverse` from a template for a :class:`.Node`. By default, the :class:`.Node` that is used for the call is pulled from the context variable ``node``; however, this can be overridden with the ``[for <node>]`` option.
+
+Usage::
+
+	{% node_url [for <node>] [as <var>] %}
+	{% node_url with <obj> [for <node>] [as <var>] %}
+	{% node_url <view_name> [<arg1> [<arg2> ...] ] [for <node>] [as <var>] %}
+	{% node_url <view_name> [<key1>=<value1> [<key2>=<value2> ...] ] [for <node>] [as <var>] %}
+
+"""
+
 from django import template
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -68,12 +87,10 @@ class NodeURLNode(template.Node):
 @register.tag(name='node_url')
 def do_node_url(parser, token):
 	"""
-	Usage::
-	
-		{% node_url [for <node>] [as <var>] %}
-		{% node_url with <obj> [for <node>] [as <var>] %}
-		{% node_url <view_name> [<arg1> [<arg2> ...] ] [for <node>] [as <var>] %}
-		{% node_url <view_name> [<key1>=<value1> [<key2>=<value2> ...] ] [for <node>] [as <var>] %}
+	{% node_url [for <node>] [as <var>] %}
+	{% node_url with <obj> [for <node>] [as <var>] %}
+	{% node_url <view_name> [<arg1> [<arg2> ...] ] [for <node>] [as <var>] %}
+	{% node_url <view_name> [<key1>=<value1> [<key2>=<value2> ...] ] [for <node>] [as <var>] %}
 	
 	"""
 	params = token.split_contents()

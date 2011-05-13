@@ -1,10 +1,12 @@
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.template import add_to_builtins as register_templatetags
 
 from philo.models.base import value_content_type_limiter, register_value_model
 from philo.utils import fattr
+
+
+__all__ = ('Collection', 'CollectionMember')
 
 
 class Collection(models.Model):
@@ -73,5 +75,4 @@ class CollectionMember(models.Model):
 		app_label = 'philo'
 
 
-register_templatetags('philo.templatetags.collections')
 register_value_model(Collection)

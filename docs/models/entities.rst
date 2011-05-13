@@ -16,6 +16,7 @@ Attributes
 	:members:
 
 .. automodule:: philo.models.base
+	:noindex:
 	:members: attribute_value_limiter
 
 .. autoclass:: JSONValue

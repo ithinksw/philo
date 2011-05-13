@@ -8,7 +8,6 @@ from django.core.servers.basehttp import FileWrapper
 from django.core.urlresolvers import resolve, clear_url_caches, reverse, NoReverseMatch
 from django.db import models
 from django.http import HttpResponse, HttpResponseServerError, HttpResponseRedirect, Http404
-from django.template import add_to_builtins as register_templatetags
 from django.utils.encoding import smart_str
 
 from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED, ViewCanNotProvideSubpath, ViewDoesNotProvideSubpaths
@@ -17,6 +16,9 @@ from philo.models.fields import JSONField
 from philo.utils import ContentTypeSubclassLimiter
 from philo.utils.entities import LazyPassthroughAttributeMapper
 from philo.signals import view_about_to_render, view_finished_rendering
+
+
+__all__ = ('Node', 'View', 'MultiView', 'Redirect', 'File')
 
 
 _view_content_type_limiter = ContentTypeSubclassLimiter(None)
@@ -387,5 +389,4 @@ class File(View):
 		return self.file.name
 
 
-register_templatetags('philo.templatetags.nodes')
 register_value_model(Node)

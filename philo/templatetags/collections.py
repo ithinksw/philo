@@ -1,3 +1,19 @@
+"""
+The collection template tags are automatically included as builtins if :mod:`philo` is an installed app.
+
+.. templatetag:: membersof
+
+membersof
+---------
+
+Given a collection and a content type, sets the results of :meth:`collection.members.with_model <.CollectionMemberManager.with_model>` as a variable in the context.
+
+Usage::
+
+	{% membersof <collection> with <app_label>.<model_name> as <var> %}
+
+"""
+
 from django import template
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -23,9 +39,7 @@ class MembersofNode(template.Node):
 
 def do_membersof(parser, token):
 	"""
-	Usage::
-	
-		{% membersof <collection> with <app_label>.<model_name> as <var> %}
+	{% membersof <collection> with <app_label>.<model_name> as <var> %}
 	
 	"""
 	params=token.split_contents()

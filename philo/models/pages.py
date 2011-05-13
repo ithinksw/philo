@@ -10,7 +10,7 @@ from django.contrib.contenttypes import generic
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.http import HttpResponse
-from django.template import TemplateDoesNotExist, Context, RequestContext, Template as DjangoTemplate, add_to_builtins as register_templatetags, TextNode, VariableNode
+from django.template import TemplateDoesNotExist, Context, RequestContext, Template as DjangoTemplate, TextNode, VariableNode
 from django.template.loader_tags import BlockNode, ExtendsNode, BlockContext
 from django.utils.datastructures import SortedDict
 
@@ -21,6 +21,9 @@ from philo.signals import page_about_to_render_to_string, page_finished_renderin
 from philo.templatetags.containers import ContainerNode
 from philo.utils import fattr
 from philo.validators import LOADED_TEMPLATE_ATTR
+
+
+__all__ = ('Template', 'Page', 'Contentlet', 'ContentReference')
 
 
 class LazyContainerFinder(object):
@@ -170,6 +173,8 @@ class Page(View):
 		"""
 		In addition to rendering as an :class:`HttpResponse`, a :class:`Page` can also render as a string. This means, for example, that :class:`Page`\ s can be used to render emails or other non-HTML content with the same :ttag:`container`-based functionality as is used for HTML.
 		
+		The :class:`Page` will add itself to the context as ``page`` and its :attr:`~.Entity.attributes` as ``attributes``. If a request is provided, then :class:`request.node <.Node>` will also be added to the context as ``node`` and ``attributes`` will be set to the result of calling :meth:`~.View.attributes_with_node` with that :class:`.Node`.
+		
 		"""
 		context = {}
 		context.update(extra_context or {})
@@ -256,9 +261,6 @@ class ContentReference(models.Model):
 	
 	class Meta:
 		app_label = 'philo'
-
-
-register_templatetags('philo.templatetags.containers')
 
 
 register_value_model(Template)

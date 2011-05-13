@@ -1,3 +1,19 @@
+"""
+The container template tags are automatically included as builtins if :mod:`philo` is an installed app.
+
+.. templatetag:: container
+
+container
+---------
+
+If a template using this tag is used to render a :class:`.Page`, that :class:`.Page` will have associated content which can be set in the admin interface. If a content type is referenced, then a :class:`.ContentReference` object will be created; otherwise, a :class:`.Contentlet` object will be created.
+
+Usage::
+
+	{% container <name> [[references <app_label>.<model_name>] as <variable>] %}
+
+"""
+
 from django import template
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -61,9 +77,7 @@ class ContainerNode(template.Node):
 
 def do_container(parser, token):
 	"""
-	Usage::
-		
-		{% container <name> [[references <app_label>.<model_name>] as <variable>] %}
+	{% container <name> [[references <app_label>.<model_name>] as <variable>] %}
 	
 	"""
 	params = token.split_contents()

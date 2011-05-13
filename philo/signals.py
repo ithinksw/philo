@@ -1,7 +1,7 @@
 from django.dispatch import Signal
 
 
-#: Sent whenever an Entity subclass has been "prepared" -- that is, after the processing necessary to make :mod:`EntityProxyFields <philo.models.fields.entities>` work has been completed. This will fire after :obj:`django.db.models.signals.class_prepared`.
+#: Sent whenever an Entity subclass has been "prepared" -- that is, after the processing necessary to make :mod:`.AttributeProxyField`\ s work has been completed. This will fire after :obj:`django.db.models.signals.class_prepared`.
 #:
 #: Arguments that are sent with this signal:
 #: 

@@ -1,12 +1,3 @@
-"""
-EntityProxyFields can be assigned as fields on a subclass of philo.models.Entity. They act like any other model fields, but instead of saving their data to the model's table, they save it to attributes related to a model instance. Additionally, a new attribute will be created for an instance if and only if the field's value has been set. This is relevant i.e. for :class:`QuerySetMapper` passthroughs, where even an Attribute with a value of ``None`` must prevent a passthrough.
-
-Example::
-
-	class Thing(Entity):
-		numbers = models.PositiveIntegerField()
-		improvised = JSONAttribute(models.BooleanField)
-"""
 import datetime
 from itertools import tee
 
@@ -26,8 +17,23 @@ __all__ = ('JSONAttribute', 'ForeignKeyAttribute', 'ManyToManyAttribute')
 ATTRIBUTE_REGISTRY = '_attribute_registry'
 
 
-class EntityProxyField(object):
-	def __init__(self, verbose_name=None, help_text=None, default=NOT_PROVIDED, editable=True, choices=None, *args, **kwargs):
+class AttributeProxyField(object):
+	"""
+	:class:`AttributeProxyField`\ s can be assigned as fields on a subclass of :class:`philo.models.base.Entity`. They act like any other model fields, but instead of saving their data to the model's table, they save it to :class:`.Attribute`\ s related to a model instance. Additionally, a new :class:`.Attribute` will be created for an instance if and only if the field's value has been set. This is relevant i.e. for :class:`.PassthroughAttributeMapper`\ s and :class:`.TreeAttributeMapper`\ s, where even an :class:`.Attribute` with a value of ``None`` will prevent a passthrough.
+	
+	Example::
+	
+		class Thing(Entity):
+			numbers = models.PositiveIntegerField()
+			improvised = JSONAttribute(models.BooleanField)
+	
+	:param attribute_key: The key of the attribute that will be used to store this field's value, if it is different than the field's name.
+	
+	The remaining parameters have the same meaning as for ordinary model fields.
+	
+	"""
+	def __init__(self, attribute_key=None, verbose_name=None, help_text=None, default=NOT_PROVIDED, editable=True, choices=None, *args, **kwargs):
+		self.attribute_key = attribute_key
 		self.verbose_name = verbose_name
 		self.help_text = help_text
 		self.default = default
@@ -36,8 +42,15 @@ class EntityProxyField(object):
 	
 	def actually_contribute_to_class(self, sender, **kwargs):
 		sender._entity_meta.add_proxy_field(self)
+		setattr(sender, self.name, AttributeFieldDescriptor(self))
+		opts = sender._entity_meta
+		if not hasattr(opts, '_has_attribute_fields'):
+			opts._has_attribute_fields = True
+			models.signals.post_save.connect(process_attribute_fields, sender=sender)
 	
 	def contribute_to_class(self, cls, name):
+		if self.attribute_key is None:
+			self.attribute_key = name
 		if issubclass(cls, Entity):
 			self.name = self.attname = name
 			self.model = cls
@@ -48,6 +61,10 @@ class EntityProxyField(object):
 			raise FieldError('%s instances can only be declared on Entity subclasses.' % self.__class__.__name__)
 	
 	def formfield(self, form_class=forms.CharField, **kwargs):
+		"""
+		Returns a form field capable of accepting values for the :class:`AttributeProxyField`.
+		
+		"""
 		defaults = {
 			'required': False,
 			'label': capfirst(self.verbose_name),
@@ -59,25 +76,34 @@ class EntityProxyField(object):
 		return form_class(**defaults)
 	
 	def value_from_object(self, obj):
-		"""The return value of this method will be used by the EntityForm as
-		this field's initial value."""
+		"""Returns the value of this field in the given model instance."""
 		return getattr(obj, self.name)
 	
 	def get_storage_value(self, value):
-		"""Final conversion of `value` before it gets stored on an Entity instance.
-		This step is performed by the ProxyFieldForm."""
+		"""Final conversion of ``value`` before it gets stored on an :class:`.Entity` instance. This will be called during :meth:`.EntityForm.save`."""
 		return value
 	
+	def validate_value(self, value):
+		"Raise an appropriate exception if ``value`` is not valid for this :class:`AttributeProxyField`."
+		pass
+	
 	def has_default(self):
+		"""Returns ``True`` if a default value was provided and ``False`` otherwise."""
 		return self.default is not NOT_PROVIDED
 	
 	def _get_choices(self):
+		"""Returns the choices passed into the constructor."""
 		if hasattr(self._choices, 'next'):
 			choices, self._choices = tee(self._choices)
 			return choices
 		else:
 			return self._choices
 	choices = property(_get_choices)
+	
+	@property
+	def value_class(self):
+		"""Each :class:`AttributeProxyField` subclass can define a value_class to use for creation of new :class:`.AttributeValue`\ s"""
+		raise AttributeError("value_class must be defined on %s subclasses." % self.__class__.__name__)
 
 
 class AttributeFieldDescriptor(object):
@@ -118,12 +144,14 @@ class AttributeFieldDescriptor(object):
 
 
 def process_attribute_fields(sender, instance, created, **kwargs):
-	"""This function is attached to each :class:`Entity` subclass's post_save signal. Any :class:`Attribute`\ s managed by EntityProxyFields which have been removed will be deleted, and any new attributes will be created """
+	"""This function is attached to each :class:`Entity` subclass's post_save signal. Any :class:`Attribute`\ s managed by :class:`AttributeProxyField`\ s which have been removed will be deleted, and any new attributes will be created."""
 	if ATTRIBUTE_REGISTRY in instance.__dict__:
 		registry = instance.__dict__[ATTRIBUTE_REGISTRY]
 		instance.attribute_set.filter(key__in=[field.attribute_key for field in registry['removed']]).delete()
 		
 		for field in registry['added']:
+			# TODO: Should this perhaps just use instance.attributes[field.attribute_key] = getattr(instance, field.name, None)?
+			# (Would eliminate the need for field.value_class.)
 			try:
 				attribute = instance.attribute_set.get(key=field.attribute_key)
 			except Attribute.DoesNotExist:
@@ -134,35 +162,13 @@ def process_attribute_fields(sender, instance, created, **kwargs):
 		del instance.__dict__[ATTRIBUTE_REGISTRY]
 
 
-class AttributeField(EntityProxyField):
-	def __init__(self, attribute_key=None, **kwargs):
-		self.attribute_key = attribute_key
-		super(AttributeField, self).__init__(**kwargs)
+class JSONAttribute(AttributeProxyField):
+	"""
+	Handles an :class:`.Attribute` with a :class:`.JSONValue`.
 	
-	def actually_contribute_to_class(self, sender, **kwargs):
-		super(AttributeField, self).actually_contribute_to_class(sender, **kwargs)
-		setattr(sender, self.name, AttributeFieldDescriptor(self))
-		opts = sender._entity_meta
-		if not hasattr(opts, '_has_attribute_fields'):
-			opts._has_attribute_fields = True
-			models.signals.post_save.connect(process_attribute_fields, sender=sender)
+	:param field_template: A django form field instance that will be used to guide rendering and interpret values. For example, using :class:`django.forms.BooleanField` will make this field render as a checkbox.
 	
-	def contribute_to_class(self, cls, name):
-		if self.attribute_key is None:
-			self.attribute_key = name
-		super(AttributeField, self).contribute_to_class(cls, name)
-	
-	def validate_value(self, value):
-		"Confirm that the value is valid or raise an appropriate error."
-		pass
-	
-	@property
-	def value_class(self):
-		raise AttributeError("value_class must be defined on AttributeField subclasses.")
-
-
-class JSONAttribute(AttributeField):
-	"""Handles an :class:`Attribute` with a :class:`JSONValue`."""
+	"""
 	
 	value_class = JSONValue
 	
@@ -184,12 +190,14 @@ class JSONAttribute(AttributeField):
 		return self.field_template.formfield(**defaults)
 	
 	def value_from_object(self, obj):
+		"""If the field template is a :class:`DateField` or a :class:`DateTimeField`, this will convert the default return value to a datetime instance."""
 		value = super(JSONAttribute, self).value_from_object(obj)
 		if isinstance(self.field_template, (models.DateField, models.DateTimeField)):
 			value = self.field_template.to_python(value)
 		return value
 	
 	def get_storage_value(self, value):
+		"""If ``value`` is a :class:`datetime.datetime` instance, this will convert it to a format which can be stored as correct JSON."""
 		if isinstance(value, datetime.datetime):
 			return value.strftime("%Y-%m-%d %H:%M:%S")
 		if isinstance(value, datetime.date):
@@ -197,12 +205,18 @@ class JSONAttribute(AttributeField):
 		return value
 
 
-class ForeignKeyAttribute(AttributeField):
-	"""Handles an :class:`Attribute` with a :class:`ForeignKeyValue`."""
+class ForeignKeyAttribute(AttributeProxyField):
+	"""
+	Handles an :class:`.Attribute` with a :class:`.ForeignKeyValue`.
+	
+	:param limit_choices_to: A :class:`Q` object, dictionary, or :class:`.ContentTypeLimiter` to restrict the queryset for the :class:`ForeignKeyAttribute`.
+	
+	"""
 	value_class = ForeignKeyValue
 	
 	def __init__(self, model, limit_choices_to=None, **kwargs):
 		super(ForeignKeyAttribute, self).__init__(**kwargs)
+		# Spoof being a rel from a ForeignKey for admin widgets.
 		self.to = model
 		if limit_choices_to is None:
 			limit_choices_to = {}
@@ -220,15 +234,22 @@ class ForeignKeyAttribute(AttributeField):
 		return super(ForeignKeyAttribute, self).formfield(form_class=form_class, **defaults)
 	
 	def value_from_object(self, obj):
+		"""Converts the default value type (a model instance) to a pk."""
 		relobj = super(ForeignKeyAttribute, self).value_from_object(obj)
 		return getattr(relobj, 'pk', None)
 	
 	def get_related_field(self):
-		"""Spoof being a rel from a ForeignKey."""
+		# Spoof being a rel from a ForeignKey for admin widgets.
 		return self.to._meta.pk
 
 
 class ManyToManyAttribute(ForeignKeyAttribute):
+	"""
+	Handles an :class:`.Attribute` with a :class:`.ManyToManyValue`.
+	
+	:param limit_choices_to: A :class:`Q` object, dictionary, or :class:`ContentTypeLimiter <philo.utils>` to restrict the queryset for the :class:`ManyToManyAttribute`.
+	
+	"""
 	value_class = ManyToManyValue
 	
 	def validate_value(self, value):
@@ -239,6 +260,7 @@ class ManyToManyAttribute(ForeignKeyAttribute):
 		return super(ManyToManyAttribute, self).formfield(form_class=form_class, **kwargs)
 	
 	def value_from_object(self, obj):
+		"""Converts the default value type (a queryset) to a list of pks."""
 		qs = super(ForeignKeyAttribute, self).value_from_object(obj)
 		try:
 			return qs.values_list('pk', flat=True)

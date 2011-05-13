@@ -21,6 +21,9 @@ sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'dummy-settings'
 
+# Import loader so that loader_tags will be correctly added to builtins. Weird import situations... this is necessary for doc build to work.
+from django.template import loader
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.

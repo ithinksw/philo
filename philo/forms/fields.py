@@ -9,6 +9,7 @@ __all__ = ('JSONFormField',)
 
 
 class JSONFormField(forms.Field):
+	"""A form field which is validated by :func:`philo.validators.json_validator`."""
 	default_validators = [json_validator]
 	
 	def clean(self, value):

@@ -15,16 +15,12 @@ class DelayedDateForm(forms.ModelForm):
 		self.fields[self.date_field].required = False
 
 
-class TitledAdmin(EntityAdmin):
+class BlogAdmin(EntityAdmin):
 	prepopulated_fields = {'slug': ('title',)}
 	list_display = ('title', 'slug')
 
 
-class BlogAdmin(TitledAdmin):
-	pass
-
-
-class BlogEntryAdmin(TitledAdmin, AddTagAdmin):
+class BlogEntryAdmin(AddTagAdmin):
 	form = DelayedDateForm
 	filter_horizontal = ['tags']
 	list_filter = ['author', 'blog']
@@ -45,6 +41,7 @@ class BlogEntryAdmin(TitledAdmin, AddTagAdmin):
 		})
 	)
 	related_lookup_fields = {'fk': raw_id_fields}
+	prepopulated_fields = {'slug': ('title',)}
 
 
 class BlogViewAdmin(EntityAdmin):
@@ -71,11 +68,12 @@ class BlogViewAdmin(EntityAdmin):
 	related_lookup_fields = {'fk': raw_id_fields}
 
 
-class NewsletterAdmin(TitledAdmin):
-	pass
+class NewsletterAdmin(EntityAdmin):
+	prepopulated_fields = {'slug': ('title',)}
+	list_display = ('title', 'slug')
 
 
-class NewsletterArticleAdmin(TitledAdmin, AddTagAdmin):
+class NewsletterArticleAdmin(AddTagAdmin):
 	form = DelayedDateForm
 	filter_horizontal = ('tags', 'authors')
 	list_filter = ('newsletter',)
@@ -95,6 +93,7 @@ class NewsletterArticleAdmin(TitledAdmin, AddTagAdmin):
 		})
 	)
 	actions = ['make_issue']
+	prepopulated_fields = {'slug': ('title',)}
 	
 	def author_names(self, obj):
 		return ', '.join([author.get_full_name() for author in obj.authors.all()])
@@ -108,8 +107,10 @@ class NewsletterArticleAdmin(TitledAdmin, AddTagAdmin):
 	make_issue.short_description = u"Create issue from selected %(verbose_name_plural)s"
 
 
-class NewsletterIssueAdmin(TitledAdmin):
-	filter_horizontal = TitledAdmin.filter_horizontal + ('articles',)
+class NewsletterIssueAdmin(EntityAdmin):
+	filter_horizontal = ('articles',)
+	prepopulated_fields = {'slug': ('title',)}
+	list_display = ('title', 'slug')
 
 
 class NewsletterViewAdmin(EntityAdmin):

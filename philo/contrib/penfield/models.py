@@ -16,7 +16,7 @@ from philo.contrib.penfield.exceptions import HttpNotAcceptable
 from philo.contrib.penfield.middleware import http_not_acceptable
 from philo.contrib.penfield.validators import validate_pagination_count
 from philo.exceptions import ViewCanNotProvideSubpath
-from philo.models import Tag, Titled, Entity, MultiView, Page, register_value_model, TemplateField, Template
+from philo.models import Tag, Entity, MultiView, Page, register_value_model, TemplateField, Template
 from philo.utils import paginate
 
 try:
@@ -297,7 +297,13 @@ class FeedView(MultiView):
 		abstract=True
 
 
-class Blog(Entity, Titled):
+class Blog(Entity):
+	title = models.CharField(max_length=255)
+	slug = models.SlugField(max_length=255)
+	
+	def __unicode__(self):
+		return self.title
+	
 	@property
 	def entry_tags(self):
 		""" Returns a QuerySet of Tags that are used on any entries in this blog. """
@@ -312,7 +318,9 @@ class Blog(Entity, Titled):
 register_value_model(Blog)
 
 
-class BlogEntry(Entity, Titled):
+class BlogEntry(Entity):
+	title = models.CharField(max_length=255)
+	slug = models.SlugField(max_length=255)
 	blog = models.ForeignKey(Blog, related_name='entries', blank=True, null=True)
 	author = models.ForeignKey(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='blogentries')
 	date = models.DateTimeField(default=None)
@@ -324,6 +332,9 @@ class BlogEntry(Entity, Titled):
 		if self.date is None:
 			self.date = datetime.now()
 		super(BlogEntry, self).save(*args, **kwargs)
+	
+	def __unicode__(self):
+		return self.title
 	
 	class Meta:
 		ordering = ['-date']
@@ -562,14 +573,20 @@ class BlogView(FeedView):
 		return [tag.name for tag in item.tags.all()]
 
 
-class Newsletter(Entity, Titled):
-	pass
+class Newsletter(Entity):
+	title = models.CharField(max_length=255)
+	slug = models.SlugField(max_length=255)
+	
+	def __unicode__(self):
+		return self.title
 
 
 register_value_model(Newsletter)
 
 
-class NewsletterArticle(Entity, Titled):
+class NewsletterArticle(Entity):
+	title = models.CharField(max_length=255)
+	slug = models.SlugField(max_length=255)
 	newsletter = models.ForeignKey(Newsletter, related_name='articles')
 	authors = models.ManyToManyField(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='newsletterarticles')
 	date = models.DateTimeField(default=None)
@@ -582,6 +599,9 @@ class NewsletterArticle(Entity, Titled):
 			self.date = datetime.now()
 		super(NewsletterArticle, self).save(*args, **kwargs)
 	
+	def __unicode__(self):
+		return self.title
+	
 	class Meta:
 		get_latest_by = 'date'
 		ordering = ['-date']
@@ -591,10 +611,15 @@ class NewsletterArticle(Entity, Titled):
 register_value_model(NewsletterArticle)
 
 
-class NewsletterIssue(Entity, Titled):
+class NewsletterIssue(Entity):
+	title = models.CharField(max_length=255)
+	slug = models.SlugField(max_length=255)
 	newsletter = models.ForeignKey(Newsletter, related_name='issues')
 	numbering = models.CharField(max_length=50, help_text='For example, 04.02 for volume 4, issue 2.')
 	articles = models.ManyToManyField(NewsletterArticle, related_name='issues')
+	
+	def __unicode__(self):
+		return self.title
 	
 	class Meta:
 		ordering = ['-numbering']

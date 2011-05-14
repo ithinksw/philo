@@ -36,6 +36,7 @@ class Tag(models.Model):
 
 
 class Titled(models.Model):
+	# Use of this model is deprecated.
 	title = models.CharField(max_length=255)
 	slug = models.SlugField(max_length=255)
 	

@@ -16,7 +16,8 @@ from philo.contrib.penfield.exceptions import HttpNotAcceptable
 from philo.contrib.penfield.middleware import http_not_acceptable
 from philo.contrib.penfield.validators import validate_pagination_count
 from philo.exceptions import ViewCanNotProvideSubpath
-from philo.models import Tag, Entity, MultiView, Page, register_value_model, TemplateField, Template
+from philo.models import Tag, Entity, MultiView, Page, register_value_model, Template
+from philo.models.fields import TemplateField
 from philo.utils import paginate
 
 try:

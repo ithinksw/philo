@@ -17,7 +17,8 @@ from django.utils.encoding import force_unicode
 from philo.contrib.julian.feedgenerator import ICalendarFeed
 from philo.contrib.penfield.models import FeedView, FEEDS
 from philo.exceptions import ViewCanNotProvideSubpath
-from philo.models import Tag, Entity, Page, TemplateField
+from philo.models import Tag, Entity, Page
+from philo.models.fields import TemplateField
 from philo.utils import ContentTypeRegistryLimiter
 
 

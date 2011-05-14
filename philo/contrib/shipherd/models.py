@@ -7,7 +7,8 @@ from django.core.validators import RegexValidator, MinValueValidator
 from django.db import models
 from django.forms.models import model_to_dict
 
-from philo.models import TreeEntity, Node, TreeManager, Entity, TargetURLModel
+from philo.models.base import TreeEntity, TreeManager, Entity
+from philo.models.nodes import Node, TargetURLModel
 
 
 DEFAULT_NAVIGATION_DEPTH = 3

@@ -209,7 +209,7 @@ class ForeignKeyAttribute(AttributeProxyField):
 	"""
 	Handles an :class:`.Attribute` with a :class:`.ForeignKeyValue`.
 	
-	:param limit_choices_to: A :class:`Q` object, dictionary, or :class:`.ContentTypeLimiter` to restrict the queryset for the :class:`ForeignKeyAttribute`.
+	:param limit_choices_to: A :class:`Q` object, dictionary, or :class:`ContentTypeLimiter <philo.utils>` to restrict the queryset for the :class:`ForeignKeyAttribute`.
 	
 	"""
 	value_class = ForeignKeyValue

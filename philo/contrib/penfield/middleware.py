@@ -5,8 +5,7 @@ from philo.contrib.penfield.exceptions import HttpNotAcceptable
 
 
 class HttpNotAcceptableMiddleware(object):
-	"""Middleware to catch HttpNotAcceptable errors and return an Http406 response.
-	See RFC 2616."""
+	"""Middleware to catch :exc:`~philo.contrib.penfield.exceptions.HttpNotAcceptable` and return an :class:`HttpResponse` with a 406 response code. See :rfc:`2616`."""
 	def process_exception(self, request, exception):
 		if isinstance(exception, HttpNotAcceptable):
 			return HttpResponse(status=406)

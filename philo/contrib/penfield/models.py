@@ -14,7 +14,6 @@ from django.utils.html import escape
 
 from philo.contrib.penfield.exceptions import HttpNotAcceptable
 from philo.contrib.penfield.middleware import http_not_acceptable
-from philo.contrib.penfield.validators import validate_pagination_count
 from philo.exceptions import ViewCanNotProvideSubpath
 from philo.models import Tag, Entity, MultiView, Page, register_value_model, Template
 from philo.models.fields import TemplateField
@@ -40,31 +39,49 @@ FEED_CHOICES = (
 
 class FeedView(MultiView):
 	"""
-	The FeedView expects to handle a number of different feeds for the
-	same object - i.e. patterns for a blog to handle all entries or
-	just entries for a certain year/month/day.
+	:class:`FeedView` handles a number of pages and related feeds for a single object such as a blog or newsletter. In addition to all other methods and attributes, :class:`FeedView` supports the same generic API as `django.contrib.syndication.views.Feed <http://docs.djangoproject.com/en/dev/ref/contrib/syndication/#django.contrib.syndication.django.contrib.syndication.views.Feed>`_.
 	
-	This class would subclass django.contrib.syndication.views.Feed, but
-	that would make it callable, which causes problems.
 	"""
+	#: The type of feed which should be served by the :class:`FeedView`.
 	feed_type = models.CharField(max_length=50, choices=FEED_CHOICES, default=ATOM)
+	#: The suffix which will be appended to a page URL for a feed of its items. Default: "feed"
 	feed_suffix = models.CharField(max_length=255, blank=False, default="feed")
+	#: A :class:`BooleanField` - whether or not feeds are enabled.
 	feeds_enabled = models.BooleanField(default=True)
+	#: A :class:`PositiveIntegerField` - the maximum number of items to return for this feed. All items will be returned if this field is blank. Default: 15.
 	feed_length = models.PositiveIntegerField(blank=True, null=True, default=15, help_text="The maximum number of items to return for this feed. All items will be returned if this field is blank.")
 	
+	#: A :class:`ForeignKey` to a :class:`.Template` which can be used to render the title of each item in the feed.
 	item_title_template = models.ForeignKey(Template, blank=True, null=True, related_name="%(app_label)s_%(class)s_title_related")
+	#: A :class:`ForeignKey` to a :class:`.Template` which can be used to render the description of each item in the feed.
 	item_description_template = models.ForeignKey(Template, blank=True, null=True, related_name="%(app_label)s_%(class)s_description_related")
 	
+	#: The name of the context variable to be populated with the items managed by the :class:`FeedView`.
 	item_context_var = 'items'
+	#: The attribute on a subclass of :class:`FeedView` which will contain the main object of a feed (such as a :class:`Blog`.)
 	object_attr = 'object'
 	
+	#: A description of the feeds served by the :class:`FeedView`. This is a required part of the :class:`django.contrib.syndication.view.Feed` API.
 	description = ""
 	
 	def feed_patterns(self, base, get_items_attr, page_attr, reverse_name):
 		"""
-		Given the name to be used to reverse this view and the names of
-		the attributes for the function that fetches the objects, returns
-		patterns suitable for inclusion in urlpatterns.
+		Given the name to be used to reverse this view and the names of the attributes for the function that fetches the objects, returns patterns suitable for inclusion in urlpatterns.
+		
+		:param base: The base of the returned patterns - that is, the subpath pattern which will reference the page for the items. The :attr:`feed_suffix` will be appended to this subpath.
+		:param get_items_attr: A callable or the name of a callable on the :class:`FeedView` which will return an (``items``, ``extra_context``) tuple. This will be passed directly to :meth:`feed_view` and :meth:`page_view`.
+		:param page_attr: A :class:`.Page` instance or the name of an attribute on the :class:`FeedView` which contains a :class:`.Page` instance. This will be passed directly to :meth:`page_view` and will be rendered with the items from ``get_items_attr``.
+		:param reverse_name: The string which is considered the "name" of the view function returned by :meth:`page_view` for the given parameters.
+		:returns: Patterns suitable for use in urlpatterns.
+		
+		Example::
+		
+			@property
+			def urlpatterns(self):
+				urlpatterns = self.feed_patterns(r'^', 'get_all_entries', 'index_page', 'index')
+				urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})', 'get_entries_by_ymd', 'entry_archive_page', 'entries_by_day')
+				return urlpatterns
+		
 		"""
 		urlpatterns = patterns('')
 		if self.feeds_enabled:
@@ -80,11 +97,18 @@ class FeedView(MultiView):
 		return urlpatterns
 	
 	def get_object(self, request, **kwargs):
+		"""By default, returns the object stored in the attribute named by :attr:`object_attr`. This can be overridden for subclasses that publish different data for different URL parameters. It is part of the :class:`django.contrib.syndication.views.Feed` API."""
 		return getattr(self, self.object_attr)
 	
 	def feed_view(self, get_items_attr, reverse_name):
 		"""
 		Returns a view function that renders a list of items as a feed.
+		
+		:param get_items_attr: A callable or the name of a callable on the :class:`FeedView` that will return a (items, extra_context) tuple when called with view arguments.
+		:param reverse_name: The name which can be used reverse this feed using the :class:`FeedView` as the urlconf.
+		
+		:returns: A view function that renders a list of items as a feed.
+		
 		"""
 		get_items = callable(get_items_attr) and get_items_attr or getattr(self, get_items_attr)
 		
@@ -102,7 +126,11 @@ class FeedView(MultiView):
 	
 	def page_view(self, get_items_attr, page_attr):
 		"""
-		Returns a view function that renders a list of items as a page.
+		:param get_items_attr: A callable or the name of a callable on the :class:`FeedView` that will return a (items, extra_context) tuple when called with view arguments.
+		:param page_attr: A :class:`.Page` instance or the name of an attribute on the :class:`FeedView` which contains a :class:`.Page` instance. This will be rendered with the items from ``get_items_attr``.
+		
+		:returns: A view function that renders a list of items as an :class:`HttpResponse`.
+		
 		"""
 		get_items = callable(get_items_attr) and get_items_attr or getattr(self, get_items_attr)
 		page = isinstance(page_attr, Page) and page_attr or getattr(self, page_attr)
@@ -120,10 +148,8 @@ class FeedView(MultiView):
 	
 	def process_page_items(self, request, items):
 		"""
-		Hook for handling any extra processing of items based on a
-		request, such as pagination or searching. This method is
-		expected to return a list of items and a dictionary to be
-		added to the page context.
+		Hook for handling any extra processing of ``items`` based on an :class:`HttpRequest`, such as pagination or searching. This method is expected to return a list of items and a dictionary to be added to the page context.
+		
 		"""
 		item_context = {
 			self.item_context_var: items
@@ -131,6 +157,10 @@ class FeedView(MultiView):
 		return items, item_context
 	
 	def get_feed_type(self, request):
+		"""
+		Intelligently chooses a feed type for a given request. Tries to return :attr:`feed_type`, but if the Accept header does not include that mimetype, tries to return the best match from the feed types that are offered by the :class:`FeedView`. If none of the offered feed types are accepted by the :class:`HttpRequest`, then this method will raise :exc:`philo.contrib.penfield.exceptions.HttpNotAcceptable`.
+		
+		"""
 		feed_type = self.feed_type
 		if feed_type not in FEEDS:
 			feed_type = FEEDS.keys()[0]
@@ -151,7 +181,8 @@ class FeedView(MultiView):
 	
 	def get_feed(self, obj, request, reverse_name):
 		"""
-		Returns an unpopulated feedgenerator.DefaultFeed object for this object.
+		Returns an unpopulated :class:`django.utils.feedgenerator.DefaultFeed` object for this object.
+		
 		"""
 		try:
 			current_site = Site.objects.get_current()
@@ -185,6 +216,7 @@ class FeedView(MultiView):
 		return feed
 	
 	def populate_feed(self, feed, items, request):
+		"""Populates a :class:`django.utils.feedgenerator.DefaultFeed` instance as is returned by :meth:`get_feed` with the passed-in ``items``."""
 		if self.item_title_template:
 			title_template = DjangoTemplate(self.item_title_template.code)
 		else:
@@ -275,17 +307,11 @@ class FeedView(MultiView):
 		return attr
 	
 	def feed_extra_kwargs(self, obj):
-		"""
-		Returns an extra keyword arguments dictionary that is used when
-		initializing the feed generator.
-		"""
+		"""Returns an extra keyword arguments dictionary that is used when initializing the feed generator."""
 		return {}
 	
 	def item_extra_kwargs(self, item):
-		"""
-		Returns an extra keyword arguments dictionary that is used with
-		the `add_item` call of the feed generator.
-		"""
+		"""Returns an extra keyword arguments dictionary that is used with the `add_item` call of the feed generator."""
 		return {}
 	
 	def item_title(self, item):
@@ -299,7 +325,11 @@ class FeedView(MultiView):
 
 
 class Blog(Entity):
+	"""Represents a blog which can be posted to."""
+	#: The name of the :class:`Blog`, currently called 'title' for historical reasons.
 	title = models.CharField(max_length=255)
+	
+	#: A slug used to identify the :class:`Blog`.
 	slug = models.SlugField(max_length=255)
 	
 	def __unicode__(self):
@@ -307,11 +337,12 @@ class Blog(Entity):
 	
 	@property
 	def entry_tags(self):
-		""" Returns a QuerySet of Tags that are used on any entries in this blog. """
+		"""Returns a :class:`QuerySet` of :class:`.Tag`\ s that are used on any entries in this blog."""
 		return Tag.objects.filter(blogentries__blog=self).distinct()
 	
 	@property
 	def entry_dates(self):
+		"""Returns a dictionary of date :class:`QuerySet`\ s for years, months, and days for which there are entries."""
 		dates = {'year': self.entries.dates('date', 'year', order='DESC'), 'month': self.entries.dates('date', 'month', order='DESC'), 'day': self.entries.dates('date', 'day', order='DESC')}
 		return dates
 
@@ -320,13 +351,29 @@ register_value_model(Blog)
 
 
 class BlogEntry(Entity):
+	"""Represents an entry in a :class:`Blog`."""
+	#: The title of the :class:`BlogEntry`.
 	title = models.CharField(max_length=255)
+	
+	#: A slug which identifies the :class:`BlogEntry`.
 	slug = models.SlugField(max_length=255)
+	
+	#: The :class:`Blog` which this entry has been posted to. Can be left blank to represent a "draft" status.
 	blog = models.ForeignKey(Blog, related_name='entries', blank=True, null=True)
+	
+	#: A :class:`ForeignKey` to the author. The model is either :setting:`PHILO_PERSON_MODULE` or :class:`auth.User`.
 	author = models.ForeignKey(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='blogentries')
+	
+	#: The date and time which the :class:`BlogEntry` is considered posted at.
 	date = models.DateTimeField(default=None)
+	
+	#: The content of the :class:`BlogEntry`.
 	content = models.TextField()
+	
+	#: An optional brief excerpt from the :class:`BlogEntry`.
 	excerpt = models.TextField(blank=True, null=True)
+	
+	#: :class:`.Tag`\ s for this :class:`BlogEntry`.
 	tags = models.ManyToManyField(Tag, related_name='blogentries', blank=True, null=True)
 	
 	def save(self, *args, **kwargs):
@@ -347,6 +394,10 @@ register_value_model(BlogEntry)
 
 
 class BlogView(FeedView):
+	"""
+	A subclass of :class:`FeedView` which handles patterns and feeds for a :class:`Blog` and its related :class:`entries <BlogEntry>`.
+	
+	"""
 	ENTRY_PERMALINK_STYLE_CHOICES = (
 		('D', 'Year, month, and day'),
 		('M', 'Year and month'),
@@ -355,18 +406,34 @@ class BlogView(FeedView):
 		('N', 'No base')
 	)
 	
+	#: The :class:`Blog` whose entries should be managed by this :class:`BlogView`
 	blog = models.ForeignKey(Blog, related_name='blogviews')
 	
+	#: The main page of the :class:`Blog` will be rendered with this :class:`.Page`.
 	index_page = models.ForeignKey(Page, related_name='blog_index_related')
+	#: The detail view of a :class:`BlogEntry` will be rendered with this :class:`Page`.
 	entry_page = models.ForeignKey(Page, related_name='blog_entry_related')
 	# TODO: entry_archive is misleading. Rename to ymd_page or timespan_page.
+	#: Views of :class:`BlogEntry` archives will be rendered with this :class:`Page` (optional).
 	entry_archive_page = models.ForeignKey(Page, related_name='blog_entry_archive_related', null=True, blank=True)
+	#: Views of :class:`BlogEntry` archives according to their :class:`.Tag`\ s will be rendered with this :class:`Page`.
 	tag_page = models.ForeignKey(Page, related_name='blog_tag_related')
+	#: The archive of all available tags will be rendered with this :class:`Page` (optional).
 	tag_archive_page = models.ForeignKey(Page, related_name='blog_tag_archive_related', null=True, blank=True)
-	entries_per_page = models.IntegerField(blank=True, validators=[validate_pagination_count], null=True)
+	#: This number will be passed directly into pagination for :class:`BlogEntry` list pages. Pagination will be disabled if this is left blank.
+	entries_per_page = models.IntegerField(blank=True, null=True)
 	
+	#: Depending on the needs of the site, different permalink styles may be appropriate. Example subpaths are provided for a :class:`BlogEntry` posted on May 2nd, 2011 with a slug of "hello". The choices are:
+	#: 
+	#: 	* Year, month, and day - ``2011/05/02/hello``
+	#: 	* Year and month - ``2011/05/hello``
+	#: 	* Year - ``2011/hello``
+	#: 	* Custom base - :attr:`entry_permalink_base`\ ``/hello``
+	#: 	* No base - ``hello``
 	entry_permalink_style = models.CharField(max_length=1, choices=ENTRY_PERMALINK_STYLE_CHOICES)
+	#: If the :attr:`entry_permalink_style` is set to "Custom base" then the value of this field will be used as the base subpath for year/month/day entry archive pages and entry detail pages. Default: "entries"
 	entry_permalink_base = models.CharField(max_length=255, blank=False, default='entries')
+	#: This will be used as the base for the views of :attr:`tag_page` and :attr:`tag_archive_page`. Default: "tags"
 	tag_permalink_base = models.CharField(max_length=255, blank=False, default='tags')
 	
 	item_context_var = 'entries'
@@ -436,7 +503,7 @@ class BlogView(FeedView):
 				url((r'^%s/(?P<slug>[-\w]+)$' % self.entry_permalink_base), self.entry_view)
 			)
 		else:
-			urlpatterns = patterns('',
+			urlpatterns += patterns('',
 				url(r'^(?P<slug>[-\w]+)$', self.entry_view)
 			)
 		return urlpatterns
@@ -445,15 +512,19 @@ class BlogView(FeedView):
 		return {'blog': self.blog}
 	
 	def get_entry_queryset(self):
+		"""Returns the default :class:`QuerySet` of :class:`BlogEntry` instances for the :class:`BlogView`."""
 		return self.blog.entries.all()
 	
 	def get_tag_queryset(self):
+		"""Returns the default :class:`QuerySet` of :class:`.Tag`\ s for the :class:`BlogView`'s :meth:`get_entries_by_tag` and :meth:`tag_archive_view`."""
 		return self.blog.entry_tags
 	
 	def get_all_entries(self, request, extra_context=None):
+		"""Used to generate :meth:`~FeedView.feed_patterns` for all entries."""
 		return self.get_entry_queryset(), extra_context
 	
 	def get_entries_by_ymd(self, request, year=None, month=None, day=None, extra_context=None):
+		"""Used to generate :meth:`~FeedView.feed_patterns` for entries with a specific year, month, and day."""
 		if not self.entry_archive_page:
 			raise Http404
 		entries = self.get_entry_queryset()
@@ -469,6 +540,7 @@ class BlogView(FeedView):
 		return entries, context
 	
 	def get_entries_by_tag(self, request, tag_slugs, extra_context=None):
+		"""Used to generate :meth:`~FeedView.feed_patterns` for entries with all of the given tags."""
 		tag_slugs = tag_slugs.replace('+', '/').split('/')
 		tags = self.get_tag_queryset().filter(slug__in=tag_slugs)
 		
@@ -491,6 +563,7 @@ class BlogView(FeedView):
 		return entries, context
 	
 	def entry_view(self, request, slug, year=None, month=None, day=None, extra_context=None):
+		"""Renders :attr:`entry_page` with the entry specified by the given parameters."""
 		entries = self.get_entry_queryset()
 		if year:
 			entries = entries.filter(date__year=year)
@@ -508,6 +581,7 @@ class BlogView(FeedView):
 		return self.entry_page.render_to_response(request, extra_context=context)
 	
 	def tag_archive_view(self, request, extra_context=None):
+		"""Renders :attr:`tag_archive_page` with the result of :meth:`get_tag_queryset` added to the context."""
 		if not self.tag_archive_page:
 			raise Http404
 		context = self.get_context()
@@ -518,6 +592,7 @@ class BlogView(FeedView):
 		return self.tag_archive_page.render_to_response(request, extra_context=context)
 	
 	def feed_view(self, get_items_attr, reverse_name):
+		"""Overrides :meth:`FeedView.feed_view` to add :class:`.Tag`\ s to the feed as categories."""
 		get_items = callable(get_items_attr) and get_items_attr or getattr(self, get_items_attr)
 		
 		def inner(request, extra_context=None, *args, **kwargs):
@@ -541,6 +616,7 @@ class BlogView(FeedView):
 		return inner
 	
 	def process_page_items(self, request, items):
+		"""Overrides :meth:`FeedView.process_page_items` to add pagination."""
 		if self.entries_per_page:
 			page_num = request.GET.get('page', 1)
 			paginator, paginated_page, items = paginate(items, self.entries_per_page, page_num)
@@ -575,7 +651,10 @@ class BlogView(FeedView):
 
 
 class Newsletter(Entity):
+	"""Represents a newsletter which will contain :class:`articles <NewsletterArticle>` organized into :class:`issues <NewsletterIssue>`."""
+	#: The name of the :class:`Newsletter`, currently callse 'title' for historical reasons.
 	title = models.CharField(max_length=255)
+	#: A slug used to identify the :class:`Newsletter`.
 	slug = models.SlugField(max_length=255)
 	
 	def __unicode__(self):
@@ -586,13 +665,22 @@ register_value_model(Newsletter)
 
 
 class NewsletterArticle(Entity):
+	"""Represents an article in a :class:`Newsletter`"""
+	#: The title of the :class:`NewsletterArticle`.
 	title = models.CharField(max_length=255)
+	#: A slug which identifies the :class:`NewsletterArticle`.
 	slug = models.SlugField(max_length=255)
+	#: A :class:`ForeignKey` to :class:`Newsletter` representing the newsletter which this article was written for.
 	newsletter = models.ForeignKey(Newsletter, related_name='articles')
+	#: A :class:`ManyToManyField` to the author(s) of the :class:`NewsletterArticle`. The model is either :setting:`PHILO_PERSON_MODULE` or :class:`auth.User`.
 	authors = models.ManyToManyField(getattr(settings, 'PHILO_PERSON_MODULE', 'auth.User'), related_name='newsletterarticles')
+	#: The date and time which the :class:`NewsletterArticle` is considered published at.
 	date = models.DateTimeField(default=None)
+	#: A :class:`.TemplateField` containing an optional short summary of the article, meant to grab a reader's attention and draw them in.
 	lede = TemplateField(null=True, blank=True, verbose_name='Summary')
+	#: A :class:`.TemplateField` containing the full text of the article.
 	full_text = TemplateField(db_index=True)
+	#: A :class:`ManyToManyField` to :class:`.Tag`\ s for the :class:`NewsletterArticle`.
 	tags = models.ManyToManyField(Tag, related_name='newsletterarticles', blank=True, null=True)
 	
 	def save(self, *args, **kwargs):
@@ -613,10 +701,16 @@ register_value_model(NewsletterArticle)
 
 
 class NewsletterIssue(Entity):
+	"""Represents an issue of the newsletter."""
+	#: The title of the :class:`NewsletterIssue`.
 	title = models.CharField(max_length=255)
+	#: A slug which identifies the :class:`NewsletterIssue`.
 	slug = models.SlugField(max_length=255)
+	#: A :class:`ForeignKey` to the :class:`Newsletter` which this issue belongs to.
 	newsletter = models.ForeignKey(Newsletter, related_name='issues')
+	#: The numbering of the issue - for example, 04.02 for volume 4, issue 2. This is an instance of :class:`CharField` to allow any arbitrary numbering system.
 	numbering = models.CharField(max_length=50, help_text='For example, 04.02 for volume 4, issue 2.')
+	#: A :class:`ManyToManyField` to articles belonging to this issue.
 	articles = models.ManyToManyField(NewsletterArticle, related_name='issues')
 	
 	def __unicode__(self):
@@ -631,6 +725,7 @@ register_value_model(NewsletterIssue)
 
 
 class NewsletterView(FeedView):
+	"""A subclass of :class:`FeedView` which handles patterns and feeds for a :class:`Newsletter` and its related :class:`articles <NewsletterArticle>`."""
 	ARTICLE_PERMALINK_STYLE_CHOICES = (
 		('D', 'Year, month, and day'),
 		('M', 'Year and month'),
@@ -638,16 +733,30 @@ class NewsletterView(FeedView):
 		('S', 'Slug only')
 	)
 	
+	#: A :class:`ForeignKey` to the :class:`Newsletter` managed by this :class:`NewsletterView`.
 	newsletter = models.ForeignKey(Newsletter, related_name='newsletterviews')
 	
+	#: A :class:`ForeignKey` to the :class:`Page` used to render the main page of this :class:`NewsletterView`.
 	index_page = models.ForeignKey(Page, related_name='newsletter_index_related')
+	#: A :class:`ForeignKey` to the :class:`Page` used to render the detail view of a :class:`NewsletterArticle` for this :class:`NewsletterView`.
 	article_page = models.ForeignKey(Page, related_name='newsletter_article_related')
+	#: A :class:`ForeignKey` to the :class:`Page` used to render the :class:`NewsletterArticle` archive pages for this :class:`NewsletterView`.
 	article_archive_page = models.ForeignKey(Page, related_name='newsletter_article_archive_related', null=True, blank=True)
+	#: A :class:`ForeignKey` to the :class:`Page` used to render the detail view of a :class:`NewsletterIssue` for this :class:`NewsletterView`.
 	issue_page = models.ForeignKey(Page, related_name='newsletter_issue_related')
+	#: A :class:`ForeignKey` to the :class:`Page` used to render the :class:`NewsletterIssue` archive pages for this :class:`NewsletterView`.
 	issue_archive_page = models.ForeignKey(Page, related_name='newsletter_issue_archive_related', null=True, blank=True)
 	
+	#: Depending on the needs of the site, different permalink styles may be appropriate. Example subpaths are provided for a :class:`NewsletterArticle` posted on May 2nd, 2011 with a slug of "hello". The choices are:
+	#: 
+	#: 	* Year, month, and day - :attr:`article_permalink_base`\ ``/2011/05/02/hello``
+	#: 	* Year and month - :attr:`article_permalink_base`\ ``/2011/05/hello``
+	#: 	* Year - :attr:`article_permalink_base`\ ``/2011/hello``
+	#: 	* Slug only - :attr:`article_permalink_base`\ ``/hello``
 	article_permalink_style = models.CharField(max_length=1, choices=ARTICLE_PERMALINK_STYLE_CHOICES)
+	#: This will be used as the base subpath for year/month/day article archive pages and article detail pages. Default: "articles"
 	article_permalink_base = models.CharField(max_length=255, blank=False, default='articles')
+	#: This will be used as the base subpath for issue detail pages and the issue archive page.
 	issue_permalink_base = models.CharField(max_length=255, blank=False, default='issues')
 	
 	item_context_var = 'articles'
@@ -722,15 +831,19 @@ class NewsletterView(FeedView):
 		return {'newsletter': self.newsletter}
 	
 	def get_article_queryset(self):
+		"""Returns the default :class:`QuerySet` of :class:`NewsletterArticle` instances for the :class:`NewsletterView`."""
 		return self.newsletter.articles.all()
 	
 	def get_issue_queryset(self):
+		"""Returns the default :class:`QuerySet` of :class:`NewsletterIssue` instances for the :class:`NewsletterView`."""
 		return self.newsletter.issues.all()
 	
 	def get_all_articles(self, request, extra_context=None):
+		"""Used to generate :meth:`FeedView.feed_patterns` for all entries."""
 		return self.get_article_queryset(), extra_context
 	
 	def get_articles_by_ymd(self, request, year, month=None, day=None, extra_context=None):
+		"""Used to generate :meth:`FeedView.feed_patterns` for a specific year, month, and day."""
 		articles = self.get_article_queryset().filter(date__year=year)
 		if month:
 			articles = articles.filter(date__month=month)
@@ -739,6 +852,7 @@ class NewsletterView(FeedView):
 		return articles, extra_context
 	
 	def get_articles_by_issue(self, request, numbering, extra_context=None):
+		"""Used to generate :meth:`FeedView.feed_patterns` for articles from a certain issue."""
 		try:
 			issue = self.get_issue_queryset().get(numbering=numbering)
 		except NewsletterIssue.DoesNotExist:
@@ -748,6 +862,7 @@ class NewsletterView(FeedView):
 		return self.get_article_queryset().filter(issues=issue), context
 	
 	def article_view(self, request, slug, year=None, month=None, day=None, extra_context=None):
+		"""Renders :attr:`article_page` with the article specified by the given parameters."""
 		articles = self.get_article_queryset()
 		if year:
 			articles = articles.filter(date__year=year)
@@ -765,6 +880,7 @@ class NewsletterView(FeedView):
 		return self.article_page.render_to_response(request, extra_context=context)
 	
 	def issue_archive_view(self, request, extra_context):
+		"""Renders :attr:`issue_archive_page` with the result of :meth:`get_issue_queryset` added to the context."""
 		if not self.issue_archive_page:
 			raise Http404
 		context = self.get_context()

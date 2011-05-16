@@ -225,3 +225,11 @@ man_pages = [
     ('index', 'philo', u'Philo Documentation',
      [u'Stephen Burrows'], 1)
 ]
+
+def skip_attribute_attrs(app, what, name, obj, skip, options):
+	if name in ("attribute_set", "get_attribute_mapper", "nodes"):
+		return True
+	return skip
+
+def setup(app):
+	app.connect('autodoc-skip-member', skip_attribute_attrs)

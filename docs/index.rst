@@ -21,6 +21,7 @@ Contents:
 	templatetags
 	forms
 	loaders
+	contrib/intro
 
 Indices and tables
 ==================

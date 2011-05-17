@@ -117,6 +117,7 @@ class LazyAttributeMapperMixin(object):
 		return self.get_attributes().get(key=key)
 	
 	def _add_to_cache(self, key):
+		from philo.models.base import Attribute
 		try:
 			attr = self._raw_get_attribute(key)
 		except Attribute.DoesNotExist:

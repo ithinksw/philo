@@ -1,25 +1,6 @@
 """
 The embed template tags are automatically included as builtins if :mod:`philo` is an installed app.
 
-.. templatetag:: embed
-
-embed
------
-
-The {% embed %} tag can be used in two ways.
-
-First, to set which template will be used to render a particular model. This declaration can be placed in a base template and will propagate into all templates that extend that template.
-
-Syntax::
-
-	{% embed <app_label>.<model_name> with <template> %}
-
-Second, to embed a specific model instance in the document with a template specified earlier in the template or in a parent template using the first syntax. The instance can be specified as a content type and pk or as a context variable. Any kwargs provided will be passed into the context of the template.
-
-Syntax::
-
-	{% embed (<app_label>.<model_name> <object_pk> || <instance>) [<argname>=<value> ...] %}
-
 """
 from django import template
 from django.conf import settings
@@ -310,10 +291,22 @@ def parse_content_type(bit, tagname):
 	return ct
 
 
-def do_embed(parser, token):
+@register.tag
+def embed(parser, token):
 	"""
-	{% embed <app_label>.<model_name> with <template> %}
-	{% embed (<app_label>.<model_name> <object_pk> || <instance>) [<argname>=<value> ...] %}
+	The {% embed %} tag can be used in two ways.
+	
+	First, to set which template will be used to render a particular model. This declaration can be placed in a base template and will propagate into all templates that extend that template.
+	
+	Syntax::
+	
+		{% embed <app_label>.<model_name> with <template> %}
+	
+	Second, to embed a specific model instance in the document with a template specified earlier in the template or in a parent template using the first syntax. The instance can be specified as a content type and pk or as a context variable. Any kwargs provided will be passed into the context of the template.
+	
+	Syntax::
+	
+		{% embed (<app_label>.<model_name> <object_pk> || <instance>) [<argname>=<value> ...] %}
 	
 	"""
 	bits = token.split_contents()
@@ -355,6 +348,3 @@ def do_embed(parser, token):
 		return EmbedNode(ct, object_pk=parser.compile_filter(pk), kwargs=kwargs)
 	else:
 		return ConstantEmbedNode(ct, object_pk=pk, kwargs=kwargs)
-
-
-register.tag('embed', do_embed)

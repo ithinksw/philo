@@ -101,12 +101,13 @@ class RecurseNavigationNode(template.Node):
 @register.tag
 def recursenavigation(parser, token):
 	"""
-	The recursenavigation templatetag takes two arguments:
-	- the node for which the navigation should be found
-	- the navigation's key.
+	The :ttag:`recursenavigation` templatetag takes two arguments:
 	
-	It will then recursively loop over each item in the navigation and render the template
-	chunk within the block. recursenavigation sets the following variables in the context:
+	* the :class:`.Node` for which the :class:`.Navigation` should be found
+	* the :class:`.Navigation`'s :attr:`~.Navigation.key`.
+	
+	It will then recursively loop over each :class:`.NavigationItem` in the :class:`.Navigation` and render the template
+	chunk within the block. :ttag:`recursenavigation` sets the following variables in the context:
 	
 		==============================  ================================================
 		Variable                        Description
@@ -118,25 +119,26 @@ def recursenavigation(parser, token):
 		``navloop.first``               True if this is the first time through the current level
 		``navloop.last``                True if this is the last time through the current level
 		``navloop.parentloop``          This is the loop one level "above" the current one
-		==============================  ================================================
-		``item``                        The current item in the loop (a NavigationItem instance)
+		
+		``item``                        The current item in the loop (a :class:`.NavigationItem` instance)
 		``children``                    If accessed, performs the next level of recursion.
 		``navloop.active``              True if the item is active for this request
 		``navloop.active_descendants``  True if the item has active descendants for this request
 		==============================  ================================================
 	
-	Example:
+	Example::
+	
 		<ul>
-			{% recursenavigation node "main" %}
-				<li{% if navloop.active %} class='active'{% endif %}>
-					{{ navloop.item.text }}
-					{% if item.get_children %}
-						<ul>
-							{{ children }}
-						</ul>
-					{% endif %}
-				</li>
-			{% endrecursenavigation %}
+		    {% recursenavigation node "main" %}
+		        <li{% if navloop.active %} class='active'{% endif %}>
+		            {{ navloop.item.text }}
+		            {% if item.get_children %}
+		                <ul>
+		                    {{ children }}
+		                </ul>
+		            {% endif %}
+		        </li>
+		    {% endrecursenavigation %}
 		</ul>
 	"""
 	bits = token.contents.split()

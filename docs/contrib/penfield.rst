@@ -43,3 +43,7 @@ Template filters
 ++++++++++++++++
 
 .. automodule:: philo.contrib.penfield.templatetags.penfield
+
+.. autotemplatefilter:: monthname
+
+.. autotemplatefilter:: apmonthname

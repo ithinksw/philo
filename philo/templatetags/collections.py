@@ -1,17 +1,6 @@
 """
 The collection template tags are automatically included as builtins if :mod:`philo` is an installed app.
 
-.. templatetag:: membersof
-
-membersof
----------
-
-Given a collection and a content type, sets the results of :meth:`collection.members.with_model <.CollectionMemberManager.with_model>` as a variable in the context.
-
-Usage::
-
-	{% membersof <collection> with <app_label>.<model_name> as <var> %}
-
 """
 
 from django import template
@@ -37,9 +26,14 @@ class MembersofNode(template.Node):
 		return ''
 
 
-def do_membersof(parser, token):
+@register.tag
+def membersof(parser, token):
 	"""
-	{% membersof <collection> with <app_label>.<model_name> as <var> %}
+	Given a collection and a content type, sets the results of :meth:`collection.members.with_model <.CollectionMemberManager.with_model>` as a variable in the context.
+	
+	Usage::
+	
+		{% membersof <collection> with <app_label>.<model_name> as <var> %}
 	
 	"""
 	params=token.split_contents()
@@ -63,6 +57,3 @@ def do_membersof(parser, token):
 		raise template.TemplateSyntaxError('"%s" template tag requires the fifth parameter to be "as"' % tag)
 	
 	return MembersofNode(collection=params[1], model=ct.model_class(), as_var=params[5])
-
-
-register.tag('membersof', do_membersof)

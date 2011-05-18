@@ -31,7 +31,7 @@ needs_sphinx = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['djangodocs', 'sphinx.ext.autodoc']
+extensions = ['djangodocs', 'sphinx.ext.autodoc', 'philodocs']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -233,3 +233,4 @@ def skip_attribute_attrs(app, what, name, obj, skip, options):
 
 def setup(app):
 	app.connect('autodoc-skip-member', skip_attribute_attrs)
+	#app.connect('autodoc-process-signature', )

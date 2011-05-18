@@ -14,8 +14,11 @@ from philo.models.nodes import Node, TargetURLModel
 DEFAULT_NAVIGATION_DEPTH = 3
 
 
-class NavigationQuerySetMapper(object, DictMixin):
-	"""This class exists to prevent setting of items in the navigation cache through node.navigation."""
+class NavigationMapper(object, DictMixin):
+	"""
+	The :class:`NavigationMapper` is a dictionary-like object which allows easy fetching of the root items of a navigation for a node according to a key. The fetching goes through the :class:`NavigationManager` and can thus take advantage of the navigation cache. A :class:`NavigationMapper` instance will be available on each node instance as :attr:`Node.navigation` if :mod:`~philo.contrib.shipherd` is in the :setting:`INSTALLED_APPS`
+	
+	"""
 	def __init__(self, node):
 		self.node = node
 	
@@ -28,7 +31,7 @@ class NavigationQuerySetMapper(object, DictMixin):
 
 def navigation(self):
 	if not hasattr(self, '_navigation'):
-		self._navigation = NavigationQuerySetMapper(self)
+		self._navigation = NavigationMapper(self)
 	return self._navigation
 
 
@@ -40,6 +43,7 @@ class NavigationCacheQuerySet(models.query.QuerySet):
 	This subclass will trigger general cache clearing for Navigation.objects when a mass
 	update or deletion is performed. As there is no convenient way to iterate over the
 	changed or deleted instances, there's no way to be more precise about what gets cleared.
+	
 	"""
 	def update(self, *args, **kwargs):
 		super(NavigationCacheQuerySet, self).update(*args, **kwargs)
@@ -51,15 +55,22 @@ class NavigationCacheQuerySet(models.query.QuerySet):
 
 
 class NavigationManager(models.Manager):
-	# Since navigation is going to be hit frequently and changed
-	# relatively infrequently, cache it. Analogous to contenttypes.
+	"""
+	Since navigation on a site will be hit frequently, is relatively costly to compute, and is changed relatively infrequently, the NavigationManager maintains a cache which maps nodes to navigations.
+	
+	"""
 	use_for_related = True
 	_cache = {}
 	
-	def get_queryset(self):
+	def get_query_set(self):
+		"""
+		Returns a :class:`NavigationCacheQuerySet` instance.
+		
+		"""
 		return NavigationCacheQuerySet(self.model, using=self._db)
 	
 	def get_cache_for(self, node, update_targets=True):
+		"""Returns the navigation cache for a given :class:`.Node`. If update_targets is ``True``, then :meth:`update_targets_for` will be run with the :class:`.Node`."""
 		created = False
 		if not self.has_cache_for(node):
 			self.create_cache_for(node)
@@ -71,10 +82,11 @@ class NavigationManager(models.Manager):
 		return self.__class__._cache[self.db][node]
 	
 	def has_cache_for(self, node):
+		"""Returns ``True`` if a cache exists for the :class:`.Node` and ``False`` otherwise."""
 		return self.db in self.__class__._cache and node in self.__class__._cache[self.db]
 	
 	def create_cache_for(self, node):
-		"This method loops through the nodes ancestors and caches all unique navigation keys."
+		"""This method loops through the :class:`.Node`\ s ancestors and caches all unique navigation keys."""
 		ancestors = node.get_ancestors(ascending=True, include_self=True)
 		
 		nodes_to_cache = []
@@ -130,10 +142,7 @@ class NavigationManager(models.Manager):
 		return cache
 	
 	def clear_cache_for(self, node):
-		# Clear the cache for this node and all its descendants. The
-		# navigation for this node has probably changed, and for now,
-		# it isn't worth it to only clear the descendants actually
-		# affected by this.
+		"""Clear the cache for the :class:`.Node` and all its descendants. The navigation for this node has probably changed, and it isn't worth it to figure out which descendants were actually affected by this."""
 		if not self.has_cache_for(node):
 			# Already cleared.
 			return
@@ -144,10 +153,7 @@ class NavigationManager(models.Manager):
 			cache.pop(node, None)
 	
 	def update_targets_for(self, node):
-		# Manually update a cache's target nodes in case something's changed there.
-		# This should be a less complex operation than reloading the models each
-		# time. Not as good as selective updates... but not much to be done
-		# about that. TODO: Benchmark it.
+		"""Manually updates the target nodes for the :class:`.Node`'s cache in case something's changed there. This is a less complex operation than rebuilding the :class:`.Node`'s cache."""
 		caches = self.__class__._cache[self.db][node].values()
 		
 		target_pks = set()
@@ -165,14 +171,23 @@ class NavigationManager(models.Manager):
 					item.target_node = targets[targets.index(item.target_node)]
 	
 	def clear_cache(self):
+		"""Clears the manager's entire navigation cache."""
 		self.__class__._cache.pop(self.db, None)
 
 
 class Navigation(Entity):
+	"""
+	:class:`Navigation` represents a group of :class:`NavigationItem`\ s that have an intrinsic relationship in terms of navigating a website. For example, a ``main`` navigation versus a ``side`` navigation, or a ``authenticated`` navigation versus an ``anonymous`` navigation.
+	
+	"""
+	#: A :class:`NavigationManager` instance.
 	objects = NavigationManager()
 	
+	#: The :class:`.Node` which the :class:`Navigation` is attached to. The :class:`Navigation` will also be available to all the :class:`.Node`'s descendants and will override any :class:`Navigation` with the same key on any of the :class:`.Node`'s ancestors.
 	node = models.ForeignKey(Node, related_name='navigation_set', help_text="Be available as navigation for this node.")
+	#: Each :class:`Navigation` has a ``key`` which consists of one or more word characters so that it can easily be accessed in a template as ``{{ node.navigation.this_key }}``.
 	key = models.CharField(max_length=255, validators=[RegexValidator("\w+")], help_text="Must contain one or more alphanumeric characters or underscores.", db_index=True)
+	#: There is no limit to the depth of a tree of :class:`NavigationItem`\ s, but ``depth`` will limit how much of the tree will be displayed.
 	depth = models.PositiveSmallIntegerField(default=DEFAULT_NAVIGATION_DEPTH, validators=[MinValueValidator(1)], help_text="Defines the maximum display depth of this navigation.")
 	
 	def __init__(self, *args, **kwargs):
@@ -203,16 +218,21 @@ class Navigation(Entity):
 class NavigationItemManager(TreeManager):
 	use_for_related = True
 	
-	def get_queryset(self):
+	def get_query_set(self):
+		"""Returns a :class:`NavigationCacheQuerySet` instance."""
 		return NavigationCacheQuerySet(self.model, using=self._db)
 
 
 class NavigationItem(TreeEntity, TargetURLModel):
+	#: A :class:`NavigationItemManager` instance
 	objects = NavigationItemManager()
 	
+	#: A :class:`ForeignKey` to a :class:`Navigation` instance. If this is not null, then the :class:`NavigationItem` will be a root node of the :class:`Navigation` instance.
 	navigation = models.ForeignKey(Navigation, blank=True, null=True, related_name='roots', help_text="Be a root in this navigation tree.")
+	#: The text which will be displayed in the navigation. This is a :class:`CharField` instance with max length 50.
 	text = models.CharField(max_length=50)
 	
+	#: The order in which the :class:`NavigationItem` will be displayed.
 	order = models.PositiveSmallIntegerField(default=0)
 	
 	def __init__(self, *args, **kwargs):
@@ -229,6 +249,7 @@ class NavigationItem(TreeEntity, TargetURLModel):
 			raise ValidationError("Exactly one of `parent` and `navigation` must be defined.")
 	
 	def is_active(self, request):
+		"""Returns ``True`` if the :class:`NavigationItem` is considered active for a given request and ``False`` otherwise."""
 		if self.target_url == request.path:
 			# Handle the `default` case where the target_url and requested path
 			# are identical.
@@ -255,6 +276,7 @@ class NavigationItem(TreeEntity, TargetURLModel):
 		return False
 	
 	def has_active_descendants(self, request):
+		"""Returns ``True`` if the :class:`NavigationItem` has active descendants and ``False`` otherwise."""
 		for child in self.get_children():
 			if child.is_active(request) or child.has_active_descendants(request):
 				return True

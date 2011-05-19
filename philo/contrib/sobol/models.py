@@ -27,13 +27,20 @@ if getattr(settings, 'SOBOL_USE_EVENTLET', False):
 
 
 class Search(models.Model):
+	"""Represents all attempts to search for a unique string."""
+	#: The string which was searched for.
 	string = models.TextField()
 	
 	def __unicode__(self):
 		return self.string
 	
 	def get_weighted_results(self, threshhold=None):
-		"Returns this search's results ordered by decreasing weight."
+		"""
+		Returns a list of :class:`ResultURL` instances related to the search and ordered by decreasing weight. This will be cached on the instance.
+		
+		:param threshhold: The earliest datetime that a :class:`Click` can have been made on a related :class:`ResultURL` in order to be included in the weighted results (or ``None`` to include all :class:`Click`\ s and :class:`ResultURL`\ s).
+		
+		"""
 		if not hasattr(self, '_weighted_results'):
 			result_qs = self.result_urls.all()
 			
@@ -50,14 +57,11 @@ class Search(models.Model):
 	
 	def get_favored_results(self, error=5, threshhold=None):
 		"""
-		Calculate the set of most-favored results. A higher error
-		will cause this method to be more reticent about adding new
-		items.
+		Calculates the set of most-favored results based on their weight. Evenly-weighted results will be grouped together and either added or excluded as a group.
 		
-		The thought is to see whether there are any results which
-		vastly outstrip the other options. As such, evenly-weighted
-		results should be grouped together and either added or
-		excluded as a group.
+		:param error: An arbitrary number; higher values will cause this method to be more reticent about adding new items to the favored results.
+		:param threshhold: Will be passed directly into :meth:`get_weighted_results`
+		
 		"""
 		if not hasattr(self, '_favored_results'):
 			results = self.get_weighted_results(threshhold)
@@ -83,13 +87,22 @@ class Search(models.Model):
 
 
 class ResultURL(models.Model):
+	"""Represents a URL which has been selected one or more times for a :class:`Search`."""
+	#: A :class:`ForeignKey` to the :class:`Search` which the :class:`ResultURL` is related to.
 	search = models.ForeignKey(Search, related_name='result_urls')
+	#: The URL which was selected.
 	url = models.TextField(validators=[URLValidator()])
 	
 	def __unicode__(self):
 		return self.url
 	
 	def get_weight(self, threshhold=None):
+		"""
+		Calculates, caches, and returns the weight of the :class:`ResultURL`.
+		
+		:param threshhold: The datetime limit before which :class:`Click`\ s will not contribute to the weight of the :class:`ResultURL`.
+		
+		"""
 		if not hasattr(self, '_weight'):
 			clicks = self.clicks.all()
 			
@@ -106,13 +119,17 @@ class ResultURL(models.Model):
 
 
 class Click(models.Model):
+	"""Represents a click on a :class:`ResultURL`."""
+	#: A :class:`ForeignKey` to the :class:`ResultURL` which the :class:`Click` is related to.
 	result = models.ForeignKey(ResultURL, related_name='clicks')
+	#: The datetime when the click was registered in the system.
 	datetime = models.DateTimeField()
 	
 	def __unicode__(self):
 		return self.datetime.strftime('%B %d, %Y %H:%M:%S')
 	
 	def get_weight(self, default=1, weighted=lambda value, days: value/days**2):
+		"""Calculates and returns the weight of the :class:`Click`."""
 		if not hasattr(self, '_weight'):
 			days = (datetime.datetime.now() - self.datetime).days
 			if days < 0:
@@ -155,11 +172,21 @@ else:
 
 
 class SearchView(MultiView):
+	"""Handles a view for the results of a search, and an AJAX API for asynchronous search result loading. This can be particularly useful if some searches are slow."""
+	#: :class:`ForeignKey` to a :class:`.Page` which will be used to render the search results.
 	results_page = models.ForeignKey(Page, related_name='search_results_related')
+	#: A class:`.SlugMultipleChoiceField` whose choices are the contents of the :class:`.SearchRegistry`
 	searches = RegistryChoiceField(choices=registry.iterchoices())
-	enable_ajax_api = models.BooleanField("Enable AJAX API", default=True, help_text="Search results will be available <i>only</i> by AJAX, not as template variables.")
+	#: A :class:`BooleanField` which controls whether or not the AJAX API is enabled.
+	#:
+	#: .. note:: If the AJAX API is enabled, a ``ajax_api_url`` attribute will be added to each search instance containing the url and get parameters for an AJAX request to retrieve results for that search.
+	#:
+	#: .. note:: Be careful not to access :attr:`search_instance.results <.BaseSearch.results>` if the AJAX API is enabled - otherwise the search will be run immediately rather than on the AJAX request.
+	enable_ajax_api = models.BooleanField("Enable AJAX API", default=True)
+	#: A :class:`CharField` containing the placeholder text which is intended to be used for the search box for the :class:`SearchView`. It is the template author's responsibility to make use of this information.
 	placeholder_text = models.CharField(max_length=75, default="Search")
 	
+	#: The form which will be used to validate the input to the search box for this :class:`SearchView`.
 	search_form = SearchForm
 	
 	def __unicode__(self):
@@ -180,9 +207,17 @@ class SearchView(MultiView):
 		return urlpatterns
 	
 	def get_search_instance(self, slug, search_string):
+		"""Returns an instance of the :class:`.BaseSearch` subclass corresponding to ``slug`` in the :class:`.SearchRegistry` and instantiated with ``search_string``."""
 		return registry[slug](search_string.lower())
 	
 	def results_view(self, request, extra_context=None):
+		"""
+		Renders :attr:`results_page` with a context containing an instance of :attr:`search_form`. If the form was submitted and was valid, then one of two things has happened:
+		
+		* A search has been initiated. In this case, a list of search instances will be added to the context as 'searches'. If :attr:`enable_ajax_api` is enabled, each instance will have an "ajax_api_url" attribute containing the url needed to make an AJAX request for the search results.
+		* A link has been chosen. In this case, corresponding :class:`Search`, :class:`ResultURL`, and :class:`Click` instances will be created and the user will be redirected to the link's actual url.
+		
+		"""
 		results = None
 		
 		context = self.get_context()
@@ -207,26 +242,24 @@ class SearchView(MultiView):
 						messages.add_message(request, messages.INFO, "The link you followed had been tampered with. Here are all the results for your search term instead!")
 						# TODO: Should search_string be escaped here?
 						return HttpResponseRedirect("%s?%s=%s" % (request.path, SEARCH_ARG_GET_KEY, search_string))
-				if not self.enable_ajax_api:
-					search_instances = []
-					if eventlet:
-						pool = eventlet.GreenPool()
-					for slug in self.searches:
-						search_instance = self.get_search_instance(slug, search_string)
-						search_instances.append(search_instance)
-						if eventlet:
-							pool.spawn_n(self.make_result_cache, search_instance)
-						else:
-							self.make_result_cache(search_instance)
-					if eventlet:
-						pool.waitall()
-					context.update({
-						'searches': search_instances
-					})
-				else:
-					context.update({
-						'searches': [{'verbose_name': verbose_name, 'slug': slug, 'url': "%s?%s=%s" % (self.reverse('ajax_api_view', kwargs={'slug': slug}, node=request.node), SEARCH_ARG_GET_KEY, search_string), 'result_template': registry[slug].result_template} for slug, verbose_name in registry.iterchoices() if slug in self.searches]
-					})
+				
+				search_instances = []
+				for slug in self.searches:
+					search_instance = self.get_search_instance(slug, search_string)
+					search_instances.append(search_instance)
+					
+					if self.enable_ajax_api:
+						search_instance.ajax_api_url = "%s?%s=%s" % (self.reverse('ajax_api_view', kwargs={'slug': slug}, node=request.node), SEARCH_ARG_GET_KEY, search_string)
+				
+				if eventlet and not self.enable_ajax_api:
+					pool = eventlet.GreenPool()
+					for instance in search_instances:
+						pool.spawn_n(lambda x: x.results, search_instance)
+					pool.waitall()
+				
+				context.update({
+					'searches': search_instances
+				})
 		else:
 			form = SearchForm()
 		
@@ -235,10 +268,17 @@ class SearchView(MultiView):
 		})
 		return self.results_page.render_to_response(request, extra_context=context)
 	
-	def make_result_cache(self, search_instance):
-		search_instance.results
-	
 	def ajax_api_view(self, request, slug, extra_context=None):
+		"""
+		Returns a JSON string containing two keyed lists.
+		
+		results
+			Contains the results of :meth:`.Result.get_context` for each result.
+		
+		rendered
+			Contains the results of :meth:`.Result.render` for each result.
+		
+		"""
 		search_string = request.GET.get(SEARCH_ARG_GET_KEY)
 		
 		if not request.is_ajax() or not self.enable_ajax_api or slug not in self.searches or search_string is None:
@@ -249,4 +289,4 @@ class SearchView(MultiView):
 		return HttpResponse(json.dumps({
 			'results': [result.get_context() for result in search_instance.results],
 			'rendered': [result.render() for result in search_instance.results]
-		}))
+		}), mimetype="application/json")

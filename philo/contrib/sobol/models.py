@@ -204,7 +204,7 @@ class SearchView(MultiView):
 					})
 				else:
 					context.update({
-						'searches': [{'verbose_name': verbose_name, 'slug': slug, 'url': self.reverse('ajax_api_view', kwargs={'slug': slug}, node=request.node), 'result_template': registry[slug].result_template} for slug, verbose_name in registry.iterchoices() if slug in self.searches]
+						'searches': [{'verbose_name': verbose_name, 'slug': slug, 'url': "%s?%s=%s" % (self.reverse('ajax_api_view', kwargs={'slug': slug}, node=request.node), SEARCH_ARG_GET_KEY, search_string), 'result_template': registry[slug].result_template} for slug, verbose_name in registry.iterchoices() if slug in self.searches]
 					})
 		else:
 			form = SearchForm()
@@ -224,7 +224,8 @@ class SearchView(MultiView):
 			raise Http404
 		
 		search_instance = self.get_search_instance(slug, search_string)
-		response = HttpResponse(json.dumps({
+		
+		return HttpResponse(json.dumps({
 			'results': [result.get_context() for result in search_instance.results],
+			'rendered': [result.render() for result in search_instance.results]
 		}))
-		return response

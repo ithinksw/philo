@@ -115,7 +115,8 @@ class Result(object):
 		context = self.get_extra_context()
 		context.update({
 			'title': self.get_title(),
-			'url': self.get_url()
+			'url': self.get_url(),
+			'result': self.result
 		})
 		return context
 	
@@ -355,9 +356,6 @@ class GoogleSearch(JSONSearch):
 	
 	def get_result_url(self, result):
 		return result['unescapedUrl']
-	
-	def get_result_extra_context(self, result):
-		return result
 
 
 registry.register(GoogleSearch)

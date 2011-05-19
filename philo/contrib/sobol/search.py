@@ -11,7 +11,7 @@ from django.utils.safestring import mark_safe
 from django.utils.text import capfirst
 from django.template import loader, Context, Template
 
-from philo.contrib.sobol.utils import make_tracking_querydict
+from philo.contrib.sobol.utils import make_tracking_querydict, RegistryIterator
 
 
 if getattr(settings, 'SOBOL_USE_EVENTLET', False):
@@ -24,7 +24,7 @@ else:
 
 
 __all__ = (
-	'Result', 'BaseSearch', 'DatabaseSearch', 'URLSearch', 'JSONSearch', 'GoogleSearch', 'registry'
+	'Result', 'BaseSearch', 'DatabaseSearch', 'URLSearch', 'JSONSearch', 'GoogleSearch', 'SearchRegistry', 'registry'
 )
 
 
@@ -41,7 +41,8 @@ class RegistrationError(Exception):
 
 
 class SearchRegistry(object):
-	# Holds a registry of search types by slug.
+	"""Holds a registry of search types by slug."""
+	
 	def __init__(self):
 		self._registry = {}
 	
@@ -68,11 +69,10 @@ class SearchRegistry(object):
 		return self._registry.items()
 	
 	def iteritems(self):
-		return self._registry.iteritems()
+		return RegistryIterator(self._registry, 'iteritems')
 	
 	def iterchoices(self):
-		for slug, search in self.iteritems():
-			yield slug, search.verbose_name
+		return RegistryIterator(self._registry, 'iteritems', lambda x: (x[0], x[1].verbose_name))
 	
 	def __getitem__(self, key):
 		return self._registry[key]
@@ -132,7 +132,7 @@ class Result(object):
 class BaseSearchMetaclass(type):
 	def __new__(cls, name, bases, attrs):
 		if 'verbose_name' not in attrs:
-			attrs['verbose_name'] = capfirst(convert_camelcase(name))
+			attrs['verbose_name'] = capfirst(' '.join(convert_camelcase(name).rsplit(' ', 1)[:-1]))
 		if 'slug' not in attrs:
 			attrs['slug'] = name.lower()
 		return super(BaseSearchMetaclass, cls).__new__(cls, name, bases, attrs)
@@ -252,7 +252,7 @@ class BaseSearch(object):
 		return make_tracking_querydict(self.search_arg, self.more_results_url)
 	
 	def __unicode__(self):
-		return ' '.join(self.__class__.verbose_name.rsplit(' ', 1)[:-1]) + ' results'
+		return self.verbose_name
 
 
 class DatabaseSearch(BaseSearch):

@@ -31,3 +31,24 @@ def make_tracking_querydict(search_arg, url):
  		URL_REDIRECT_GET_KEY, urlquote(url),
 		HASH_REDIRECT_GET_KEY, make_redirect_hash(search_arg, url))
 	)
+
+
+class RegistryIterator(object):
+	def __init__(self, registry, iterattr='__iter__', transform=lambda x:x):
+		if not hasattr(registry, iterattr):
+			raise AttributeError("Registry has no attribute %s" % iterattr)
+		self.registry = registry
+		self.iterattr = iterattr
+		self.transform = transform
+	
+	def __iter__(self):
+		return self
+	
+	def next(self):
+		if not hasattr(self, '_iter'):
+			self._iter = getattr(self.registry, self.iterattr)()
+		
+		return self.transform(self._iter.next())
+	
+	def copy(self):
+		return self.__class__(self.registry, self.iterattr, self.transform)

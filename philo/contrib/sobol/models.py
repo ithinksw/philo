@@ -1,4 +1,5 @@
 import datetime
+import itertools
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns, url
@@ -12,7 +13,7 @@ from django.utils.datastructures import SortedDict
 
 from philo.contrib.sobol import registry
 from philo.contrib.sobol.forms import SearchForm
-from philo.contrib.sobol.utils import HASH_REDIRECT_GET_KEY, URL_REDIRECT_GET_KEY, SEARCH_ARG_GET_KEY, check_redirect_hash
+from philo.contrib.sobol.utils import HASH_REDIRECT_GET_KEY, URL_REDIRECT_GET_KEY, SEARCH_ARG_GET_KEY, check_redirect_hash, RegistryIterator
 from philo.exceptions import ViewCanNotProvideSubpath
 from philo.models import MultiView, Page
 from philo.models.fields import SlugMultipleChoiceField
@@ -133,9 +134,29 @@ class Click(models.Model):
 		get_latest_by = 'datetime'
 
 
+class RegistryChoiceField(SlugMultipleChoiceField):
+	def _get_choices(self):
+		if isinstance(self._choices, RegistryIterator):
+			return self._choices.copy()
+		elif hasattr(self._choices, 'next'):
+			choices, self._choices = itertools.tee(self._choices)
+			return choices
+		else:
+			return self._choices
+	choices = property(_get_choices)
+
+
+try:
+	from south.modelsinspector import add_introspection_rules
+except ImportError:
+	pass
+else:
+	add_introspection_rules([], ["^philo\.contrib\.shipherd\.models\.RegistryChoiceField"])
+
+
 class SearchView(MultiView):
 	results_page = models.ForeignKey(Page, related_name='search_results_related')
-	searches = SlugMultipleChoiceField(choices=registry.iterchoices())
+	searches = RegistryChoiceField(choices=registry.iterchoices())
 	enable_ajax_api = models.BooleanField("Enable AJAX API", default=True, help_text="Search results will be available <i>only</i> by AJAX, not as template variables.")
 	placeholder_text = models.CharField(max_length=75, default="Search")
 	

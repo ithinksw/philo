@@ -1,3 +1,13 @@
+"""
+Waldo provides abstract :class:`.MultiView`\ s to handle several levels of common authentication:
+
+* :class:`LoginMultiView` handles the case where users only need to be able to log in and out.
+* :class:`PasswordMultiView` handles the case where users will also need to change their password.
+* :class:`RegistrationMultiView` builds on top of :class:`PasswordMultiView` to handle user registration, as well.
+* :class:`AccountMultiView` adds account-handling functionality to the :class:`RegistrationMultiView`.
+
+"""
+
 import urlparse
 
 from django import forms
@@ -24,10 +34,10 @@ from philo.contrib.waldo.tokens import registration_token_generator, email_token
 
 
 class LoginMultiView(MultiView):
-	"""
-	Handles exclusively methods and views related to logging users in and out.
-	"""
+	"""Handles exclusively methods and views related to logging users in and out."""
+	#: A :class:`ForeignKey` to the :class:`.Page` which will be used to render the login form.
 	login_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_login_related')
+	#: A django form class which will be used for the authentication process. Default: :class:`.WaldoAuthenticationForm`.
 	login_form = WaldoAuthenticationForm
 	
 	@property
@@ -38,7 +48,7 @@ class LoginMultiView(MultiView):
 		)
 	
 	def set_requirement_redirect(self, request, redirect=None):
-		"Figure out where someone should end up after landing on a `requirement` page like the login page."
+		"""Figures out and stores where a user should end up after landing on a page (like the login page) because they have not fulfilled some kind of requirement."""
 		if redirect is not None:
 			pass
 		elif 'requirement_redirect' in request.session:
@@ -63,6 +73,7 @@ class LoginMultiView(MultiView):
 		request.session['requirement_redirect'] = redirect
 	
 	def get_requirement_redirect(self, request, default=None):
+		"""Returns the location which a user should be redirected to after fulfilling a requirement (like logging in)."""
 		redirect = request.session.pop('requirement_redirect', None)
 		# Security checks a la django.contrib.auth.views.login
 		if not redirect or ' ' in redirect:
@@ -77,9 +88,7 @@ class LoginMultiView(MultiView):
 	
 	@never_cache
 	def login(self, request, extra_context=None):
-		"""
-		Displays the login form for the given HttpRequest.
-		"""
+		"""Renders the :attr:`login_page` with an instance of the :attr:`login_form` for the given :class:`HttpRequest`."""
 		self.set_requirement_redirect(request)
 		
 		# Redirect already-authenticated users to the index page.
@@ -111,9 +120,11 @@ class LoginMultiView(MultiView):
 	
 	@never_cache
 	def logout(self, request, extra_context=None):
+		"""Logs the given :class:`HttpRequest` out, redirecting the user to the page they just left or to the :meth:`~.Node.get_absolute_url` for the ``request.node``."""
 		return auth_views.logout(request, request.META.get('HTTP_REFERER', request.node.get_absolute_url()))
 	
 	def login_required(self, view):
+		"""Wraps a view function to require that the user be logged in."""
 		def inner(request, *args, **kwargs):
 			if not request.user.is_authenticated():
 				self.set_requirement_redirect(request, redirect=request.path)
@@ -129,14 +140,24 @@ class LoginMultiView(MultiView):
 
 
 class PasswordMultiView(LoginMultiView):
-	"Adds on views for password-related functions."
+	"""
+	Adds support for password setting, resetting, and changing to the :class:`LoginMultiView`. Password reset support includes handling of a confirmation email.
+	
+	"""
+	#: A :class:`ForeignKey` to the :class:`.Page` which will be used to render the password reset request form.
 	password_reset_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_reset_related', blank=True, null=True)
+	#: A :class:`ForeignKey` to the :class:`.Page` which will be used to render the password reset confirmation email.
 	password_reset_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_reset_confirmation_email_related', blank=True, null=True)
+	#: A :class:`ForeignKey` to the :class:`.Page` which will be used to render the password setting form (i.e. the page that users will see after confirming a password reset).
 	password_set_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_set_related', blank=True, null=True)
+	#: A :class:`ForeignKey` to the :class:`.Page` which will be used to render the password change form.
 	password_change_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_password_change_related', blank=True, null=True)
 	
+	#: The password change form class. Default: :class:`django.contrib.auth.forms.PasswordChangeForm`.
 	password_change_form = PasswordChangeForm
+	#: The password set form class. Default: :class:`django.contrib.auth.forms.SetPasswordForm`.
 	password_set_form = SetPasswordForm
+	#: The password reset request form class. Default: :class:`django.contrib.auth.forms.PasswordResetForm`.
 	password_reset_form = PasswordResetForm
 	
 	@property
@@ -156,6 +177,18 @@ class PasswordMultiView(LoginMultiView):
 		return urlpatterns
 	
 	def make_confirmation_link(self, confirmation_view, token_generator, user, node, token_args=None, reverse_kwargs=None, secure=False):
+		"""
+		Generates a confirmation link for an arbitrary action, such as a password reset.
+		
+		:param confirmation_view: The view function which needs to be linked to.
+		:param token_generator: Generates a confirmable token for the action.
+		:param user: The user who is trying to take the action.
+		:param node: The node which is providing the basis for the confirmation URL.
+		:param token_args: A list of additional arguments (i.e. besides the user) to be used for token creation.
+		:param reverse_kwargs: A dictionary of any additional keyword arguments necessary for correctly reversing the view.
+		:param secure: Whether the link should use the https:// or http://.
+		
+		"""
 		token = token_generator.make_token(user, *(token_args or []))
 		kwargs = {
 			'uidb36': int_to_base36(user.id),
@@ -165,6 +198,15 @@ class PasswordMultiView(LoginMultiView):
 		return node.construct_url(subpath=self.reverse(confirmation_view, kwargs=kwargs), with_domain=True, secure=secure)
 	
 	def send_confirmation_email(self, subject, email, page, extra_context):
+		"""
+		Sends a confirmation email for an arbitrary action, such as a password reset. If the ``page``'s :class:`.Template` has a mimetype of ``text/html``, then the email will be sent with an HTML alternative version.
+		
+		:param subject: The subject line of the email.
+		:param email: The recipient's address.
+		:param page: The page which will be used to render the email body.
+		:param extra_context: The context for rendering the ``page``.
+		
+		"""
 		text_content = page.render_to_string(extra_context=extra_context)
 		from_email = 'noreply@%s' % Site.objects.get_current().domain
 		
@@ -176,6 +218,21 @@ class PasswordMultiView(LoginMultiView):
 			send_mail(subject, text_content, from_email, [email])
 	
 	def password_reset(self, request, extra_context=None, token_generator=password_token_generator):
+		"""
+		Handles the process by which users request a password reset, and generates the context for the confirmation email. That context will contain:
+		
+		link
+			The confirmation link for the password reset.
+		user
+			The user requesting the reset.
+		site
+			The current :class:`Site`.
+		request
+			The current :class:`HttpRequest` instance.
+		
+		:param token_generator: The token generator to use for the confirmation link.
+		
+		"""
 		if request.user.is_authenticated():
 			return HttpResponseRedirect(request.node.get_absolute_url())
 		
@@ -188,10 +245,7 @@ class PasswordMultiView(LoginMultiView):
 						'link': self.make_confirmation_link('password_reset_confirm', token_generator, user, request.node, secure=request.is_secure()),
 						'user': user,
 						'site': current_site,
-						'request': request,
-						
-						# Deprecated... leave in for backwards-compatibility
-						'username': user.username
+						'request': request
 					}
 					self.send_confirmation_email('Confirm password reset for account at %s' % current_site.domain, user.email, self.password_reset_confirmation_email, context)
 					messages.add_message(request, messages.SUCCESS, "An email has been sent to the address you provided with details on resetting your password.", fail_silently=True)
@@ -208,8 +262,10 @@ class PasswordMultiView(LoginMultiView):
 	
 	def password_reset_confirm(self, request, extra_context=None, uidb36=None, token=None, token_generator=password_token_generator):
 		"""
-		Checks that a given hash in a password reset link is valid. If so,
-		displays the password set form.
+		Checks that ``token``` is valid, and if so, renders an instance of :attr:`password_set_form` with :attr:`password_set_page`.
+		
+		:param token_generator: The token generator used to check the ``token``.
+		
 		"""
 		assert uidb36 is not None and token is not None
 		try:
@@ -240,6 +296,7 @@ class PasswordMultiView(LoginMultiView):
 		raise Http404
 	
 	def password_change(self, request, extra_context=None):
+		"""Renders an instance of :attr:`password_change_form` with :attr:`password_change_page`."""
 		if request.method == 'POST':
 			form = self.password_change_form(request.user, request.POST)
 			if form.is_valid():
@@ -261,9 +318,12 @@ class PasswordMultiView(LoginMultiView):
 
 
 class RegistrationMultiView(PasswordMultiView):
-	"""Adds on the pages necessary for letting new users register."""
+	"""Adds support for user registration to the :class:`PasswordMultiView`."""
+	#: A :class:`ForeignKey` to the :class:`.Page` which will be used to display the registration form.
 	register_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_related', blank=True, null=True)
+	#: A :class:`ForeignKey` to the :class:`.Page` which will be used to render the registration confirmation email.
 	register_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_register_confirmation_email_related', blank=True, null=True)
+	#: The registration form class. Default: :class:`.RegistrationForm`.
 	registration_form = RegistrationForm
 	
 	@property
@@ -277,6 +337,12 @@ class RegistrationMultiView(PasswordMultiView):
 		return urlpatterns
 	
 	def register(self, request, extra_context=None, token_generator=registration_token_generator):
+		"""
+		Renders the :attr:`register_page` with an instance of :attr:`registration_form` in the context as ``form``. If the form has been submitted, sends a confirmation email using :attr:`register_confirmation_email` and the same context as :meth:`PasswordMultiView.password_reset`.
+		
+		:param token_generator: The token generator to use for the confirmation link.
+		
+		"""
 		if request.user.is_authenticated():
 			return HttpResponseRedirect(request.node.get_absolute_url())
 		
@@ -306,9 +372,9 @@ class RegistrationMultiView(PasswordMultiView):
 	
 	def register_confirm(self, request, extra_context=None, uidb36=None, token=None, token_generator=registration_token_generator):
 		"""
-		Checks that a given hash in a registration link is valid and activates
-		the given account. If so, log them in and redirect to
-		self.post_register_confirm_redirect.
+		Checks that ``token`` is valid, and if so, logs the user in and redirects them to :meth:`post_register_confirm_redirect`.
+		
+		:param token_generator: The token generator used to check the ``token``.
 		"""
 		assert uidb36 is not None and token is not None
 		try:
@@ -335,6 +401,7 @@ class RegistrationMultiView(PasswordMultiView):
 		raise Http404
 	
 	def post_register_confirm_redirect(self, request):
+		"""Returns an :class:`HttpResponseRedirect` for post-registration-confirmation. Default: :meth:`Node.get_absolute_url` for ``request.node``."""
 		return HttpResponseRedirect(request.node.get_absolute_url())
 	
 	class Meta:
@@ -342,14 +409,13 @@ class RegistrationMultiView(PasswordMultiView):
 
 
 class AccountMultiView(RegistrationMultiView):
-	"""
-	By default, the `account` consists of the first_name, last_name, and email fields
-	of the User model. Using a different account model is as simple as writing a form that
-	accepts a User instance as the first argument.
-	"""
+	"""Adds support for user accounts on top of the :class:`RegistrationMultiView`. By default, the account consists of the first_name, last_name, and email fields of the User model. Using a different account model is as simple as replacing :attr:`account_form` with any form class that takes an :class:`auth.User` instance as the first argument."""
+	#: A :class:`ForeignKey` to the :class:`Page` which will be used to render the account management form.
 	manage_account_page = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_manage_account_related', blank=True, null=True)
+	#: A :class:`ForeignKey` to a :class:`Page` which will be used to render an email change confirmation email. This is optional; if it is left blank, then email changes will be performed without confirmation.
 	email_change_confirmation_email = models.ForeignKey(Page, related_name='%(app_label)s_%(class)s_email_change_confirmation_email_related', blank=True, null=True, help_text="If this is left blank, email changes will be performed without confirmation.")
 	
+	#: A django form class which will be used to manage the user's account. Default: :class:`.UserAccountForm`
 	account_form = UserAccountForm
 	
 	@property
@@ -366,6 +432,12 @@ class AccountMultiView(RegistrationMultiView):
 		return urlpatterns
 	
 	def account_view(self, request, extra_context=None, token_generator=email_token_generator, *args, **kwargs):
+		"""
+		Renders the :attr:`manage_account_page` with an instance of :attr:`account_form` in the context as ``form``. If the form has been posted, the user's email was changed, and :attr:`email_change_confirmation_email` is not ``None``, sends a confirmation email to the new email to make sure it exists before making the change. The email will have the same context as :meth:`PasswordMultiView.password_reset`.
+		
+		:param token_generator: The token generator to use for the confirmation link. 
+		
+		"""
 		if request.method == 'POST':
 			form = self.account_form(request.user, request.POST, request.FILES)
 			
@@ -415,11 +487,13 @@ class AccountMultiView(RegistrationMultiView):
 		return self.manage_account_page.render_to_response(request, extra_context=context)
 	
 	def has_valid_account(self, user):
+		"""Returns ``True`` if the ``user`` has a valid account and ``False`` otherwise."""
 		form = self.account_form(user, {})
 		form.data = form.initial
 		return form.is_valid()
 	
 	def account_required(self, view):
+		"""Wraps a view function to allow access only to users with valid accounts and otherwise redirect them to the :meth:`account_view`."""
 		def inner(request, *args, **kwargs):
 			if not self.has_valid_account(request.user):
 				messages.add_message(request, messages.ERROR, "You need to add some account information before you can access that page.", fail_silently=True)
@@ -435,6 +509,7 @@ class AccountMultiView(RegistrationMultiView):
 		return inner
 	
 	def post_register_confirm_redirect(self, request):
+		"""Automatically redirects users to the :meth:`account_view` after registration."""
 		if self.manage_account_page:
 			messages.add_message(request, messages.INFO, 'Welcome! Please fill in some more information.', fail_silently=True)
 			return HttpResponseRedirect(self.reverse('account', node=request.node))
@@ -442,7 +517,10 @@ class AccountMultiView(RegistrationMultiView):
 	
 	def email_change_confirm(self, request, extra_context=None, uidb36=None, token=None, email=None, token_generator=email_token_generator):
 		"""
-		Checks that a given hash in an email change link is valid. If so, changes the email and redirects to the account page.
+		Checks that ``token`` is valid, and if so, changes the user's email.
+		
+		:param token_generator: The token generator used to check the ``token``.
+		
 		"""
 		assert uidb36 is not None and token is not None and email is not None
 		

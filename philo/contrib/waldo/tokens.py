@@ -1,5 +1,12 @@
 """
-Based on django.contrib.auth.tokens
+Based on :mod:`django.contrib.auth.tokens`. Supports the following settings:
+
+:setting:`WALDO_REGISTRATION_TIMEOUT_DAYS`
+	The number of days a registration link will be valid before expiring. Default: 1.
+
+:setting:`WALDO_EMAIL_TIMEOUT_DAYS`
+	The number of days an email change link will be valid before expiring. Default: 1.
+
 """
 
 from hashlib import sha1
@@ -15,13 +22,10 @@ EMAIL_TIMEOUT_DAYS = getattr(settings, 'WALDO_EMAIL_TIMEOUT_DAYS', 1)
 
 
 class RegistrationTokenGenerator(PasswordResetTokenGenerator):
-	"""
-	Strategy object used to generate and check tokens for the user registration mechanism.
-	"""
+	"""Strategy object used to generate and check tokens for the user registration mechanism."""
+	
 	def check_token(self, user, token):
-		"""
-		Check that a registration token is correct for a given user.
-		"""
+		"""Check that a registration token is correct for a given user."""
 		# If the user is active, the hash can't be valid.
 		if user.is_active:
 			return False
@@ -61,13 +65,10 @@ registration_token_generator = RegistrationTokenGenerator()
 
 
 class EmailTokenGenerator(PasswordResetTokenGenerator):
-	"""
-	Strategy object used to generate and check tokens for a user email change mechanism.
-	"""
+	"""Strategy object used to generate and check tokens for a user email change mechanism."""
+	
 	def make_token(self, user, email):
-		"""
-		Returns a token that can be used once to do an email change for the given user and email.
-		"""
+		"""Returns a token that can be used once to do an email change for the given user and email."""
 		return self._make_token_with_timestamp(user, email, self._num_days(self._today()))
 	
 	def check_token(self, user, email, token):

@@ -172,7 +172,7 @@ else:
 
 
 class SearchView(MultiView):
-	"""Handles a view for the results of a search, and an AJAX API for asynchronous search result loading. This can be particularly useful if some searches are slow."""
+	"""Handles a view for the results of a search, anonymously tracks the selections made by end users, and provides an AJAX API for asynchronous search result loading. This can be particularly useful if some searches are slow."""
 	#: :class:`ForeignKey` to a :class:`.Page` which will be used to render the search results.
 	results_page = models.ForeignKey(Page, related_name='search_results_related')
 	#: A class:`.SlugMultipleChoiceField` whose choices are the contents of the :class:`.SearchRegistry`
@@ -214,7 +214,7 @@ class SearchView(MultiView):
 		"""
 		Renders :attr:`results_page` with a context containing an instance of :attr:`search_form`. If the form was submitted and was valid, then one of two things has happened:
 		
-		* A search has been initiated. In this case, a list of search instances will be added to the context as 'searches'. If :attr:`enable_ajax_api` is enabled, each instance will have an "ajax_api_url" attribute containing the url needed to make an AJAX request for the search results.
+		* A search has been initiated. In this case, a list of search instances will be added to the context as ``searches``. If :attr:`enable_ajax_api` is enabled, each instance will have an ``ajax_api_url`` attribute containing the url needed to make an AJAX request for the search results.
 		* A link has been chosen. In this case, corresponding :class:`Search`, :class:`ResultURL`, and :class:`Click` instances will be created and the user will be redirected to the link's actual url.
 		
 		"""
@@ -274,9 +274,12 @@ class SearchView(MultiView):
 		
 		results
 			Contains the results of :meth:`.Result.get_context` for each result.
-		
 		rendered
 			Contains the results of :meth:`.Result.render` for each result.
+		hasMoreResults
+			``True`` or ``False`` whether the search has more results according to :meth:`BaseSearch.has_more_results`
+		moreResultsURL
+			Contains None or a querystring which, once accessed, will note the :class:`Click` and redirect the user to a page containing more results.
 		
 		"""
 		search_string = request.GET.get(SEARCH_ARG_GET_KEY)
@@ -288,5 +291,7 @@ class SearchView(MultiView):
 		
 		return HttpResponse(json.dumps({
 			'results': [result.get_context() for result in search_instance.results],
-			'rendered': [result.render() for result in search_instance.results]
+			'rendered': [result.render() for result in search_instance.results],
+			'hasMoreResults': search.has_more_results(),
+			'moreResultsURL': (u"?%s" % search.more_results_querydict.urlencode()) if search.more_results_querydict else None,
 		}), mimetype="application/json")

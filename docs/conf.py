@@ -24,6 +24,13 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'dummy-settings'
 # Import loader so that loader_tags will be correctly added to builtins. Weird import situations... this is necessary for doc build to work.
 from django.template import loader
 
+# HACK to override descriptors that would cause AttributeErrors to be raised otherwise (which would keep them from being documented.)
+from philo.contrib.sobol.models import SearchView
+SearchView.searches = 5
+from philo.models.nodes import TargetURLModel, File
+TargetURLModel.reversing_parameters = 5
+File.file = 5
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.

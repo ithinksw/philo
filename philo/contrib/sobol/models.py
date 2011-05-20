@@ -175,7 +175,7 @@ class SearchView(MultiView):
 	"""Handles a view for the results of a search, anonymously tracks the selections made by end users, and provides an AJAX API for asynchronous search result loading. This can be particularly useful if some searches are slow."""
 	#: :class:`ForeignKey` to a :class:`.Page` which will be used to render the search results.
 	results_page = models.ForeignKey(Page, related_name='search_results_related')
-	#: A class:`.SlugMultipleChoiceField` whose choices are the contents of the :class:`.SearchRegistry`
+	#: A :class:`.SlugMultipleChoiceField` whose choices are the contents of the :class:`.SearchRegistry`
 	searches = RegistryChoiceField(choices=registry.iterchoices())
 	#: A :class:`BooleanField` which controls whether or not the AJAX API is enabled.
 	#:

@@ -291,7 +291,7 @@ class MultiView(View):
 
 class TargetURLModel(models.Model):
 	"""An abstract parent class for models which deal in targeting a url."""
-	#: An optional :class:`ForeignKey` to a :class:`Node`. If provided, that node will be used as the basis for the redirect.
+	#: An optional :class:`ForeignKey` to a :class:`.Node`. If provided, that node will be used as the basis for the redirect.
 	target_node = models.ForeignKey(Node, blank=True, null=True, related_name="%(app_label)s_%(class)s_related")
 	#: A :class:`CharField` which may contain an absolute or relative URL, or the name of a node's subpath.
 	url_or_subpath = models.CharField(max_length=200, blank=True, help_text="Point to this url or, if a node is defined and accepts subpaths, this subpath of the node.")

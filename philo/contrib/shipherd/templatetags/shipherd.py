@@ -155,6 +155,7 @@ def recursenavigation(parser, token):
 
 @register.filter
 def has_navigation(node, key=None):
+	"""Returns ``True`` if the node has a :class:`.Navigation` with the given key and ``False`` otherwise. If ``key`` is ``None``, returns whether the node has any :class:`.Navigation`\ s at all."""
 	try:
 		nav = node.navigation
 		if key is not None:
@@ -169,6 +170,7 @@ def has_navigation(node, key=None):
 
 @register.filter
 def navigation_host(node, key):
+	"""Returns the :class:`.Node` which hosts the :class:`.Navigation` which ``node`` has inherited for ``key``. Returns ``node`` if any exceptions are encountered."""
 	try:
 		return Navigation.objects.filter(node__in=node.get_ancestors(include_self=True), key=key).order_by('-node__level')[0].node
 	except:

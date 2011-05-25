@@ -410,6 +410,9 @@ body {
       -webkit-animation-direction: alternate; }
     #contribList .status.pla {
       opacity: .5; }
+  #contribList a {
+    color: #CCC;
+    border: none; }
 
 footer {
   margin-top: 25px;

@@ -179,6 +179,15 @@ class Navigation(Entity):
 	"""
 	:class:`Navigation` represents a group of :class:`NavigationItem`\ s that have an intrinsic relationship in terms of navigating a website. For example, a ``main`` navigation versus a ``side`` navigation, or a ``authenticated`` navigation versus an ``anonymous`` navigation.
 	
+	A :class:`Navigation`'s :class:`NavigationItem`\ s will be accessible from its related :class:`.Node` and that :class:`.Node`'s descendants through a :class:`NavigationMapper` instance at :attr:`Node.navigation`. Example::
+	
+		>>> node.navigation_set.all()
+		[]
+		>>> parent = node.parent
+		>>> items = parent.navigation_set.get(key='main').roots.all()
+		>>> parent.navigation["main"] == node.navigation["main"] == list(items)
+		True
+	
 	"""
 	#: A :class:`NavigationManager` instance.
 	objects = NavigationManager()

@@ -16,6 +16,15 @@
 	color:#FFF !important;
 }
 
+@-webkit-keyframes glow{
+	0% {
+		text-shadow: 0 0 3px rgba(255,255,255,0);
+	}
+	100% {
+		text-shadow: 0 0 3px rgba(255,255,255,.5);
+	}
+}
+
 body{
 	background:$page-background;
 	@include background(
@@ -33,24 +42,70 @@ body{
 
 #nameplate{
 	@include adjust-font-size-to(60px);
-	margin-bottom:25px;
-	padding-bottom:5px;
-	border-bottom:5px solid $foreground;
-	@include box-shadow(0 1px 0 #FFF);
 	font-family:$headingfonts;
+	position:relative;
+}
+
+.installButton{
+	height:30px;
+	$buttoncolor:#EEE;
+	$buttonbottom:darken($buttoncolor, 10%);
+	$buttonfore:darken($buttoncolor, 80%);
+	color:$buttonfore;
+	text-decoration:none;
+	font-size:25px;
+	line-height:36px;
+	font-family:$headingfonts;
+	text-transform:uppercase;
+	letter-spacing:2px;
+	float:right;
+	width:160px;
+	@include border-radius(5px);
+	@include box-shadow(0 1px 3px 0 rgba(0,0,0,.15));
+	@include background(linear-gradient($buttoncolor, $buttonbottom));
+	text-shadow: #FFF 0 1px 0;
+	border:1px solid $buttoncolor;
+	padding:5px 10px;
+	position:absolute;
+	top:10px;
+	right:0;
+	&::after{
+		content: '\2b07';
+		font-size:20px;
+		line-height:20px;
+		padding:7px 1px 3px 4px;
+		width:25px;
+		@include border-radius(15px);
+		@include box-shadow(0 1px 0 0 #FFF, 0 1px 2px 0 rgba(0,0,0,.15) inset);
+		background:darken($buttoncolor,20%);
+		float:left;
+		text-align:center;
+		margin-right:10px;
+		font-family:Helvetica, Arial, sans-serif;
+	}
+	&:hover{
+		@include background(linear-gradient($buttoncolor, darken($buttonbottom, 5%)));
+	}
+	&:active{
+		@include background(linear-gradient(darken($buttonbottom, 5%), $buttoncolor));
+		@include box-shadow(0 1px 3px 0 rgba(0,0,0,.15), 0 0 16px 0 rgba(0,0,0,.15) inset);
+		color:darken($buttonfore, 10%);
+		&::after{
+			background:darken($buttoncolor, 30%);
+		}
+	}
 }
 
 #content{
 	a{
-		color: darken($foreground, 20%);
+		color: darken($page-background, 60%);;
+		border-bottom:1px solid darken($page-background, 20%);
+		@include box-shadow(0 1px 0 0 #FFF);
 		text-decoration:none;
-		background: darken($page-background, 15%);
-		padding:3px;
-		@include border-radius(3px);
 		&:hover{
-			background: desaturate(darken($page-background, 25%), 10%);
-			text-shadow: 0 1px 0 rgba(255,255,255,.65);
-		};
+			color: darken($page-background, 60%);
+			border-bottom:1px solid darken($page-background, 60%);
+		}
 	}
 	p, ul, ol, header{
 		@include margin-trailer;
@@ -74,6 +129,7 @@ body{
 	}
 	.codeblock{
 		@extend code;
+		@include margin-trailer;
 		padding: 10px;
 		display:block;
 		code{
@@ -88,6 +144,9 @@ body{
 			content: "$ ";
 			color:lighten($foreground, 10%);
 		}
+	}
+	.pname{
+		color:darken($page-background, 60%);
 	}
 }
 
@@ -145,6 +204,41 @@ body{
 	@include clearfix;
 }
 
+#whatIs{
+	padding:10px;
+	background:$foreground;
+	margin-bottom:20px;
+	line-height:30px;
+	font-size:20px;
+	@include box-inset(rgba(0,0,0,.35), #FFF);
+	@include border-radius(5px);
+	text-shadow: 0 -1px 0 #000;
+	text-align:center;
+	-webkit-font-smoothing: antialiased;
+	color:lighten($foreground, 60%);
+	:last-child{
+		margin-bottom:0;
+	}
+	.w1{
+		font-weight:bold;
+	}
+	.s1{
+		color:lighten($foreground, 80%);
+		display:block;
+	}
+	a{
+		background:transparent;
+		padding:0;
+		color:lighten($accent, 20%);
+		border-width:0;
+		@include box-shadow(none);
+		&:hover{
+			background:transparent;
+			color:lighten($accent, 20%);
+		}
+	}
+}
+
 #modelList{
 	margin-left: 1.5em;
 	li{
@@ -161,7 +255,7 @@ body{
 	$width: $page-width + $pad;
 	background: $foreground;
 	margin:$base-line-height #{-$pad};
-	padding:#{2*$pad} $pad;
+	padding:#{2*$pad} $pad $pad $pad;
 	@include border-radius(5px);
 	@include box-shadow(0 1px 0 0 #FFF, 0 2px 4px rgba(0,0,0,.35) inset);
 	@include clearfix;
@@ -194,6 +288,16 @@ body{
 		font-style:italic;
 		@include adjust-font-size-to(13px);
 		float:right;
+		&.dev{
+			-webkit-animation-name: glow;
+			-webkit-animation-duration: 1s;
+			-webkit-animation-timing-function: ease;
+			-webkit-animation-iteration-count: infinite;
+			-webkit-animation-direction: alternate;
+		}
+		&.pla{
+			opacity:.5;
+		}
 	}
 }
 

@@ -9,29 +9,36 @@
 	</head>
 	<body>
 		<div id="fork">
-<a href="http://github.com/ithinksw/philo"><img style="position: fixed; top: 0; right: 0; border: 0;" src="https://d3nwyuy0nl342s.cloudfront.net/img/e6bef7a091f5f3138b8cd40bc3e114258dd68ddf/687474703a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f7265645f6161303030302e706e67" alt="Fork me on GitHub"></a>		<div id="container">
+			<a href="http://github.com/ithinksw/philo"><img style="position: fixed; top: 0; right: 0; border: 0;" src="https://d3nwyuy0nl342s.cloudfront.net/img/e6bef7a091f5f3138b8cd40bc3e114258dd68ddf/687474703a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f7265645f6161303030302e706e67" alt="Fork me on GitHub"></a>
+		</div>
+
+		<div id="container">
+			
 			<header id="nameplate">
 				<h1>Philo</h1>
+				<a class="installButton" href="#install">Install</a>
 			</header><!-- /#nameplate -->
 			
 			<article id="content">
 				
-				<p>Philo is a powerful content-management system built with Django.</p>
+				<section id="whatIs">
+					<p><span class="s1"><span class="w1">Philo</span> is a powerful content-management system built with <a href="https://djangoproject.com/">Django</a>.</span> It manages websites, simple and complex.</p>
+				</section>
 			
 				<section id="featuresSection">
 					<header>
 						<h2 id="features">Features</h2>
 					</header>
 			
-					<p>Philo allows the creation of complex site structures from Django&#8217;s web-based admin interface (or similar database-editing interface). For a simple site, you will use the following three objects, included in the Philo core.</p>
+					<p>Philo allows the creation of complex site structures from Django&#8217;s own <a href="https://docs.djangoproject.com/en/1.3/ref/contrib/admin/">admin interface</a> (or similar database interface). For a simple site, you will use the following three objects, included in the <span class="pname">Philo</span> core.</p>
 			
 					<ul id="modelList">
-						<li><span class="name">Nodes</span> are the basic building blocks of a website using Philo. They define the URL hierarchy and connect each URL to a View subclass instance, such as a Page.</li>
+						<li><span class="name">Nodes</span> are the basic building blocks of a website using <span class="pname">Philo</span>. They define the URL hierarchy and connect each URL to a View subclass instance, such as a Page.</li>
 						<li><span class="name">Templates</span> are Django templates, stored in the database and editable from the Django admin (or similar).</li>
 						<li><span class="name">Pages</span> are a simple view subclass which return a basic HTML page according to a template. They have related, editable Contentlets and Content References based on <code>{% container %}</code> tags used in the template.</li>
 					</ul>
 			
-					<p>Philo also provides a number of useful template tags, in particular <code>{% container %}</code>, which generates a relationship (and a field in the admin interface) on any pages which use that template.</p>
+					<p><span class="pname">Philo</span> also provides a number of useful template tags, in particular <code>{% container %}</code>, which generates a relationship (and a field in the admin interface) on any pages which use that template. For more about <span class="pname">Philo</span> and its features, <a href="#documentation">read the documentation</a>.</p>
 				</section>
 				
 				<section id="exampleSection">
@@ -39,20 +46,20 @@
 			
 					<div class="three-up">
 						<figure>
-							<img src="static/img/container1.png" />
+							<img src="static/img/container1.png" width="600" height="300" />
 							<figcaption>Put container tags in your template.</figcaption>
 						</figure>
 						<figure>
-							<img src="static/img/container2.png" />
+							<img src="static/img/container2.png" width="600" height="300" />
 							<figcaption>Edit the contentlets on the page.</figcaption>
 						</figure>
 						<figure>
-							<img src="static/img/container3.png" />
+							<img src="static/img/container3.png" width="600" height="300" />
 							<figcaption>See the results on your site!</figcaption>
 						</figure>
 					</div>
 			
-					<p>You can use also collections, redirects, files, content references (all included in the Philo core), as well as the Philo contrib apps and your own code to create and manage more powerful, complex websites.</p>
+					<p>You can use also collections, redirects, files, content references (all included in the <span class="pname">Philo</span> core), as well as the <span class="pname">Philo</span> contrib apps and your own code to create and manage more powerful, complex websites.</p>
 				</section>
 				
 				<section id="contribSection">
@@ -78,49 +85,54 @@
 							<span class="description">Custom authentication systems.</span>
 						</li>
 						<li>
-							<span class="status">(in development)</span>
+							<span class="status dev">(in development)</span>
 							<span class="name">Gilbert</span>
 							<span class="description">Alternative web-based admin.</span>
 						</li>
 						<li>
-							<span class="status">(in development)</span>
+							<span class="status dev">(in development)</span>
 							<span class="name">Julian</span>
 							<span class="description">Calendar and events system.</span>
 						</li>
 						<li>
-							<span class="status">(in development)</span>
+							<span class="status dev">(in development)</span>
 							<span class="name">Edmonia</span>
 							<span class="description">Asset management.</span>
 						</li>
 						<li>
-							<span class="status">(in development)</span>
+							<span class="status dev">(in development)</span>
 							<span class="name">Bartleby</span>
 							<span class="description">Form generation and handling.</span>
 						</li>
 						<li>
-							<span class="status">(planned)</span>
+							<span class="status pla">(planned)</span>
 							<span class="description">Forums.</span>
 						</li>
 						<li>
-							<span class="status">(planned)</span>
+							<span class="status pla">(planned)</span>
 							<span class="description">Wikis.</span>
 						</li>
 					</ul>
 				</section>
 				
 				<section class="installSection">
-					<h2>Install Philo</h2>
+					<h2 id="install">Install Philo</h2>
 					<div class="codeblock shell">
-						<code>git clone https://github.com/ithinksw/philo.git</code>
+						<code>git clone git://git.ithinksw.org/philo.git</code>
 						<code>python philo/setup.py install</code>
 						<code>rm -rf philo</code>
 					</div>
 				</section>
 				
+				<section class="getInvolved">
+					<h2 id="get_involved">Get Involved</h2>
+					<p><span class="pname">Philo</span> is still under heavy-development. If you&#8217;re a Python/Django developer, help out by forking <a href="http://github.com/ithinksw/philo"><span class="pname">Philo</span> on GitHub</a> to add features or fix bugs.</p>
+				<section>
+				
 			</article><!-- /#content -->
 			
 			<footer>
-				<p>Philo is developed by iThink Software. Read the <a href="https://github.com/ithinksw/philo/blob/master/LICENSE">license</a>.</p>
+				<p>Philo is developed by iThink Software. Read the <a href="https://github.com/ithinksw/philo/blob/master/LICENSE">license</a>. Read the <a href="#documentation">documentation</a>.</p>
 			</footer>
 			
 		</div>

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup
 import os
 
 
@@ -40,8 +40,43 @@ for dirpath, dirnames, filenames in os.walk(philo_dir):
 version = __import__('philo').VERSION
 
 setup(
-	name = 'Philo',
-	version = '%s.%s' % (version[0], version[1]),
+	name = 'philo',
+	version = '.'.join([str(v) for v in version]),
+	url = "https://github.com/ithinksw/philo",
+	description = "A foundation for developing web content management systems.",
+	long_description = open(os.path.join(root_dir, 'README.markdown')).read(),
+	maintainer = "Joseph Spiros",
+	maintainer_email = "joseph.spiros@ithinksw.com",
 	packages = packages,
 	data_files = data_files,
+	
+	classifiers = [
+		'Environment :: Web Environment',
+		'Framework :: Django',
+		'Intended Audience :: Developers',
+		'License :: OSI Approved :: ISC License (ISCL)',
+		'Operating System :: OS Independent',
+		'Programming Language :: Python',
+		'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+		'Topic :: Software Development :: Libraries :: Application Frameworks',
+	],
+	platforms = ['OS Independent'],
+	license = 'ISC License (ISCL)',
+	
+	install_requires = [
+		'django>=1.3',
+		'python>=2.5.4',
+		'django-mptt>0.4.2',
+	],
+	extras_require = {
+		'docs': ["sphinx>=1.0"],
+		'grappelli': ['django-grappelli>=2.3'],
+		'migrations': ['south>=0.7.2'],
+		'waldo-recaptcha': ['recaptcha-django'],
+		'sobol-eventlet': ['eventlet'],
+		'sobol-scrape': ['BeautifulSoup'],
+	},
+	dependency_links = [
+		'https://github.com/django-mptt/django-mptt/tarball/master#egg=django-mptt-dev'
+	]
 )

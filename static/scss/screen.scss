@@ -70,13 +70,14 @@ body{
 	@include adjust-font-size-to(60px);
 	font-family:$headingfonts;
 	position:relative;
-}
+}	
 
-.installButton{
+$buttoncolor:#EEE;
+$buttonbottom:darken($buttoncolor, 10%);
+$buttonfore:darken($buttoncolor, 80%);
+
+.installButton, .docsButton{
 	height:30px;
-	$buttoncolor:#EEE;
-	$buttonbottom:darken($buttoncolor, 10%);
-	$buttonfore:darken($buttoncolor, 80%);
 	color:$buttonfore;
 	text-decoration:none;
 	font-size:25px;
@@ -96,10 +97,8 @@ body{
 	top:10px;
 	right:0;
 	&::after{
-		content: '\2b07';
 		font-size:20px;
 		line-height:20px;
-		padding:7px 1px 3px 4px;
 		width:25px;
 		@include border-radius(15px);
 		@include box-shadow(0 1px 0 0 #FFF, 0 1px 2px 0 rgba(0,0,0,.15) inset);
@@ -121,8 +120,25 @@ body{
 		}
 	}
 }
+.docsButton{
+	right: 200px;
+	width:100px;
+	text-align:center;
+}
+.installButton{
+	&::after{
+		content: '\2b07';
+		padding:7px 1px 3px 4px;
+	}
+}
 
 #content{
+	em{
+		font-style:italic;
+	}
+	strong{
+		font-weight:bold;
+	}
 	a{
 		color: darken($page-background, 60%);;
 		border-bottom:1px solid darken($page-background, 20%);
@@ -193,6 +209,7 @@ body{
 			background:rgba(255,255,255,.5);
 			@include border-radius(5px);
 			border:1px solid darken($page-background, 5%);
+			@include box-shadow(0 1px 0 0 #FFF, 0 1px 0 0 #FFF inset);
 		}
 
 		section :last-child{
@@ -263,7 +280,8 @@ body{
 
 #whatIs{
 	padding:10px;
-	background:$foreground;
+	background: $foreground;
+	@include background(linear-gradient(bottom, lighten($foreground, 10%), $foreground));
 	margin-bottom:20px;
 	line-height:30px;
 	font-size:20px;

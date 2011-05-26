@@ -140,7 +140,7 @@ body {
   font-family: "Expletus Sans", Helvetica, Arial, serif;
   position: relative; }
 
-.installButton {
+.installButton, .docsButton {
   height: 30px;
   color: #222222;
   text-decoration: none;
@@ -172,11 +172,9 @@ body {
   position: absolute;
   top: 10px;
   right: 0; }
-  .installButton::after {
-    content: '\2b07';
+  .installButton::after, .docsButton::after {
     font-size: 20px;
     line-height: 20px;
-    padding: 7px 1px 3px 4px;
     width: 25px;
     -moz-border-radius: 15px;
     -webkit-border-radius: 15px;
@@ -193,13 +191,13 @@ body {
     text-align: center;
     margin-right: 10px;
     font-family: Helvetica, Arial, sans-serif; }
-  .installButton:hover {
+  .installButton:hover, .docsButton:hover {
     background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #eeeeee), color-stop(100%, #c8c8c8));
     background: -webkit-linear-gradient(#eeeeee, #c8c8c8);
     background: -moz-linear-gradient(#eeeeee, #c8c8c8);
     background: -o-linear-gradient(#eeeeee, #c8c8c8);
     background: linear-gradient(#eeeeee, #c8c8c8); }
-  .installButton:active {
+  .installButton:active, .docsButton:active {
     background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #c8c8c8), color-stop(100%, #eeeeee));
     background: -webkit-linear-gradient(#c8c8c8, #eeeeee);
     background: -moz-linear-gradient(#c8c8c8, #eeeeee);
@@ -210,9 +208,22 @@ body {
     -o-box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.15), 0 0 16px 0 rgba(0, 0, 0, 0.15) inset;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.15), 0 0 16px 0 rgba(0, 0, 0, 0.15) inset;
     color: #080808; }
-    .installButton:active::after {
+    .installButton:active::after, .docsButton:active::after {
       background: #a2a2a2; }
 
+.docsButton {
+  right: 200px;
+  width: 100px;
+  text-align: center; }
+
+.installButton::after {
+  content: '\2b07';
+  padding: 7px 1px 3px 4px; }
+
+#content em {
+  font-style: italic; }
+#content strong {
+  font-weight: bold; }
 #content a {
   color: #354668;
   border-bottom: 1px solid #9dadcc;
@@ -300,7 +311,11 @@ body {
     -ms-border-radius: 5px;
     -khtml-border-radius: 5px;
     border-radius: 5px;
-    border: 1px solid #cfd7e6; }
+    border: 1px solid #cfd7e6;
+    -moz-box-shadow: 0 1px 0 0 white, 0 1px 0 0 white inset;
+    -webkit-box-shadow: 0 1px 0 0 white, 0 1px 0 0 white inset;
+    -o-box-shadow: 0 1px 0 0 white, 0 1px 0 0 white inset;
+    box-shadow: 0 1px 0 0 white, 0 1px 0 0 white inset; }
   #content .tucol section :last-child {
     margin-bottom: 0; }
 
@@ -376,6 +391,11 @@ body {
 #whatIs {
   padding: 10px;
   background: #333333;
+  background: -webkit-gradient(linear, 50% 100%, 50% 0%, color-stop(0%, #4d4d4d), color-stop(100%, #333333));
+  background: -webkit-linear-gradient(bottom, #4d4d4d, #333333);
+  background: -moz-linear-gradient(bottom, #4d4d4d, #333333);
+  background: -o-linear-gradient(bottom, #4d4d4d, #333333);
+  background: linear-gradient(bottom, #4d4d4d, #333333);
   margin-bottom: 20px;
   line-height: 30px;
   font-size: 20px;

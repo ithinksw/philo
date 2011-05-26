@@ -31,5 +31,5 @@ After installing `philo`_ and `mptt`_ on your python path, make sure to complete
 
 Philo should be ready to go!
 
-.. _philo: http://github.com/ithinksw/philo
+.. _philo: http://philocms.org/
 .. _mptt: http://github.com/django-mptt/django-mptt

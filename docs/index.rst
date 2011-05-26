@@ -46,4 +46,4 @@ Prerequisites:
 * (Optional) `south 0.7.2+ <http://south.aeracode.org/>`_
 * (Optional) `recaptcha-django r6 <http://code.google.com/p/recaptcha-django/>`_
 
-To contribute, please visit the `project website <http://philo.ithinksw.org/>`_ or make a fork of the `git repository <http://github.com/ithinksw/philo/>`_. Feel free to join us on IRC at `irc://irc.oftc.net/#philo <irc://irc.oftc.net/#philo>`_.
+To contribute, please visit the `project website <http://philocms.org/>`_ or make a fork of the git repository on `GitHub <http://github.com/ithinksw/philo>`_ or `Gitorious <http://gitorious.org/ithinksw/philo>`_. Feel free to join us on IRC at `irc://irc.oftc.net/#philo <irc://irc.oftc.net/#philo>`_.

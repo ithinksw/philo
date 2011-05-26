@@ -42,11 +42,11 @@ version = __import__('philo').VERSION
 setup(
 	name = 'philo',
 	version = '.'.join([str(v) for v in version]),
-	url = "https://github.com/ithinksw/philo",
+	url = "http://philocms.org/",
 	description = "A foundation for developing web content management systems.",
 	long_description = open(os.path.join(root_dir, 'README.markdown')).read(),
-	maintainer = "Joseph Spiros",
-	maintainer_email = "joseph.spiros@ithinksw.com",
+	maintainer = "iThink Software",
+	maintainer_email = "contact@ithinksw.com",
 	packages = packages,
 	data_files = data_files,
 	

@@ -9,7 +9,7 @@ Prerequisites:
  * (Optional) [south 0.7.2+ &lt;http://south.aeracode.org/)](http://south.aeracode.org/)
  * (Optional) [recaptcha-django r6 &lt;http://code.google.com/p/recaptcha-django/&gt;](http://code.google.com/p/recaptcha-django/)
 
-To contribute, please visit the [project website](http://philo.ithinksw.org/). Feel free to join us on IRC at [irc://irc.oftc.net/#philo](irc://irc.oftc.net/#philo>).
+To contribute, please visit the [project website](http://philocms.org/). Feel free to join us on IRC at [irc://irc.oftc.net/#philo](irc://irc.oftc.net/#philo>).
 
 Using philo
 ===========

@@ -8,7 +8,7 @@ Prerequisites:
 	* (Optional) recaptcha-django r6 <http://code.google.com/p/recaptcha-django/>
 	* (Optional) south 0.7.2+ <http://south.aeracode.org/>
 
-To contribute, please visit the project website <http://philo.ithinksw.org/>. Feel free to join us on IRC at irc://irc.oftc.net/#philo.
+To contribute, please visit the project website <http://philocms.org/>. Feel free to join us on IRC at irc://irc.oftc.net/#philo.
 
 ====
 Using philo

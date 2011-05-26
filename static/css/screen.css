@@ -104,10 +104,10 @@ html > body {
   border-radius: 5px; }
 
 section {
-  -moz-transition-property: all;
-  -webkit-transition-property: all;
-  -o-transition-property: all;
-  transition-property: all;
+  -moz-transition-property: background;
+  -webkit-transition-property: background;
+  -o-transition-property: background;
+  transition-property: background;
   -moz-transition-duration: 0.15s;
   -webkit-transition-duration: 0.15s;
   -o-transition-duration: 0.15s;

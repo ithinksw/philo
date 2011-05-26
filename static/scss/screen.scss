@@ -48,7 +48,7 @@
 }
 
 section{
-	@include transition(all, .15s, linear);
+	@include transition(background, .15s, linear);
 }
 
 body{

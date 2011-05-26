@@ -12,7 +12,26 @@ var philo_site = {
 			var $this = $(this);
 			$this.parent().children().removeClass('expanded').removeClass('shrunk');
 		}
+	},
+	anchor_light: {
+		init: function () {
+			var self = philo_site.anchor_light;
+			links = $('a[href^="#"]');
+			links.click(self.hiliteHandler);
+		},
+		hiliteHandler: function () {
+			var self = philo_site.anchor_light,
+				$this = $(this),
+				id = $this.attr('href'),
+				el = $(id);
+			el.addClass("lite");
+			setTimeout(self.unhiliteHandler, 1000);
+		},
+		unhiliteHandler: function () {
+			$('.lite').removeClass('lite');
+		}
 	}
 }
 
 $(philo_site.three_up.init);
+$(philo_site.anchor_light.init);

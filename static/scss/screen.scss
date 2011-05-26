@@ -25,6 +25,32 @@
 	}
 }
 
+@-webkit-keyframes pulse{
+	0%{
+		-webkit-transform: scale(1);
+	}
+	100%{
+		-webkit-transform: scale(1.05);
+	}
+}
+
+.lite{
+	-webkit-animation-name: pulse;
+	-webkit-animation-duration: .25s;
+	-webkit-animation-iteration-count: infinite;
+	-webkit-animation-direction: alternate;
+	-webkit-animation-timing-function: linear;
+	margin: -10px;
+	padding: 9px;
+	border:1px solid darken($page-background, 5%);
+	background:lighten($page-background, 10%);
+	@include border-radius(5px);
+}
+
+section{
+	@include transition(all, .15s, linear);
+}
+
 body{
 	background:$page-background;
 	@include background(
@@ -148,6 +174,36 @@ body{
 	.pname{
 		color:darken($page-background, 60%);
 	}
+	
+	
+
+	.tucol{
+		@include pie-clearfix;
+		section{
+			width:$page-width/2 - 20px;
+			float:right;
+		}
+
+		section:first-child{
+			float:left;
+		}
+		section:nth-child(2){
+			width:$page-width/2 - 40px;
+			padding:15px 15px;
+			background:rgba(255,255,255,.5);
+			@include border-radius(5px);
+			border:1px solid darken($page-background, 5%);
+		}
+
+		section :last-child{
+			margin-bottom:0;
+		}
+		
+		@include margin-leader(2);
+		@include margin-trailer(2);
+	}
+
+	
 }
 
 .three-up{
@@ -158,6 +214,7 @@ body{
 	padding:$pad;
 	@include border-radius(5px);
 	@include box-shadow(0 1px 0 0 #FFF, 0 2px 4px rgba(0,0,0,.35) inset);
+	height:300px;
 
 	figure{
 		$border: 1px;
@@ -172,7 +229,7 @@ body{
 		@include border-radius(3px);
 		
 		&.shrunk{
-			width: ($width - 610px) / 2 - $pad - 3 * $border;
+			width: ($width - 610px) / 2 - $pad - 3 * $border - 2px;
 		}
 		&.expanded{
 			width:600px;
@@ -234,7 +291,8 @@ body{
 		@include box-shadow(none);
 		&:hover{
 			background:transparent;
-			color:lighten($accent, 20%);
+			color:desaturate(lighten($accent, 60%), 10%);
+			border:none;
 		}
 	}
 }
@@ -302,7 +360,16 @@ body{
 	a{
 		color:#CCC;
 		border:none;
+		@include box-shadow(none);
+		&:hover{
+			color:#FFF;
+			border:none;
+		}
 	}
+}
+
+.getInvolved{
+	margin:-16px 0;
 }
 
 footer{

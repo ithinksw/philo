@@ -54,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Philo'
-copyright = u'2011, Joseph Spiros'
+copyright = u'2009-2011, iThink Software'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -197,7 +197,7 @@ htmlhelp_basename = 'Philodoc'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'Philo.tex', u'Philo Documentation',
-   u'Stephen Burrows', 'manual'),
+   u'iThink Software', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -230,7 +230,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'philo', u'Philo Documentation',
-     [u'Stephen Burrows'], 1)
+     [u'iThink Software'], 1)
 ]
 
 def skip_attribute_attrs(app, what, name, obj, skip, options):

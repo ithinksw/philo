@@ -100,7 +100,7 @@ class AttributeValue(models.Model):
 		abstract = True
 
 
-#: An instance of :class:`ContentTypeSubclassLimiter` which is used to track the content types which are considered valid value models for an :class:`Attribute`.
+#: An instance of :class:`.ContentTypeSubclassLimiter` which is used to track the content types which are considered valid value models for an :class:`Attribute`.
 attribute_value_limiter = ContentTypeSubclassLimiter(AttributeValue)
 
 
@@ -246,7 +246,12 @@ class ManyToManyValue(AttributeValue):
 
 
 class Attribute(models.Model):
-	"""Represents an arbitrary key/value pair on an arbitrary :class:`Model` where the key consists of word characters and the value is a subclass of :class:`AttributeValue`."""
+	"""
+	:class:`Attribute`\ s exist primarily to let arbitrary data be attached to arbitrary model instances without altering the database schema and without guaranteeing that the data will be available on every instance of that model.
+	
+	Generally, :class:`Attribute`\ s will not be accessed as models; instead, they will be accessed through the :attr:`Entity.attributes` property, which allows direct dictionary getting and setting of the value of an :class:`Attribute` with its key.
+	
+	"""
 	entity_content_type = models.ForeignKey(ContentType, related_name='attribute_entity_set', verbose_name='Entity type')
 	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID', db_index=True)
 	

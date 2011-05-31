@@ -467,6 +467,9 @@ class TreeModel(MPTTModel):
 		if root == self:
 			return ''
 		
+		if root is None and self.is_root_node():
+			return self.slug
+		
 		if root is not None and not self.is_descendant_of(root):
 			raise AncestorDoesNotExist(root)
 		

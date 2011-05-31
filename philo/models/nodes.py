@@ -29,8 +29,8 @@ class Node(TreeEntity):
 	:class:`Node`\ s are the basic building blocks of a website using Philo. They define the URL hierarchy and connect each URL to a :class:`View` subclass instance which is used to generate an HttpResponse.
 	
 	"""
-	view_content_type = models.ForeignKey(ContentType, related_name='node_view_set', limit_choices_to=_view_content_type_limiter)
-	view_object_id = models.PositiveIntegerField()
+	view_content_type = models.ForeignKey(ContentType, related_name='node_view_set', limit_choices_to=_view_content_type_limiter, blank=True, null=True)
+	view_object_id = models.PositiveIntegerField(blank=True, null=True)
 	#: :class:`GenericForeignKey` to a non-abstract subclass of :class:`View`
 	view = generic.GenericForeignKey('view_content_type', 'view_object_id')
 	
@@ -42,11 +42,15 @@ class Node(TreeEntity):
 		return False
 	
 	def handles_subpath(self, subpath):
-		return self.view.handles_subpath(subpath)
+		if self.view:
+			return self.view.handles_subpath(subpath)
+		return False
 	
 	def render_to_response(self, request, extra_context=None):
 		"""This is a shortcut method for :meth:`View.render_to_response`"""
-		return self.view.render_to_response(request, extra_context)
+		if self.view:
+			return self.view.render_to_response(request, extra_context)
+		raise Http404
 	
 	def get_absolute_url(self, request=None, with_domain=False, secure=False):
 		"""

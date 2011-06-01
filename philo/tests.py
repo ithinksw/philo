@@ -3,11 +3,13 @@ import traceback
 
 from django import template
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.db import connection, models
 from django.template import loader
 from django.template.loaders import cached
 from django.test import TestCase
 from django.test.utils import setup_test_template_loader, restore_template_loaders
+from django.utils.datastructures import SortedDict
 
 from philo.exceptions import AncestorDoesNotExist
 from philo.models import Node, Page, Template, Tag
@@ -200,3 +202,17 @@ class TreePathTestCase(TestCase):
 		self.assertQueryLimit(1, 'second/third', root, callable=third.get_path)
 		self.assertQueryLimit(1, e, third, callable=second2.get_path)
 		self.assertQueryLimit(1, '? - ?', root, ' - ', 'title', callable=third.get_path)
+
+
+class ContainerTestCase(TestCase):
+	def test_simple_containers(self):
+		t = Template(code="{% container one %}{% container two %}{% container three %}{% container two %}")
+		contentlet_specs, contentreference_specs = t.containers
+		self.assertEqual(len(contentreference_specs.keyOrder), 0)
+		self.assertEqual(contentlet_specs, ['one', 'two', 'three'])
+		
+		ct = ContentType.objects.get_for_model(Tag)
+		t = Template(code="{% container one references philo.tag as tag1 %}{% container two references philo.tag as tag2 %}{% container one references philo.tag as tag1 %}")
+		contentlet_specs, contentreference_specs = t.containers
+		self.assertEqual(len(contentlet_specs), 0)
+		self.assertEqual(contentreference_specs, SortedDict([('one', ct), ('two', ct)]))

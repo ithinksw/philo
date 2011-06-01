@@ -201,7 +201,7 @@ class FeedView(MultiView):
 			language = settings.LANGUAGE_CODE.decode(),
 			feed_url = add_domain(
 				current_site.domain,
-				self.__get_dynamic_attr('feed_url', obj) or node.construct_url(node.subpath, with_domain=True, request=request, secure=request.is_secure()),
+				self.__get_dynamic_attr('feed_url', obj) or node.construct_url(node._subpath, with_domain=True, request=request, secure=request.is_secure()),
 				request.is_secure()
 			),
 			author_name = self.__get_dynamic_attr('author_name', obj),

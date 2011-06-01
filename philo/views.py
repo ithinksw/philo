@@ -37,10 +37,10 @@ def node_view(request, path=None, **kwargs):
 		raise Http404
 	
 	node = request.node
-	subpath = request.node.subpath
+	subpath = request.node._subpath
 	
 	# Explicitly disallow trailing slashes if we are otherwise at a node's url.
-	if request._cached_node_path != "/" and request._cached_node_path[-1] == "/" and subpath == "/":
+	if node._path != "/" and node._path[-1] == "/" and subpath == "/":
 		return HttpResponseRedirect(node.get_absolute_url())
 	
 	if not node.handles_subpath(subpath):

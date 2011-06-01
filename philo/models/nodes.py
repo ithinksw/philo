@@ -235,7 +235,7 @@ class MultiView(View):
 		
 		"""
 		clear_url_caches()
-		subpath = request.node.subpath
+		subpath = request.node._subpath
 		view, args, kwargs = resolve(subpath, urlconf=self)
 		view_args = getargspec(view)
 		if extra_context is not None and ('extra_context' in view_args[0] or view_args[2] is not None):

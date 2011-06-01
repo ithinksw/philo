@@ -16,7 +16,7 @@ from django.template import TemplateDoesNotExist, Context, RequestContext, Templ
 from django.template.loader_tags import BlockNode, ExtendsNode, BlockContext
 from django.utils.datastructures import SortedDict
 
-from philo.models.base import TreeModel, register_value_model
+from philo.models.base import SlugTreeEntity, register_value_model
 from philo.models.fields import TemplateField
 from philo.models.nodes import View
 from philo.signals import page_about_to_render_to_string, page_finished_rendering_to_string
@@ -100,7 +100,7 @@ def build_extension_tree(nodelist):
 	return nodelists
 
 
-class Template(TreeModel):
+class Template(SlugTreeEntity):
 	"""Represents a database-driven django template."""
 	#: The name of the template. Used for organization and debugging.
 	name = models.CharField(max_length=255)
@@ -148,7 +148,7 @@ class Template(TreeModel):
 		"""Returns the value of the :attr:`name` field."""
 		return self.name
 	
-	class Meta:
+	class Meta(SlugTreeEntity.Meta):
 		app_label = 'philo'
 
 

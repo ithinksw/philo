@@ -35,18 +35,6 @@ class Tag(models.Model):
 		ordering = ('name',)
 
 
-class Titled(models.Model):
-	# Use of this model is deprecated.
-	title = models.CharField(max_length=255)
-	slug = models.SlugField(max_length=255)
-	
-	def __unicode__(self):
-		return self.title
-	
-	class Meta:
-		abstract = True
-
-
 #: An instance of :class:`.ContentTypeRegistryLimiter` which is used to track the content types which can be related to by :class:`ForeignKeyValue`\ s and :class:`ManyToManyValue`\ s.
 value_content_type_limiter = ContentTypeRegistryLimiter()
 
@@ -337,10 +325,18 @@ class Entity(models.Model):
 		abstract = True
 
 
-class TreeManager(models.Manager):
+class TreeEntityBase(MPTTModelBase, EntityBase):
+	def __new__(meta, name, bases, attrs):
+		attrs['_mptt_meta'] = MPTTOptions(attrs.pop('MPTTMeta', None))
+		cls = EntityBase.__new__(meta, name, bases, attrs)
+		
+		return meta.register(cls)
+
+
+class TreeEntityManager(models.Manager):
 	use_for_related_fields = True
 	
-	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/', field='slug'):
+	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/', field='pk'):
 		"""
 		If ``absolute_result`` is ``True``, returns the object at ``path`` (starting at ``root``) or raises an :class:`~django.core.exceptions.ObjectDoesNotExist` exception. Otherwise, returns a tuple containing the deepest object found along ``path`` (or ``root`` if no deeper object is found) and the remainder of the path after that object as a string (or None if there is no remaining path).
 		
@@ -450,10 +446,12 @@ class TreeManager(models.Manager):
 		return find_obj(segments, len(segments)/2 or len(segments))
 
 
-class TreeModel(MPTTModel):
-	objects = TreeManager()
+class TreeEntity(Entity, MPTTModel):
+	"""An abstract subclass of Entity which represents a tree relationship."""
+	
+	__metaclass__ = TreeEntityBase
+	objects = TreeEntityManager()
 	parent = models.ForeignKey('self', related_name='children', null=True, blank=True)
-	slug = models.SlugField(max_length=255)
 	
 	def get_path(self, root=None, pathsep='/', field='slug'):
 		"""
@@ -468,7 +466,7 @@ class TreeModel(MPTTModel):
 			return ''
 		
 		if root is None and self.is_root_node():
-			return self.slug
+			return getattr(self, field, '?')
 		
 		if root is not None and not self.is_descendant_of(root):
 			raise AncestorDoesNotExist(root)
@@ -480,27 +478,6 @@ class TreeModel(MPTTModel):
 		
 		return pathsep.join([getattr(parent, field, '?') for parent in qs])
 	path = property(get_path)
-	
-	def __unicode__(self):
-		return self.path
-	
-	class Meta:
-		unique_together = (('parent', 'slug'),)
-		abstract = True
-
-
-class TreeEntityBase(MPTTModelBase, EntityBase):
-	def __new__(meta, name, bases, attrs):
-		attrs['_mptt_meta'] = MPTTOptions(attrs.pop('MPTTMeta', None))
-		cls = EntityBase.__new__(meta, name, bases, attrs)
-		
-		return meta.register(cls)
-
-
-class TreeEntity(Entity, TreeModel):
-	"""An abstract subclass of Entity which represents a tree relationship."""
-	
-	__metaclass__ = TreeEntityBase
 	
 	def get_attribute_mapper(self, mapper=None):
 		"""
@@ -525,5 +502,26 @@ class TreeEntity(Entity, TreeModel):
 		return super(TreeEntity, self).get_attribute_mapper(mapper)
 	attributes = property(get_attribute_mapper)
 	
+	def __unicode__(self):
+		return self.path
+	
 	class Meta:
+		abstract = True
+
+
+class SlugTreeEntityManager(TreeEntityManager):
+	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/', field='slug'):
+		return super(SlugTreeEntityManager, self).get_with_path(path, root, absolute_result, pathsep, field)
+
+
+class SlugTreeEntity(TreeEntity):
+	objects = SlugTreeEntityManager()
+	slug = models.SlugField(max_length=255)
+	
+	def get_path(self, root=None, pathsep='/', field='slug'):
+		return super(SlugTreeEntity, self).get_path(root, pathsep, field)
+	path = property(get_path)
+	
+	class Meta:
+		unique_together = ('parent', 'slug')
 		abstract = True

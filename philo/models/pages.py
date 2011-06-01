@@ -4,6 +4,8 @@
 
 """
 
+import itertools
+
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
@@ -14,7 +16,7 @@ from django.template import TemplateDoesNotExist, Context, RequestContext, Templ
 from django.template.loader_tags import BlockNode, ExtendsNode, BlockContext
 from django.utils.datastructures import SortedDict
 
-from philo.models.base import TreeModel, register_value_model
+from philo.models.base import SlugTreeEntity, register_value_model
 from philo.models.fields import TemplateField
 from philo.models.nodes import View
 from philo.signals import page_about_to_render_to_string, page_finished_rendering_to_string
@@ -30,7 +32,7 @@ class LazyContainerFinder(object):
 	def __init__(self, nodes, extends=False):
 		self.nodes = nodes
 		self.initialized = False
-		self.contentlet_specs = set()
+		self.contentlet_specs = []
 		self.contentreference_specs = SortedDict()
 		self.blocks = {}
 		self.block_super = False
@@ -47,7 +49,7 @@ class LazyContainerFinder(object):
 			
 			if isinstance(node, ContainerNode):
 				if not node.references:
-					self.contentlet_specs.add(node.name)
+					self.contentlet_specs.append(node.name)
 				else:
 					if node.name not in self.contentreference_specs.keys():
 						self.contentreference_specs[node.name] = node.references
@@ -78,7 +80,27 @@ class LazyContainerFinder(object):
 			self.initialized = True
 
 
-class Template(TreeModel):
+def build_extension_tree(nodelist):
+	nodelists = []
+	extends = None
+	for node in nodelist:
+		if not isinstance(node, TextNode):
+			if isinstance(node, ExtendsNode):
+				extends = node
+			break
+	
+	if extends:
+		if extends.nodelist:
+			nodelists.append(LazyContainerFinder(extends.nodelist, extends=True))
+		loaded_template = getattr(extends, LOADED_TEMPLATE_ATTR)
+		nodelists.extend(build_extension_tree(loaded_template.nodelist))
+	else:
+		# Base case: root.
+		nodelists.append(LazyContainerFinder(nodelist))
+	return nodelists
+
+
+class Template(SlugTreeEntity):
 	"""Represents a database-driven django template."""
 	#: The name of the template. Used for organization and debugging.
 	name = models.CharField(max_length=255)
@@ -97,35 +119,16 @@ class Template(TreeModel):
 		"""
 		template = DjangoTemplate(self.code)
 		
-		def build_extension_tree(nodelist):
-			nodelists = []
-			extends = None
-			for node in nodelist:
-				if not isinstance(node, TextNode):
-					if isinstance(node, ExtendsNode):
-						extends = node
-					break
-			
-			if extends:
-				if extends.nodelist:
-					nodelists.append(LazyContainerFinder(extends.nodelist, extends=True))
-				loaded_template = getattr(extends, LOADED_TEMPLATE_ATTR)
-				nodelists.extend(build_extension_tree(loaded_template.nodelist))
-			else:
-				# Base case: root.
-				nodelists.append(LazyContainerFinder(nodelist))
-			return nodelists
-		
 		# Build a tree of the templates we're using, placing the root template first.
-		levels = build_extension_tree(template.nodelist)[::-1]
+		levels = build_extension_tree(template.nodelist)
 		
-		contentlet_specs = set()
+		contentlet_specs = []
 		contentreference_specs = SortedDict()
 		blocks = {}
 		
-		for level in levels:
+		for level in reversed(levels):
 			level.initialize()
-			contentlet_specs |= level.contentlet_specs
+			contentlet_specs.extend(itertools.ifilter(lambda x: x not in contentlet_specs, level.contentlet_specs))
 			contentreference_specs.update(level.contentreference_specs)
 			for name, block in level.blocks.items():
 				if block.block_super:
@@ -136,7 +139,7 @@ class Template(TreeModel):
 		for block_list in blocks.values():
 			for block in block_list:
 				block.initialize()
-				contentlet_specs |= block.contentlet_specs
+				contentlet_specs.extend(itertools.ifilter(lambda x: x not in contentlet_specs, block.contentlet_specs))
 				contentreference_specs.update(block.contentreference_specs)
 		
 		return contentlet_specs, contentreference_specs
@@ -145,7 +148,7 @@ class Template(TreeModel):
 		"""Returns the value of the :attr:`name` field."""
 		return self.name
 	
-	class Meta:
+	class Meta(SlugTreeEntity.Meta):
 		app_label = 'philo'
 
 

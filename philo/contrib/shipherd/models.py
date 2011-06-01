@@ -7,7 +7,7 @@ from django.core.validators import RegexValidator, MinValueValidator
 from django.db import models
 from django.forms.models import model_to_dict
 
-from philo.models.base import TreeEntity, TreeManager, Entity
+from philo.models.base import TreeEntity, TreeEntityManager, Entity
 from philo.models.nodes import Node, TargetURLModel
 
 
@@ -224,7 +224,7 @@ class Navigation(Entity):
 		unique_together = ('node', 'key')
 
 
-class NavigationItemManager(TreeManager):
+class NavigationItemManager(TreeEntityManager):
 	use_for_related = True
 	
 	def get_query_set(self):
@@ -249,8 +249,9 @@ class NavigationItem(TreeEntity, TargetURLModel):
 		self._initial_data = model_to_dict(self)
 		self._is_cached = False
 	
-	def __unicode__(self):
-		return self.get_path(field='text', pathsep=u' › ')
+	def get_path(self, root=None, pathsep=u' › ', field='text'):
+		return super(NavigationItem, self).get_path(root, pathsep, field)
+	path = property(get_path)
 	
 	def clean(self):
 		super(NavigationItem, self).clean()

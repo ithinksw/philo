@@ -11,7 +11,7 @@ from django.http import HttpResponse, HttpResponseServerError, HttpResponseRedir
 from django.utils.encoding import smart_str
 
 from philo.exceptions import MIDDLEWARE_NOT_CONFIGURED, ViewCanNotProvideSubpath, ViewDoesNotProvideSubpaths
-from philo.models.base import TreeEntity, Entity, register_value_model
+from philo.models.base import SlugTreeEntity, Entity, register_value_model
 from philo.models.fields import JSONField
 from philo.utils import ContentTypeSubclassLimiter
 from philo.utils.entities import LazyPassthroughAttributeMapper
@@ -24,7 +24,7 @@ __all__ = ('Node', 'View', 'MultiView', 'Redirect', 'File')
 _view_content_type_limiter = ContentTypeSubclassLimiter(None)
 
 
-class Node(TreeEntity):
+class Node(SlugTreeEntity):
 	"""
 	:class:`Node`\ s are the basic building blocks of a website using Philo. They define the URL hierarchy and connect each URL to a :class:`View` subclass instance which is used to generate an HttpResponse.
 	
@@ -108,7 +108,7 @@ class Node(TreeEntity):
 		
 		return '%s%s%s%s' % (domain, root_url, path, subpath)
 	
-	class Meta:
+	class Meta(SlugTreeEntity.Meta):
 		app_label = 'philo'
 
 
@@ -239,7 +239,7 @@ class MultiView(View):
 		
 		"""
 		clear_url_caches()
-		subpath = request.node.subpath
+		subpath = request.node._subpath
 		view, args, kwargs = resolve(subpath, urlconf=self)
 		view_args = getargspec(view)
 		if extra_context is not None and ('extra_context' in view_args[0] or view_args[2] is not None):

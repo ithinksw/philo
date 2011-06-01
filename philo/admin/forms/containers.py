@@ -153,7 +153,7 @@ class ContainerInlineFormSet(BaseInlineFormSet):
 class ContentletInlineFormSet(ContainerInlineFormSet):
 	def get_containers(self):
 		try:
-			containers = list(self.instance.containers[0])
+			containers = self.instance.containers[0]
 		except ObjectDoesNotExist:
 			containers = []
 		

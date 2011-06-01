@@ -41,7 +41,7 @@ Entities
 .. autoclass:: Entity
 	:members:
 
-.. autoclass:: TreeManager
+.. autoclass:: TreeEntityManager
 	:members:
 
 .. autoclass:: TreeEntity
@@ -50,6 +50,6 @@ Entities
 
 	.. attribute:: objects
 
-		An instance of :class:`TreeManager`.
+		An instance of :class:`TreeEntityManager`.
 	
 	.. automethod:: get_path

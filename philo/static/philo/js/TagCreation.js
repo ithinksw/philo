@@ -76,16 +76,23 @@ var tagCreation = window.tagCreation;
 			tagCreation.toggleButton(id);
 			addEvent(input, 'keyup', function() {
 				tagCreation.toggleButton(id);
-			})
+			});
 			addEvent(addLink, 'click', function(e) {
 				e.preventDefault();
 				tagCreation.addTagFromSlug(addLink);
+			});
+			// SelectFilter actually mistakenly allows submission on enter. We disallow it.
+			addEvent(input, 'keypress', function(e) {
+				if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+					e.preventDefault();
+				}
 			})
 		},
 		'toggleButton': function(id) {
 			var addLink = tagCreation.cache[id].addLink;
 			var select = $(tagCreation.cache[id].select);
-			if (select[0].options.length == 0) {
+			var input = tagCreation.cache[id].input;
+			if (input.value != "") {
 				if (addLink.style.display == 'none') {
 					addLink.style.display = 'block';
 					select.height(select.height() - $(addLink).outerHeight(false))

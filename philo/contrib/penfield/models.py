@@ -51,9 +51,9 @@ class FeedView(MultiView):
 	#: A :class:`PositiveIntegerField` - the maximum number of items to return for this feed. All items will be returned if this field is blank. Default: 15.
 	feed_length = models.PositiveIntegerField(blank=True, null=True, default=15, help_text="The maximum number of items to return for this feed. All items will be returned if this field is blank.")
 	
-	#: A :class:`ForeignKey` to a :class:`.Template` which can be used to render the title of each item in the feed.
+	#: A :class:`ForeignKey` to a :class:`.Template` which will be used to render the title of each item in the feed if provided.
 	item_title_template = models.ForeignKey(Template, blank=True, null=True, related_name="%(app_label)s_%(class)s_title_related")
-	#: A :class:`ForeignKey` to a :class:`.Template` which can be used to render the description of each item in the feed.
+	#: A :class:`ForeignKey` to a :class:`.Template` which will be used to render the description of each item in the feed if provided.
 	item_description_template = models.ForeignKey(Template, blank=True, null=True, related_name="%(app_label)s_%(class)s_description_related")
 	
 	#: The name of the context variable to be populated with the items managed by the :class:`FeedView`.
@@ -201,7 +201,7 @@ class FeedView(MultiView):
 			language = settings.LANGUAGE_CODE.decode(),
 			feed_url = add_domain(
 				current_site.domain,
-				self.__get_dynamic_attr('feed_url', obj) or node.construct_url(node.subpath, with_domain=True, request=request, secure=request.is_secure()),
+				self.__get_dynamic_attr('feed_url', obj) or node.construct_url(node._subpath, with_domain=True, request=request, secure=request.is_secure()),
 				request.is_secure()
 			),
 			author_name = self.__get_dynamic_attr('author_name', obj),

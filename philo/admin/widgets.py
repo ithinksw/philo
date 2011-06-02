@@ -52,7 +52,7 @@ class TagFilteredSelectMultiple(FilteredSelectMultiple):
 			settings.ADMIN_MEDIA_PREFIX + "js/core.js",
 			settings.ADMIN_MEDIA_PREFIX + "js/SelectBox.js",
 			settings.ADMIN_MEDIA_PREFIX + "js/SelectFilter2.js",
-			settings.ADMIN_MEDIA_PREFIX + "js/TagCreation.js",
+			"philo/js/TagCreation.js",
 		)
 
 	def render(self, name, value, attrs=None, choices=()):

@@ -2,7 +2,7 @@ from django import forms
 from django.conf import settings
 from django.contrib import admin
 
-from philo.admin.base import COLLAPSE_CLASSES, TreeAdmin
+from philo.admin.base import COLLAPSE_CLASSES, TreeEntityAdmin
 from philo.admin.forms.containers import *
 from philo.admin.nodes import ViewAdmin
 from philo.models.pages import Page, Template, Contentlet, ContentReference
@@ -55,7 +55,7 @@ class PageAdmin(ViewAdmin):
 		return super(PageAdmin, self).response_add(request, obj, post_url_continue)
 
 
-class TemplateAdmin(TreeAdmin):
+class TemplateAdmin(TreeEntityAdmin):
 	prepopulated_fields = {'slug': ('name',)}
 	fieldsets = (
 		(None, {

@@ -3,15 +3,16 @@ import traceback
 
 from django import template
 from django.conf import settings
-from django.db import connection
+from django.contrib.contenttypes.models import ContentType
+from django.db import connection, models
 from django.template import loader
 from django.template.loaders import cached
 from django.test import TestCase
-from django.test.utils import setup_test_template_loader
+from django.test.utils import setup_test_template_loader, restore_template_loaders
+from django.utils.datastructures import SortedDict
 
-from philo.contrib.penfield.models import Blog, BlogView, BlogEntry
 from philo.exceptions import AncestorDoesNotExist
-from philo.models import Node, Page, Template
+from philo.models import Node, Page, Template, Tag
 
 
 class TemplateTestCase(TestCase):
@@ -56,7 +57,7 @@ class TemplateTestCase(TestCase):
 		# Cleanup
 		settings.TEMPLATE_DEBUG = old_td
 		settings.TEMPLATE_STRING_IF_INVALID = old_invalid
-		loader.template_source_loaders = old_template_loaders
+		restore_template_loaders()
 		
 		self.assertEqual(failures, [], "Tests failed:\n%s\n%s" % ('-'*70, ("\n%s\n" % ('-'*70)).join(failures)))
 	
@@ -64,43 +65,43 @@ class TemplateTestCase(TestCase):
 	def get_template_tests(self):
 		# SYNTAX --
 		# 'template_name': ('template contents', 'context dict', 'expected string output' or Exception class)
-		blog = Blog.objects.all()[0]
+		embedded = Tag.objects.get(pk=1)
 		return {
 			# EMBED INCLUSION HANDLING
 			
-			'embed01': ('{{ embedded.title|safe }}', {'embedded': blog}, blog.title),
-			'embed02': ('{{ embedded.title|safe }}{{ var1 }}{{ var2 }}', {'embedded': blog}, blog.title),
-			'embed03': ('{{ embedded.title|safe }} is a lie!', {'embedded': blog}, '%s is a lie!' % blog.title),
+			'embed01': ('{{ embedded.name|safe }}', {'embedded': embedded}, embedded.name),
+			'embed02': ('{{ embedded.name|safe }}{{ var1 }}{{ var2 }}', {'embedded': embedded}, embedded.name),
+			'embed03': ('{{ embedded.name|safe }} is a lie!', {'embedded': embedded}, '%s is a lie!' % embedded.name),
 			
 			# Simple template structure with embed
-			'simple01': ('{% embed penfield.blog with "embed01" %}{% embed penfield.blog 1 %}Simple{% block one %}{% endblock %}', {'blog': blog}, '%sSimple' % blog.title),
-			'simple02': ('{% extends "simple01" %}', {}, '%sSimple' % blog.title),
-			'simple03': ('{% embed penfield.blog with "embed000" %}', {}, settings.TEMPLATE_STRING_IF_INVALID),
-			'simple04': ('{% embed penfield.blog 1 %}', {}, settings.TEMPLATE_STRING_IF_INVALID),
-			'simple05': ('{% embed penfield.blog with "embed01" %}{% embed blog %}', {'blog': blog}, blog.title),
+			'simple01': ('{% embed philo.tag with "embed01" %}{% embed philo.tag 1 %}Simple{% block one %}{% endblock %}', {'embedded': embedded}, '%sSimple' % embedded.name),
+			'simple02': ('{% extends "simple01" %}', {}, '%sSimple' % embedded.name),
+			'simple03': ('{% embed philo.tag with "embed000" %}', {}, settings.TEMPLATE_STRING_IF_INVALID),
+			'simple04': ('{% embed philo.tag 1 %}', {}, settings.TEMPLATE_STRING_IF_INVALID),
+			'simple05': ('{% embed philo.tag with "embed01" %}{% embed embedded %}', {'embedded': embedded}, embedded.name),
 			
 			# Kwargs
-			'kwargs01': ('{% embed penfield.blog with "embed02" %}{% embed penfield.blog 1 var1="hi" var2=lo %}', {'lo': 'lo'}, '%shilo' % blog.title),
+			'kwargs01': ('{% embed philo.tag with "embed02" %}{% embed philo.tag 1 var1="hi" var2=lo %}', {'lo': 'lo'}, '%shilo' % embedded.name),
 			
 			# Filters/variables
-			'filters01': ('{% embed penfield.blog with "embed02" %}{% embed penfield.blog 1 var1=hi|first var2=lo|slice:"3" %}', {'hi': ["These", "words"], 'lo': 'lower'}, '%sTheselow' % blog.title),
-			'filters02': ('{% embed penfield.blog with "embed01" %}{% embed penfield.blog entry %}', {'entry': 1}, blog.title),
+			'filters01': ('{% embed philo.tag with "embed02" %}{% embed philo.tag 1 var1=hi|first var2=lo|slice:"3" %}', {'hi': ["These", "words"], 'lo': 'lower'}, '%sTheselow' % embedded.name),
+			'filters02': ('{% embed philo.tag with "embed01" %}{% embed philo.tag entry %}', {'entry': 1}, embedded.name),
 			
 			# Blocky structure
 			'block01': ('{% block one %}Hello{% endblock %}', {}, 'Hello'),
-			'block02': ('{% extends "simple01" %}{% block one %}{% embed penfield.blog 1 %}{% endblock %}', {}, "%sSimple%s" % (blog.title, blog.title)),
-			'block03': ('{% extends "simple01" %}{% embed penfield.blog with "embed03" %}{% block one %}{% embed penfield.blog 1 %}{% endblock %}', {}, "%sSimple%s is a lie!" % (blog.title, blog.title)),
+			'block02': ('{% extends "simple01" %}{% block one %}{% embed philo.tag 1 %}{% endblock %}', {}, "%sSimple%s" % (embedded.name, embedded.name)),
+			'block03': ('{% extends "simple01" %}{% embed philo.tag with "embed03" %}{% block one %}{% embed philo.tag 1 %}{% endblock %}', {}, "%sSimple%s is a lie!" % (embedded.name, embedded.name)),
 			
 			# Blocks and includes
-			'block-include01': ('{% extends "simple01" %}{% embed penfield.blog with "embed03" %}{% block one %}{% include "simple01" %}{% embed penfield.blog 1 %}{% endblock %}', {}, "%sSimple%sSimple%s is a lie!" % (blog.title, blog.title, blog.title)),
-			'block-include02': ('{% extends "simple01" %}{% block one %}{% include "simple04" %}{% embed penfield.blog with "embed03" %}{% include "simple04" %}{% embed penfield.blog 1 %}{% endblock %}', {}, "%sSimple%s%s is a lie!%s is a lie!" % (blog.title, blog.title, blog.title, blog.title)),
+			'block-include01': ('{% extends "simple01" %}{% embed philo.tag with "embed03" %}{% block one %}{% include "simple01" %}{% embed philo.tag 1 %}{% endblock %}', {}, "%sSimple%sSimple%s is a lie!" % (embedded.name, embedded.name, embedded.name)),
+			'block-include02': ('{% extends "simple01" %}{% block one %}{% include "simple04" %}{% embed philo.tag with "embed03" %}{% include "simple04" %}{% embed philo.tag 1 %}{% endblock %}', {}, "%sSimple%s%s is a lie!%s is a lie!" % (embedded.name, embedded.name, embedded.name, embedded.name)),
 			
 			# Tests for more complex situations...
 			'complex01': ('{% block one %}{% endblock %}complex{% block two %}{% endblock %}', {}, 'complex'),
 			'complex02': ('{% extends "complex01" %}', {}, 'complex'),
-			'complex03': ('{% extends "complex02" %}{% embed penfield.blog with "embed01" %}', {}, 'complex'),
-			'complex04': ('{% extends "complex03" %}{% block one %}{% embed penfield.blog 1 %}{% endblock %}', {}, '%scomplex' % blog.title),
-			'complex05': ('{% extends "complex03" %}{% block one %}{% include "simple04" %}{% endblock %}', {}, '%scomplex' % blog.title),
+			'complex03': ('{% extends "complex02" %}{% embed philo.tag with "embed01" %}', {}, 'complex'),
+			'complex04': ('{% extends "complex03" %}{% block one %}{% embed philo.tag 1 %}{% endblock %}', {}, '%scomplex' % embedded.name),
+			'complex05': ('{% extends "complex03" %}{% block one %}{% include "simple04" %}{% endblock %}', {}, '%scomplex' % embedded.name),
 		}
 
 
@@ -110,35 +111,19 @@ class NodeURLTestCase(TestCase):
 	fixtures = ['test_fixtures.json']
 	
 	def setUp(self):
-		if 'south' in settings.INSTALLED_APPS:
-			from south.management.commands.migrate import Command
-			command = Command()
-			command.handle(all_apps=True)
-		
 		self.templates = [
-				("{% node_url %}", "/root/second/"),
-				("{% node_url for node2 %}", "/root/second2/"),
-				("{% node_url as hello %}<p>{{ hello|slice:'1:' }}</p>", "<p>root/second/</p>"),
-				("{% node_url for nodes|first %}", "/root/"),
-				("{% node_url with entry %}", settings.TEMPLATE_STRING_IF_INVALID),
-				("{% node_url with entry for node2 %}", "/root/second2/2010/10/20/first-entry"),
-				("{% node_url with tag for node2 %}", "/root/second2/tags/test-tag/"),
-				("{% node_url with date for node2 %}", "/root/second2/2010/10/20"),
-				("{% node_url entries_by_day year=date|date:'Y' month=date|date:'m' day=date|date:'d' for node2 as goodbye %}<em>{{ goodbye|upper }}</em>", "<em>/ROOT/SECOND2/2010/10/20</em>"),
-				("{% node_url entries_by_month year=date|date:'Y' month=date|date:'m' for node2 %}", "/root/second2/2010/10"),
-				("{% node_url entries_by_year year=date|date:'Y' for node2 %}", "/root/second2/2010/"),
+				("{% node_url %}", "/root/second"),
+				("{% node_url for node2 %}", "/root/second2"),
+				("{% node_url as hello %}<p>{{ hello|slice:'1:' }}</p>", "<p>root/second</p>"),
+				("{% node_url for nodes|first %}", "/root"),
 		]
 		
 		nodes = Node.objects.all()
-		blog = Blog.objects.all()[0]
 		
 		self.context = template.Context({
 			'node': nodes.get(slug='second'),
 			'node2': nodes.get(slug='second2'),
 			'nodes': nodes,
-			'entry': BlogEntry.objects.all()[0],
-			'tag': blog.entry_tags.all()[0],
-			'date': blog.entry_dates['day'][0]
 		})
 	
 	def test_nodeurl(self):
@@ -148,12 +133,6 @@ class NodeURLTestCase(TestCase):
 class TreePathTestCase(TestCase):
 	urls = 'philo.urls'
 	fixtures = ['test_fixtures.json']
-	
-	def setUp(self):
-		if 'south' in settings.INSTALLED_APPS:
-			from south.management.commands.migrate import Command
-			command = Command()
-			command.handle(all_apps=True)
 	
 	def assertQueryLimit(self, max, expected_result, *args, **kwargs):
 		# As a rough measure of efficiency, limit the number of queries required for a given operation.
@@ -193,7 +172,7 @@ class TreePathTestCase(TestCase):
 		
 		# Non-absolute result (binary search)
 		self.assertQueryLimit(2, (second2, 'sub/path/tail'), 'root/second2/sub/path/tail', absolute_result=False)
-		self.assertQueryLimit(3, (second2, 'sub/'), 'root/second2/sub/', absolute_result=False)
+		self.assertQueryLimit(3, (second2, 'sub'), 'root/second2/sub/', absolute_result=False)
 		self.assertQueryLimit(2, e, 'invalid/path/1/2/3/4/5/6/7/8/9/1/2/3/4/5/6/7/8/9/0', absolute_result=False)
 		self.assertQueryLimit(1, (root, None), 'root', absolute_result=False)
 		self.assertQueryLimit(2, (second2, None), 'root/second2', absolute_result=False)
@@ -203,8 +182,8 @@ class TreePathTestCase(TestCase):
 		self.assertQueryLimit(1, (second2, None), 'second2', root=root, absolute_result=False)
 		self.assertQueryLimit(2, (third, None), 'second/third', root=root, absolute_result=False)
 		
-		# Preserve trailing slash
-		self.assertQueryLimit(2, (second2, 'sub/path/tail/'), 'root/second2/sub/path/tail/', absolute_result=False)
+		# Eliminate trailing slash
+		self.assertQueryLimit(2, (second2, 'sub/path/tail'), 'root/second2/sub/path/tail/', absolute_result=False)
 		
 		# Speed increase for leaf nodes - should this be tested?
 		self.assertQueryLimit(1, (fifth, 'sub/path/tail/len/five'), 'root/second/third/fourth/fifth/sub/path/tail/len/five', absolute_result=False)
@@ -223,3 +202,17 @@ class TreePathTestCase(TestCase):
 		self.assertQueryLimit(1, 'second/third', root, callable=third.get_path)
 		self.assertQueryLimit(1, e, third, callable=second2.get_path)
 		self.assertQueryLimit(1, '? - ?', root, ' - ', 'title', callable=third.get_path)
+
+
+class ContainerTestCase(TestCase):
+	def test_simple_containers(self):
+		t = Template(code="{% container one %}{% container two %}{% container three %}{% container two %}")
+		contentlet_specs, contentreference_specs = t.containers
+		self.assertEqual(len(contentreference_specs.keyOrder), 0)
+		self.assertEqual(contentlet_specs, ['one', 'two', 'three'])
+		
+		ct = ContentType.objects.get_for_model(Tag)
+		t = Template(code="{% container one references philo.tag as tag1 %}{% container two references philo.tag as tag2 %}{% container one references philo.tag as tag1 %}")
+		contentlet_specs, contentreference_specs = t.containers
+		self.assertEqual(len(contentlet_specs), 0)
+		self.assertEqual(contentreference_specs, SortedDict([('one', ct), ('two', ct)]))

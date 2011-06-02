@@ -136,11 +136,7 @@ class EntityAdmin(admin.ModelAdmin):
 		return db_field.formfield(**kwargs)
 
 
-class TreeAdmin(MPTTModelAdmin):
-	pass
-
-
-class TreeEntityAdmin(EntityAdmin, TreeAdmin):
+class TreeEntityAdmin(EntityAdmin, MPTTModelAdmin):
 	pass
 
 

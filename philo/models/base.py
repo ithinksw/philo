@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import simplejson as json
@@ -521,6 +521,15 @@ class SlugTreeEntity(TreeEntity):
 	def get_path(self, root=None, pathsep='/', field='slug'):
 		return super(SlugTreeEntity, self).get_path(root, pathsep, field)
 	path = property(get_path)
+	
+	def clean(self):
+		if self.parent is None:
+			try:
+				self._default_manager.exclude(pk=self.pk).get(slug=self.slug, parent__isnull=True)
+			except self.DoesNotExist:
+				pass
+			else:
+				raise ValidationError(self.unique_error_message(self.__class__, ('parent', 'slug')))
 	
 	class Meta:
 		unique_together = ('parent', 'slug')

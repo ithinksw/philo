@@ -16,7 +16,7 @@ from philo.utils.entities import AttributeMapper, TreeAttributeMapper
 from philo.validators import json_validator
 
 
-__all__ = ('Tag', 'value_content_type_limiter', 'register_value_model', 'unregister_value_model', 'JSONValue', 'ForeignKeyValue', 'ManyToManyValue', 'Attribute', 'Entity', 'TreeEntity')
+__all__ = ('Tag', 'value_content_type_limiter', 'register_value_model', 'unregister_value_model', 'JSONValue', 'ForeignKeyValue', 'ManyToManyValue', 'Attribute', 'Entity', 'TreeEntity', 'SlugTreeEntity')
 
 
 class Tag(models.Model):

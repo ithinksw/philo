@@ -151,18 +151,6 @@ class Click(models.Model):
 		get_latest_by = 'datetime'
 
 
-class RegistryChoiceField(SlugMultipleChoiceField):
-	def _get_choices(self):
-		if isinstance(self._choices, RegistryIterator):
-			return self._choices.copy()
-		elif hasattr(self._choices, 'next'):
-			choices, self._choices = itertools.tee(self._choices)
-			return choices
-		else:
-			return self._choices
-	choices = property(_get_choices)
-
-
 try:
 	from south.modelsinspector import add_introspection_rules
 except ImportError:
@@ -175,8 +163,8 @@ class SearchView(MultiView):
 	"""Handles a view for the results of a search, anonymously tracks the selections made by end users, and provides an AJAX API for asynchronous search result loading. This can be particularly useful if some searches are slow."""
 	#: :class:`ForeignKey` to a :class:`.Page` which will be used to render the search results.
 	results_page = models.ForeignKey(Page, related_name='search_results_related')
-	#: A :class:`.SlugMultipleChoiceField` whose choices are the contents of the :class:`.SearchRegistry`
-	searches = RegistryChoiceField(choices=registry.iterchoices())
+	#: A :class:`.SlugMultipleChoiceField` whose choices are the contents of :obj:`.sobol.search.registry`
+	searches = SlugMultipleChoiceField(choices=registry.iterchoices())
 	#: A :class:`BooleanField` which controls whether or not the AJAX API is enabled.
 	#:
 	#: .. note:: If the AJAX API is enabled, a ``ajax_api_url`` attribute will be added to each search instance containing the url and get parameters for an AJAX request to retrieve results for that search.
@@ -207,7 +195,7 @@ class SearchView(MultiView):
 		return urlpatterns
 	
 	def get_search_instance(self, slug, search_string):
-		"""Returns an instance of the :class:`.BaseSearch` subclass corresponding to ``slug`` in the :class:`.SearchRegistry` and instantiated with ``search_string``."""
+		"""Gets the :class:`.BaseSearch` subclass registered with :obj:`.sobol.search.registry` as ``slug`` and instantiates it with ``search_string``."""
 		return registry[slug](search_string.lower())
 	
 	def results_view(self, request, extra_context=None):

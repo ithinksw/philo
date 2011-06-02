@@ -7,6 +7,7 @@ from django.utils.text import capfirst
 from django.utils.translation import ugettext_lazy as _
 
 from philo.forms.fields import JSONFormField
+from philo.utils.registry import RegistryIterator
 from philo.validators import TemplateValidator, json_validator
 #from philo.models.fields.entities import *
 
@@ -71,7 +72,7 @@ class JSONField(models.TextField):
 
 
 class SlugMultipleChoiceField(models.Field):
-	"""Stores a selection of multiple items with unique slugs in the form of a comma-separated list."""
+	"""Stores a selection of multiple items with unique slugs in the form of a comma-separated list. Also knows how to correctly handle :class:`RegistryIterator`\ s passed in as choices."""
 	__metaclass__ = models.SubfieldBase
 	description = _("Comma-separated slug field")
 	
@@ -127,6 +128,16 @@ class SlugMultipleChoiceField(models.Field):
 		if invalid_values:
 			# should really make a custom message.
 			raise ValidationError(self.error_messages['invalid_choice'] % invalid_values)
+	
+	def _get_choices(self):
+		if isinstance(self._choices, RegistryIterator):
+			return self._choices.copy()
+		elif hasattr(self._choices, 'next'):
+			choices, self._choices = itertools.tee(self._choices)
+			return choices
+		else:
+			return self._choices
+	choices = property(_get_choices)
 
 
 try:

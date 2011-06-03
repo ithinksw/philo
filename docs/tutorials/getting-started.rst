@@ -70,18 +70,20 @@ Editing page contents
 Great! We've got a page that says "Hello World". But what if we want it to say something else? Should we really have to edit the :class:`.Template` to change the content of the :class:`.Page`? And what if we want to share the :class:`.Template` but have different content? Adjust the :class:`.Template` to look like this::
 	
 	<html>
-		<head>
-			<title>{% container page_title %}</title>
-		</head>
-		<body>
-			{% container page_body as content %}
-			{% if content %}
-				<p>{{ content }}</p>
-			{% endif %}
-			<p>The time is {% now %}.</p>
-		</body>
+	    <head>
+	        <title>{% container page_title %}</title>
+	    </head>
+	    <body>
+	        {% container page_body as content %}
+	        {% if content %}
+	            <p>{{ content }}</p>
+	        {% endif %}
+	        <p>The time is {% now %}.</p>
+	    </body>
 	</html>
 
 Now go edit your :class:`.Page`. Two new fields called "Page title" and "Page body" have shown up! You can put anything you like in here and have it show up in the appropriate places when the page is rendered.
 
 .. seealso:: :ttag:`philo.templatetags.containers.container`
+
+Congrats! You've done it!

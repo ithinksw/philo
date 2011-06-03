@@ -285,7 +285,7 @@ class BlogView(FeedView):
 		
 		def inner(request, extra_context=None, *args, **kwargs):
 			obj = self.get_object(request, *args, **kwargs)
-			feed = self.get_feed(obj, request, reverse_name, feed_type)
+			feed = self.get_feed(obj, request, reverse_name, feed_type, *args, **kwargs)
 			items, extra_context = get_items(request, extra_context=extra_context, *args, **kwargs)
 			self.populate_feed(feed, items, request)
 			

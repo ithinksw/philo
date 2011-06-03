@@ -70,11 +70,10 @@ class FeedView(MultiView):
 		if self.feeds_enabled:
 			suffixes = [(self.feed_suffix, None)] + [(slug, slug) for slug in registry]
 			for suffix, feed_type in suffixes:
-				feed_reverse_name = "%s_%s" % (reverse_name, suffix)
-				feed_view = http_not_acceptable(self.feed_view(get_items_attr, feed_reverse_name, feed_type))
+				feed_view = http_not_acceptable(self.feed_view(get_items_attr, reverse_name, feed_type))
 				feed_pattern = r'%s%s%s$' % (base, "/" if base and base[-1] != "^" else "", suffix)
 				urlpatterns += patterns('',
-					url(feed_pattern, feed_view, name=feed_reverse_name),
+					url(feed_pattern, feed_view, name="%s_%s" % (reverse_name, suffix)),
 				)
 		urlpatterns += patterns('',
 			url(r"%s$" % base, self.page_view(get_items_attr, page_attr), name=reverse_name)
@@ -90,7 +89,7 @@ class FeedView(MultiView):
 		Returns a view function that renders a list of items as a feed.
 		
 		:param get_items_attr: A callable or the name of a callable on the :class:`FeedView` that will return a (items, extra_context) tuple when called with view arguments.
-		:param reverse_name: The name which can be used reverse this feed using the :class:`FeedView` as the urlconf.
+		:param reverse_name: The name which can be used reverse the page for this feed using the :class:`FeedView` as the urlconf.
 		:param feed_type: The slug used to render the feed class which will be used by the returned view function.
 		
 		:returns: A view function that renders a list of items as a feed.
@@ -100,7 +99,7 @@ class FeedView(MultiView):
 		
 		def inner(request, extra_context=None, *args, **kwargs):
 			obj = self.get_object(request, *args, **kwargs)
-			feed = self.get_feed(obj, request, reverse_name, feed_type)
+			feed = self.get_feed(obj, request, reverse_name, feed_type, *args, **kwargs)
 			items, xxx = get_items(request, extra_context=extra_context, *args, **kwargs)
 			self.populate_feed(feed, items, request)
 			
@@ -174,13 +173,13 @@ class FeedView(MultiView):
 				raise HttpNotAcceptable
 		return feed_type
 	
-	def get_feed(self, obj, request, reverse_name, feed_type=None):
+	def get_feed(self, obj, request, reverse_name, feed_type=None, *args, **kwargs):
 		"""
 		Returns an unpopulated :class:`django.utils.feedgenerator.DefaultFeed` object for this object.
 		
 		:param obj: The object for which the feed should be generated.
 		:param request: The current request.
-		:param reverse_name: The name which can be used to reverse the feed's URL.
+		:param reverse_name: The name which can be used to reverse the URL of the page corresponding to this feed.
 		:param feed_type: The slug used to register the feed class that will be instantiated and returned.
 		
 		:returns: An instance of the feed class registered as ``feed_type``, falling back to :attr:`feed_type` if ``feed_type`` is ``None``.
@@ -193,7 +192,7 @@ class FeedView(MultiView):
 		
 		feed_type = self.get_feed_type(request, feed_type)
 		node = request.node
-		link = node.get_absolute_url(with_domain=True, request=request, secure=request.is_secure())
+		link = node.construct_url(self.reverse(reverse_name, args=args, kwargs=kwargs), with_domain=True, request=request, secure=request.is_secure())
 		
 		feed = feed_type(
 			title = self.__get_dynamic_attr('title', obj),
@@ -203,7 +202,7 @@ class FeedView(MultiView):
 			language = settings.LANGUAGE_CODE.decode(),
 			feed_url = add_domain(
 				current_site.domain,
-				self.__get_dynamic_attr('feed_url', obj) or node.construct_url(node._subpath, with_domain=True, request=request, secure=request.is_secure()),
+				self.__get_dynamic_attr('feed_url', obj) or node.construct_url(self.reverse("%s_%s" % (reverse_name, registry.get_slug(feed_type)), args=args, kwargs=kwargs), with_domain=True, request=request, secure=request.is_secure()),
 				request.is_secure()
 			),
 			author_name = self.__get_dynamic_attr('author_name', obj),

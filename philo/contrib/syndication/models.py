@@ -49,7 +49,7 @@ class FeedView(MultiView):
 	
 	def feed_patterns(self, base, get_items_attr, page_attr, reverse_name):
 		"""
-		Given the name to be used to reverse this view and the names of the attributes for the function that fetches the objects, returns patterns suitable for inclusion in urlpatterns.
+		Given the name to be used to reverse this view and the names of the attributes for the function that fetches the objects, returns patterns suitable for inclusion in urlpatterns. In addition to ``base`` and ``base`` + :attr:`feed_suffix`, patterns will be provided for each registered feed type as ``base`` + ``slug``.
 		
 		:param base: The base of the returned patterns - that is, the subpath pattern which will reference the page for the items. The :attr:`feed_suffix` will be appended to this subpath.
 		:param get_items_attr: A callable or the name of a callable on the :class:`FeedView` which will return an (``items``, ``extra_context``) tuple. This will be passed directly to :meth:`feed_view` and :meth:`page_view`.
@@ -68,12 +68,14 @@ class FeedView(MultiView):
 		"""
 		urlpatterns = patterns('')
 		if self.feeds_enabled:
-			feed_reverse_name = "%s_feed" % reverse_name
-			feed_view = http_not_acceptable(self.feed_view(get_items_attr, feed_reverse_name))
-			feed_pattern = r'%s%s%s$' % (base, (base and base[-1] != "^") and "/" or "", self.feed_suffix)
-			urlpatterns += patterns('',
-				url(feed_pattern, feed_view, name=feed_reverse_name),
-			)
+			suffixes = [(self.feed_suffix, None)] + [(slug, slug) for slug in registry]
+			for suffix, feed_type in suffixes:
+				feed_reverse_name = "%s_%s" % (reverse_name, suffix)
+				feed_view = http_not_acceptable(self.feed_view(get_items_attr, feed_reverse_name, feed_type))
+				feed_pattern = r'%s%s%s$' % (base, "/" if base and base[-1] != "^" else "", suffix)
+				urlpatterns += patterns('',
+					url(feed_pattern, feed_view, name=feed_reverse_name),
+				)
 		urlpatterns += patterns('',
 			url(r"%s$" % base, self.page_view(get_items_attr, page_attr), name=reverse_name)
 		)
@@ -83,12 +85,13 @@ class FeedView(MultiView):
 		"""By default, returns the object stored in the attribute named by :attr:`object_attr`. This can be overridden for subclasses that publish different data for different URL parameters. It is part of the :class:`django.contrib.syndication.views.Feed` API."""
 		return getattr(self, self.object_attr)
 	
-	def feed_view(self, get_items_attr, reverse_name):
+	def feed_view(self, get_items_attr, reverse_name, feed_type=None):
 		"""
 		Returns a view function that renders a list of items as a feed.
 		
 		:param get_items_attr: A callable or the name of a callable on the :class:`FeedView` that will return a (items, extra_context) tuple when called with view arguments.
 		:param reverse_name: The name which can be used reverse this feed using the :class:`FeedView` as the urlconf.
+		:param feed_type: The slug used to render the feed class which will be used by the returned view function.
 		
 		:returns: A view function that renders a list of items as a feed.
 		
@@ -97,7 +100,7 @@ class FeedView(MultiView):
 		
 		def inner(request, extra_context=None, *args, **kwargs):
 			obj = self.get_object(request, *args, **kwargs)
-			feed = self.get_feed(obj, request, reverse_name)
+			feed = self.get_feed(obj, request, reverse_name, feed_type)
 			items, xxx = get_items(request, extra_context=extra_context, *args, **kwargs)
 			self.populate_feed(feed, items, request)
 			
@@ -139,34 +142,48 @@ class FeedView(MultiView):
 		}
 		return items, item_context
 	
-	def get_feed_type(self, request):
+	def get_feed_type(self, request, feed_type=None):
 		"""
-		Intelligently chooses a feed type for a given request. Tries to return :attr:`feed_type`, but if the Accept header does not include that mimetype, tries to return the best match from the feed types that are offered by the :class:`FeedView`. If none of the offered feed types are accepted by the :class:`HttpRequest`, then this method will raise :exc:`philo.contrib.penfield.exceptions.HttpNotAcceptable`.
+		If ``feed_type`` is not ``None``, returns the corresponding class from the registry or reises :exc:`.HttpNotAcceptable`. Otherwise, intelligently chooses a feed type for a given request. Tries to return :attr:`feed_type`, but if the Accept header does not include that mimetype, tries to return the best match from the feed types that are offered by the :class:`FeedView`. If none of the offered feed types are accepted by the :class:`HttpRequest`, raises :exc:`.HttpNotAcceptable`.
 		
 		"""
-		feed_type = registry.get(self.feed_type, DEFAULT_FEED)
+		if feed_type is not None:
+			feed_type = registry[feed_type]
+			loose = False
+		else:
+			feed_type = registry.get(self.feed_type, DEFAULT_FEED)
+			loose = True
 		mt = feed_type.mime_type
 		accept = request.META.get('HTTP_ACCEPT')
 		if accept and mt not in accept and "*/*" not in accept and "%s/*" % mt.split("/")[0] not in accept:
-			# Wups! They aren't accepting the chosen format. Is there another format we can use?
+			# Wups! They aren't accepting the chosen format.
 			feed_type = None
-			accepted_mts = dict([(obj.mime_type, obj) for obj in registry.values()])
-			if mimeparse:
-				mt = mimeparse.best_match(accepted_mts.keys(), accept)
-				if mt:
-					feed_type = accepted_mts[mt]
-			else:
-				for mt in accepted_mts:
-					if mt in accept or "%s/*" % mt.split("/")[0] in accept:
+			if loose:
+				# Is there another format we can use?
+				accepted_mts = dict([(obj.mime_type, obj) for obj in registry.values()])
+				if mimeparse:
+					mt = mimeparse.best_match(accepted_mts.keys(), accept)
+					if mt:
 						feed_type = accepted_mts[mt]
-						break
+				else:
+					for mt in accepted_mts:
+						if mt in accept or "%s/*" % mt.split("/")[0] in accept:
+							feed_type = accepted_mts[mt]
+							break
 			if not feed_type:
 				raise HttpNotAcceptable
 		return feed_type
 	
-	def get_feed(self, obj, request, reverse_name):
+	def get_feed(self, obj, request, reverse_name, feed_type=None):
 		"""
 		Returns an unpopulated :class:`django.utils.feedgenerator.DefaultFeed` object for this object.
+		
+		:param obj: The object for which the feed should be generated.
+		:param request: The current request.
+		:param reverse_name: The name which can be used to reverse the feed's URL.
+		:param feed_type: The slug used to register the feed class that will be instantiated and returned.
+		
+		:returns: An instance of the feed class registered as ``feed_type``, falling back to :attr:`feed_type` if ``feed_type`` is ``None``.
 		
 		"""
 		try:
@@ -174,7 +191,7 @@ class FeedView(MultiView):
 		except Site.DoesNotExist:
 			current_site = RequestSite(request)
 		
-		feed_type = self.get_feed_type(request)
+		feed_type = self.get_feed_type(request, feed_type)
 		node = request.node
 		link = node.get_absolute_url(with_domain=True, request=request, secure=request.is_secure())
 		

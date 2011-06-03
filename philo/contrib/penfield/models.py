@@ -83,7 +83,7 @@ register_value_model(BlogEntry)
 
 class BlogView(FeedView):
 	"""
-	A subclass of :class:`FeedView` which handles patterns and feeds for a :class:`Blog` and its related :class:`entries <BlogEntry>`.
+	A subclass of :class:`.FeedView` which handles patterns and feeds for a :class:`Blog` and its related :class:`entries <BlogEntry>`.
 	
 	"""
 	ENTRY_PERMALINK_STYLE_CHOICES = (
@@ -208,11 +208,11 @@ class BlogView(FeedView):
 		return self.blog.entry_tags
 	
 	def get_all_entries(self, request, extra_context=None):
-		"""Used to generate :meth:`~FeedView.feed_patterns` for all entries."""
+		"""Used to generate :meth:`~.FeedView.feed_patterns` for all entries."""
 		return self.get_entry_queryset(), extra_context
 	
 	def get_entries_by_ymd(self, request, year=None, month=None, day=None, extra_context=None):
-		"""Used to generate :meth:`~FeedView.feed_patterns` for entries with a specific year, month, and day."""
+		"""Used to generate :meth:`~.FeedView.feed_patterns` for entries with a specific year, month, and day."""
 		if not self.entry_archive_page:
 			raise Http404
 		entries = self.get_entry_queryset()
@@ -228,7 +228,7 @@ class BlogView(FeedView):
 		return entries, context
 	
 	def get_entries_by_tag(self, request, tag_slugs, extra_context=None):
-		"""Used to generate :meth:`~FeedView.feed_patterns` for entries with all of the given tags."""
+		"""Used to generate :meth:`~.FeedView.feed_patterns` for entries with all of the given tags."""
 		tag_slugs = tag_slugs.replace('+', '/').split('/')
 		tags = self.get_tag_queryset().filter(slug__in=tag_slugs)
 		
@@ -279,13 +279,13 @@ class BlogView(FeedView):
 		})
 		return self.tag_archive_page.render_to_response(request, extra_context=context)
 	
-	def feed_view(self, get_items_attr, reverse_name):
-		"""Overrides :meth:`FeedView.feed_view` to add :class:`.Tag`\ s to the feed as categories."""
+	def feed_view(self, get_items_attr, reverse_name, feed_type=None):
+		"""Overrides :meth:`.FeedView.feed_view` to add :class:`.Tag`\ s to the feed as categories."""
 		get_items = callable(get_items_attr) and get_items_attr or getattr(self, get_items_attr)
 		
 		def inner(request, extra_context=None, *args, **kwargs):
 			obj = self.get_object(request, *args, **kwargs)
-			feed = self.get_feed(obj, request, reverse_name)
+			feed = self.get_feed(obj, request, reverse_name, feed_type)
 			items, extra_context = get_items(request, extra_context=extra_context, *args, **kwargs)
 			self.populate_feed(feed, items, request)
 			
@@ -304,7 +304,7 @@ class BlogView(FeedView):
 		return inner
 	
 	def process_page_items(self, request, items):
-		"""Overrides :meth:`FeedView.process_page_items` to add pagination."""
+		"""Overrides :meth:`.FeedView.process_page_items` to add pagination."""
 		if self.entries_per_page:
 			page_num = request.GET.get('page', 1)
 			paginator, paginated_page, items = paginate(items, self.entries_per_page, page_num)
@@ -413,7 +413,7 @@ register_value_model(NewsletterIssue)
 
 
 class NewsletterView(FeedView):
-	"""A subclass of :class:`FeedView` which handles patterns and feeds for a :class:`Newsletter` and its related :class:`articles <NewsletterArticle>`."""
+	"""A subclass of :class:`.FeedView` which handles patterns and feeds for a :class:`Newsletter` and its related :class:`articles <NewsletterArticle>`."""
 	ARTICLE_PERMALINK_STYLE_CHOICES = (
 		('D', 'Year, month, and day'),
 		('M', 'Year and month'),
@@ -527,11 +527,11 @@ class NewsletterView(FeedView):
 		return self.newsletter.issues.all()
 	
 	def get_all_articles(self, request, extra_context=None):
-		"""Used to generate :meth:`FeedView.feed_patterns` for all entries."""
+		"""Used to generate :meth:`~.FeedView.feed_patterns` for all entries."""
 		return self.get_article_queryset(), extra_context
 	
 	def get_articles_by_ymd(self, request, year, month=None, day=None, extra_context=None):
-		"""Used to generate :meth:`FeedView.feed_patterns` for a specific year, month, and day."""
+		"""Used to generate :meth:`~.FeedView.feed_patterns` for a specific year, month, and day."""
 		articles = self.get_article_queryset().filter(date__year=year)
 		if month:
 			articles = articles.filter(date__month=month)
@@ -540,7 +540,7 @@ class NewsletterView(FeedView):
 		return articles, extra_context
 	
 	def get_articles_by_issue(self, request, numbering, extra_context=None):
-		"""Used to generate :meth:`FeedView.feed_patterns` for articles from a certain issue."""
+		"""Used to generate :meth:`~.FeedView.feed_patterns` for articles from a certain issue."""
 		try:
 			issue = self.get_issue_queryset().get(numbering=numbering)
 		except NewsletterIssue.DoesNotExist:

@@ -85,6 +85,9 @@ var tagCreation = window.tagCreation;
 			addEvent(input, 'keypress', function(e) {
 				if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
 					e.preventDefault();
+					if (select.options.length == 0) {
+						tagCreation.addTagFromSlug(addLink);
+					}
 				}
 			})
 		},

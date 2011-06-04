@@ -159,7 +159,7 @@ class BlogView(FeedView):
 	@property
 	def urlpatterns(self):
 		urlpatterns = self.feed_patterns(r'^', 'get_all_entries', 'index_page', 'index') +\
-			self.feed_patterns(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)$' % self.tag_permalink_base, 'get_entries_by_tag', 'tag_page', 'entries_by_tag')
+			self.feed_patterns(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)' % self.tag_permalink_base, 'get_entries_by_tag', 'tag_page', 'entries_by_tag')
 		
 		if self.tag_archive_page:
 			urlpatterns += patterns('',

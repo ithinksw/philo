@@ -1,5 +1,6 @@
 from inspect import getargspec
 import mimetypes
+from os.path import basename
 
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
@@ -388,6 +389,7 @@ class File(View):
 		wrapper = FileWrapper(self.file)
 		response = HttpResponse(wrapper, content_type=self.mimetype)
 		response['Content-Length'] = self.file.size
+		response['Content-Disposition'] = "inline; filename=%s" % basename(self.file.name)
 		return response
 	
 	class Meta:

@@ -512,8 +512,8 @@ class BlogView(FeedView):
 		return {'blog': self.blog}
 	
 	def get_entry_queryset(self):
-		"""Returns the default :class:`QuerySet` of :class:`BlogEntry` instances for the :class:`BlogView`."""
-		return self.blog.entries.all()
+		"""Returns the default :class:`QuerySet` of :class:`BlogEntry` instances for the :class:`BlogView` - all entries that are considered posted in the past. This allows for scheduled posting of entries."""
+		return self.blog.entries.filter(date__lte=datetime.now())
 	
 	def get_tag_queryset(self):
 		"""Returns the default :class:`QuerySet` of :class:`.Tag`\ s for the :class:`BlogView`'s :meth:`get_entries_by_tag` and :meth:`tag_archive_view`."""
@@ -831,8 +831,8 @@ class NewsletterView(FeedView):
 		return {'newsletter': self.newsletter}
 	
 	def get_article_queryset(self):
-		"""Returns the default :class:`QuerySet` of :class:`NewsletterArticle` instances for the :class:`NewsletterView`."""
-		return self.newsletter.articles.all()
+		"""Returns the default :class:`QuerySet` of :class:`NewsletterArticle` instances for the :class:`NewsletterView` - all articles that are considered posted in the past. This allows for scheduled posting of articles."""
+		return self.newsletter.articles.filter(date__lte=datetime.now())
 	
 	def get_issue_queryset(self):
 		"""Returns the default :class:`QuerySet` of :class:`NewsletterIssue` instances for the :class:`NewsletterView`."""

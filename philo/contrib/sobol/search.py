@@ -1,5 +1,6 @@
 #encoding: utf-8
 import datetime
+from hashlib import sha1
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -24,16 +25,12 @@ else:
 
 
 __all__ = (
-	'Result', 'BaseSearch', 'DatabaseSearch', 'URLSearch', 'JSONSearch', 'GoogleSearch', 'SearchRegistry', 'registry'
+	'Result', 'BaseSearch', 'DatabaseSearch', 'URLSearch', 'JSONSearch', 'GoogleSearch', 'SearchRegistry', 'registry', 'get_search_instance'
 )
 
 
-SEARCH_CACHE_KEY = 'philo_sobol_search_results'
-DEFAULT_RESULT_TEMPLATE_STRING = "{% if url %}<a href='{{ url }}'>{% endif %}{{ title }}{% if url %}</a>{% endif %}"
-DEFAULT_RESULT_TEMPLATE = Template(DEFAULT_RESULT_TEMPLATE_STRING)
-
-# Determines the timeout on the entire result cache.
-MAX_CACHE_TIMEOUT = 60*24*7
+SEARCH_CACHE_SEED = 'philo_sobol_search_results'
+USE_CACHE = getattr(settings, 'SOBOL_USE_SEARCH', True)
 
 
 class RegistrationError(Exception):
@@ -104,6 +101,23 @@ class SearchRegistry(object):
 
 
 registry = SearchRegistry()
+
+
+def _make_cache_key(search, search_arg):
+	return sha1(SEARCH_CACHE_SEED + search.slug + search_arg).hexdigest()
+
+
+def get_search_instance(slug, search_arg):
+	"""Returns a search instance for the given slug, either from the cache or newly-instantiated."""
+	search = registry[slug]
+	search_arg = search_arg.lower()
+	if USE_CACHE:
+		key = _make_cache_key(search, search_arg)
+		cached = cache.get(key)
+		if cached:
+			return cached
+	return search(search_arg)
+	
 
 
 class Result(object):
@@ -189,50 +203,34 @@ class BaseSearch(object):
 	result_limit = 10
 	#: How long the items for the search should be cached (in minutes). Default: 48 hours.
 	_cache_timeout = 60*48
+	#: The path to the template which will be used to render the :class:`Result`\ s for this search.
+	result_template = "sobol/search/basesearch.html"
 	
 	def __init__(self, search_arg):
 		self.search_arg = search_arg
-	
-	def _get_cached_results(self):
-		"""Return the cached results if the results haven't timed out. Otherwise return None."""
-		result_cache = cache.get(SEARCH_CACHE_KEY)
-		if result_cache and self.__class__ in result_cache and self.search_arg.lower() in result_cache[self.__class__]:
-			cached = result_cache[self.__class__][self.search_arg.lower()]
-			if cached['timeout'] >= datetime.datetime.now():
-				return cached['results']
-		return None
-	
-	def _set_cached_results(self, results, timeout):
-		"""Sets the results to the cache for <timeout> minutes."""
-		result_cache = cache.get(SEARCH_CACHE_KEY) or {}
-		cached = result_cache.setdefault(self.__class__, {}).setdefault(self.search_arg.lower(), {})
-		cached.update({
-			'results': results,
-			'timeout': datetime.datetime.now() + datetime.timedelta(minutes=timeout)
-		})
-		cache.set(SEARCH_CACHE_KEY, result_cache, MAX_CACHE_TIMEOUT)
 	
 	@property
 	def results(self):
 		"""Retrieves cached results or initiates a new search via :meth:`get_results` and caches the results."""
 		if not hasattr(self, '_results'):
-			results = self._get_cached_results()
-			if results is None:
-				try:
-					# Cache one extra result so we can see if there are
-					# more results to be had.
-					limit = self.result_limit
-					if limit is not None:
-						limit += 1
-					results = self.get_results(limit)
-				except:
-					if settings.DEBUG:
-						raise
-					#  On exceptions, don't set any cache; just return.
-					return []
+			try:
+				# Cache one extra result so we can see if there are
+				# more results to be had.
+				limit = self.result_limit
+				if limit is not None:
+					limit += 1
+				results = self.get_results(limit)
+			except:
+				if settings.DEBUG:
+					raise
+				#  On exceptions, don't set any cache; just return.
+				return []
 			
-				self._set_cached_results(results, self._cache_timeout)
 			self._results = results
+			
+			if USE_CACHE:
+				key = _make_cache_key(self, self.search_arg)
+				cache.set(key, self, self._cache_timeout)
 		
 		return self._results
 	
@@ -268,11 +266,7 @@ class BaseSearch(object):
 	
 	def get_result_template(self, result):
 		"""Returns the template to be used for rendering the ``result``."""
-		if hasattr(self, 'result_template'):
-			return loader.get_template(self.result_template)
-		if not hasattr(self, '_result_template'):
-			self._result_template = DEFAULT_RESULT_TEMPLATE
-		return self._result_template
+		return loader.get_template(self.result_template)
 	
 	def get_result_extra_context(self, result):
 		"""Returns any extra context to be used when rendering the ``result``."""
@@ -347,9 +341,9 @@ class JSONSearch(URLSearch):
 class GoogleSearch(JSONSearch):
 	"""An example implementation of a :class:`JSONSearch`."""
 	search_url = "http://ajax.googleapis.com/ajax/services/search/web"
-	result_template = 'search/googlesearch.html'
 	_cache_timeout = 60
 	verbose_name = "Google search (current site)"
+	result_template = "sobol/search/googlesearch.html"
 	
 	@property
 	def query_format_str(self):

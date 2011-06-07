@@ -11,7 +11,7 @@ from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.utils import simplejson as json
 from django.utils.datastructures import SortedDict
 
-from philo.contrib.sobol import registry
+from philo.contrib.sobol import registry, get_search_instance
 from philo.contrib.sobol.forms import SearchForm
 from philo.contrib.sobol.utils import HASH_REDIRECT_GET_KEY, URL_REDIRECT_GET_KEY, SEARCH_ARG_GET_KEY, check_redirect_hash, RegistryIterator
 from philo.exceptions import ViewCanNotProvideSubpath
@@ -206,10 +206,6 @@ class SearchView(MultiView):
 			)
 		return urlpatterns
 	
-	def get_search_instance(self, slug, search_string):
-		"""Returns an instance of the :class:`.BaseSearch` subclass corresponding to ``slug`` in the :class:`.SearchRegistry` and instantiated with ``search_string``."""
-		return registry[slug](search_string.lower())
-	
 	def results_view(self, request, extra_context=None):
 		"""
 		Renders :attr:`results_page` with a context containing an instance of :attr:`search_form`. If the form was submitted and was valid, then one of two things has happened:
@@ -245,7 +241,7 @@ class SearchView(MultiView):
 				
 				search_instances = []
 				for slug in self.searches:
-					search_instance = self.get_search_instance(slug, search_string)
+					search_instance = get_search_instance(slug, search_string)
 					search_instances.append(search_instance)
 					
 					if self.enable_ajax_api:
@@ -287,7 +283,7 @@ class SearchView(MultiView):
 		if not request.is_ajax() or not self.enable_ajax_api or slug not in self.searches or search_string is None:
 			raise Http404
 		
-		search_instance = self.get_search_instance(slug, search_string)
+		search_instance = get_search_instance(slug, search_string)
 		
 		return HttpResponse(json.dumps({
 			'results': [result.get_context() for result in search_instance.results],

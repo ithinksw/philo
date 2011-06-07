@@ -1,4 +1,6 @@
 from inspect import getargspec
+import mimetypes
+from os.path import basename
 
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
@@ -374,23 +376,32 @@ class Redirect(TargetURLModel, View):
 
 class File(View):
 	"""Stores an arbitrary file."""
-	#: Defines the mimetype of the uploaded file. This will not be validated.
-	mimetype = models.CharField(max_length=255)
+	#: The name of the uploaded file. This is meant for finding the file again later, not for display.
+	name = models.CharField(max_length=255)
+	#: Defines the mimetype of the uploaded file. This will not be validated. If no mimetype is provided, it will be automatically generated based on the filename.
+	mimetype = models.CharField(max_length=255, blank=True)
 	#: Contains the uploaded file. Files are uploaded to ``philo/files/%Y/%m/%d``.
 	file = models.FileField(upload_to='philo/files/%Y/%m/%d')
+	
+	def clean(self):
+		if not self.mimetype:
+			self.mimetype = mimetypes.guess_type(self.file.name, strict=False)[0]
+			if self.mimetype is None:
+				raise ValidationError("Unknown file type.")
 	
 	def actually_render_to_response(self, request, extra_context=None):
 		wrapper = FileWrapper(self.file)
 		response = HttpResponse(wrapper, content_type=self.mimetype)
 		response['Content-Length'] = self.file.size
+		response['Content-Disposition'] = "inline; filename=%s" % basename(self.file.name)
 		return response
 	
 	class Meta:
 		app_label = 'philo'
 	
 	def __unicode__(self):
-		"""Returns the path of the uploaded file."""
-		return self.file.name
+		"""Returns the value of :attr:`File.name`."""
+		return self.name
 
 
 register_value_model(Node)

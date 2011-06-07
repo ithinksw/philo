@@ -47,10 +47,12 @@ class RedirectAdmin(ViewAdmin):
 class FileAdmin(ViewAdmin):
 	fieldsets = (
 		(None, {
-			'fields': ('file', 'mimetype')
+			'fields': ('name', 'file', 'mimetype')
 		}),
 	)
-	list_display = ('mimetype', 'file')
+	list_display = ('name', 'mimetype', 'file')
+	search_fields = ('name',)
+	list_filter = ('mimetype',)
 
 
 admin.site.register(Node, NodeAdmin)

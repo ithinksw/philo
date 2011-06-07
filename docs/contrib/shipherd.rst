@@ -29,6 +29,7 @@ Models
 
 .. automodule:: philo.contrib.shipherd.models
 	:members: Navigation, NavigationItem, NavigationMapper
+	:show-inheritance:
 
 Navigation caching
 ------------------

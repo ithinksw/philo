@@ -241,11 +241,12 @@ class SearchView(MultiView):
 				
 				search_instances = []
 				for slug in self.searches:
-					search_instance = get_search_instance(slug, search_string)
-					search_instances.append(search_instance)
+					if slug in registry:
+						search_instance = get_search_instance(slug, search_string)
+						search_instances.append(search_instance)
 					
-					if self.enable_ajax_api:
-						search_instance.ajax_api_url = "%s?%s=%s" % (self.reverse('ajax_api_view', kwargs={'slug': slug}, node=request.node), SEARCH_ARG_GET_KEY, search_string)
+						if self.enable_ajax_api:
+							search_instance.ajax_api_url = "%s?%s=%s" % (self.reverse('ajax_api_view', kwargs={'slug': slug}, node=request.node), SEARCH_ARG_GET_KEY, search_string)
 				
 				if eventlet and not self.enable_ajax_api:
 					pool = eventlet.GreenPool()
@@ -280,14 +281,13 @@ class SearchView(MultiView):
 		"""
 		search_string = request.GET.get(SEARCH_ARG_GET_KEY)
 		
-		if not request.is_ajax() or not self.enable_ajax_api or slug not in self.searches or search_string is None:
+		if not request.is_ajax() or not self.enable_ajax_api or slug not in registry or slug not in self.searches or search_string is None:
 			raise Http404
 		
 		search_instance = get_search_instance(slug, search_string)
 		
 		return HttpResponse(json.dumps({
-			'results': [result.get_context() for result in search_instance.results],
-			'rendered': [result.render() for result in search_instance.results],
-			'hasMoreResults': search.has_more_results(),
-			'moreResultsURL': (u"?%s" % search.more_results_querydict.urlencode()) if search.more_results_querydict else None,
+			'results': [result.render() for result in search_instance.results],
+			'hasMoreResults': search_instance.has_more_results,
+			'moreResultsURL': (u"?%s" % search_instance.more_results_querydict.urlencode()) if search_instance.more_results_querydict else None,
 		}), mimetype="application/json")

@@ -187,7 +187,7 @@ class BaseSearchMetaclass(type):
 		if 'verbose_name' not in attrs:
 			attrs['verbose_name'] = capfirst(' '.join(convert_camelcase(name).rsplit(' ', 1)[:-1]))
 		if 'slug' not in attrs:
-			attrs['slug'] = name.lower()
+			attrs['slug'] = name[:-6].lower() if name.endswith("Search") else name.lower()
 		return super(BaseSearchMetaclass, cls).__new__(cls, name, bases, attrs)
 
 
@@ -199,8 +199,8 @@ class BaseSearch(object):
 	
 	"""
 	__metaclass__ = BaseSearchMetaclass
-	#: The number of results to return from the complete list. Default: 10
-	result_limit = 10
+	#: The number of results to return from the complete list. Default: 5
+	result_limit = 5
 	#: How long the items for the search should be cached (in minutes). Default: 48 hours.
 	_cache_timeout = 60*48
 	#: The path to the template which will be used to render the :class:`Result`\ s for this search.
@@ -272,19 +272,23 @@ class BaseSearch(object):
 		"""Returns any extra context to be used when rendering the ``result``."""
 		return {}
 	
+	@property
 	def has_more_results(self):
 		"""Returns ``True`` if there are more results than :attr:`result_limit` and ``False`` otherwise."""
 		return len(self.results) > self.result_limit
 	
 	@property
 	def more_results_url(self):
-		"""Returns the actual url for more results. This should be accessed through :attr:`more_results_querydict` in the template so that the click can be tracked."""
-		raise NotImplementedError
+		"""Returns the actual url for more results. This should be accessed through :attr:`more_results_querydict` in the template so that the click can be tracked. By default, simply returns ``None``."""
+		return None
 	
 	@property
 	def more_results_querydict(self):
 		"""Returns a :class:`QueryDict` for tracking whether people click on a 'more results' link."""
-		return make_tracking_querydict(self.search_arg, self.more_results_url)
+		url = self.more_results_url
+		if url:
+			return make_tracking_querydict(self.search_arg, url)
+		return None
 	
 	def __unicode__(self):
 		return self.verbose_name
@@ -344,6 +348,7 @@ class GoogleSearch(JSONSearch):
 	_cache_timeout = 60
 	verbose_name = "Google search (current site)"
 	result_template = "sobol/search/googlesearch.html"
+	_more_results_url = None
 	
 	@property
 	def query_format_str(self):

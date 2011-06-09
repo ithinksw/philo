@@ -1,0 +1,59 @@
+.x-menu{
+	@include box-shadow(0 1px 4px 0 bla(.35));
+	white-space:nowrap;
+	@extend .x-boundlist;
+}
+
+.x-menu-body{
+	position:absolute;
+}
+
+.x-menu-item{
+	padding:2px;
+}
+
+.x-menu-item-link{
+	padding:4px;
+	border:1px solid transparent;
+	@include border-radius(5px);
+	text-decoration:none;
+	display:block;
+	color:#FFF;
+}
+
+.x-menu-item-active .x-menu-item-link{
+	border-color:$accent-color;
+	@include background-image(linear-gradient($accent-color, darken($accent-color, 10%)));
+	@include box-shadow(0 -1px 0 0 bla(.15) inset);
+}
+
+.x-menu-item-icon{
+	width:16px;
+	height:16px;
+	margin-right:5px;
+	float:left;
+}
+
+.x-menu-item-unchecked{
+	.x-menu-item-icon{
+		background: theme-image($theme-name, 'form/unchecked.png');
+	}
+	.x-menu-group-icon{
+		background: theme-image($theme-name, 'form/unradioed.png');
+	}
+}
+.x-menu-item-checked{
+	.x-menu-item-icon{
+		background: theme-image($theme-name, 'form/checked.png');
+	}
+	.x-menu-group-icon{
+		background: theme-image($theme-name, 'form/radioed.png');
+	}
+}
+
+.x-menu-item-separator{
+	height:0;
+	padding:0;
+	margin: 3px 9px 3px 10px;
+	border-bottom:1px solid wha(.25);
+}

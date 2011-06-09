@@ -1,0 +1,30 @@
+.x-toolbar{
+//	@include background(linear-gradient(top, #444 0%, #666 10%, #888 90%, #777 100%));
+	@include background(linear-gradient(top, #222 0%, #444 10%, #666 90%, #444 100%));
+	padding:3px 0;
+}
+
+.x-toolbar-item{
+	margin:{
+		left:3px;
+		right:3px;
+	};
+	white-space:nowrap;
+}
+.x-toolbar-text{
+	font-size:11px;
+	margin-left:10px;
+	white-space:nowrap;
+}
+
+.x-window, .x-panel-default-framed{
+	.x-toolbar-docked-bottom{
+		@include border-radius(0 0 #{$base-border-radius-width - 2px} #{$base-border-radius-width - 2px});
+	}
+}
+
+.x-toolbar-separator{
+	border-right:1px solid wha(.25);
+	border-left:1px solid bla(.25);
+	height:14px;
+}

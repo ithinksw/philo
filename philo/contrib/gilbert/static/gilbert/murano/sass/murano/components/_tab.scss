@@ -1,0 +1,97 @@
+.x-tab{
+	@include border-radius(3px 3px 0 0);
+	border:1px solid wha(.15);
+	border-top:1px solid wha(.5);
+	border-bottom:none;
+	@include background($gloss-gradient);
+	background-color: #000;
+	margin:{
+		top:2px;
+		left:4px;
+	};
+	@include box-shadow(0 0 0 1px bla(.5));
+	button{
+		color:#CCC;
+		text-shadow: 0 -1px 0 bla(.75);
+	}
+	padding:3px;
+	white-space: nowrap;
+}
+
+.x-tab-over{
+	border-color:$accent-color;
+	border-top-color:lighten($accent-color, 20%);
+	button{
+		color:#FFF;
+	}
+}
+
+.x-tab-active{
+	border-color: wha(.35);
+	border-top-color:#FFF;
+	button{
+		color:#FFF;
+	}
+	z-index:3;
+	@include box-shadow(none);
+}
+
+.x-tab button{
+	height:14px;
+	line-height:14px;
+}
+
+.x-tab em{
+	display:block;
+	padding:0 3px;
+}
+
+.x-tab-closable em{
+	padding-right:15px;
+}
+
+.x-tab-close-btn{
+	position:absolute;
+	top:3px;
+	right:3px;
+	width:11px;
+	height:11px;
+	background: theme-image($theme-name, 'tab/tab-close.png');
+	text-indent:-119988px;
+}
+
+.x-tab-bar-strip{
+	z-index:2;
+	border-top:1px solid wha(.35);
+	border-bottom:1px solid wha(.35);
+	margin-top:-1px;
+	height:4px;
+	background:#000;
+	position:relative;
+}
+
+.x-box-scroller{
+	width:18px !important;
+	height:22px !important;
+}
+
+.x-tabbar-scroll-left{
+	background: theme-image($theme-name, 'tab-bar/l.png') !important;
+	&-hover{
+		background-position:left center !important;
+	}
+	&-disabled{
+		background-position:left top !important;
+	}
+}
+
+
+.x-tabbar-scroll-right{
+	background: theme-image($theme-name, 'tab-bar/r.png') !important;
+	&-hover{
+		background-position:left center !important;
+	}
+	&-disabled{
+		background-position:left top !important;
+	}
+}

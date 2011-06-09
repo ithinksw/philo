@@ -1,0 +1,64 @@
+.x-panel{
+	background: $panel-background;
+	overflow:hidden;
+	position:relative;
+}
+
+.x-panel, .x-window{
+	.x-panel {
+		.x-panel-body{
+			background: #222;
+		}
+	}
+}
+
+.x-panel-header{
+	@include background($gloss-gradient);
+	@include box-shadow(0 1px 0 0 bla(.35));
+	border-top:1px solid #FFF;
+	line-height: $panel-header-height;
+	height: $panel-header-height;
+	padding: $panel-header-padding;
+}
+
+.x-panel-body{
+	position:relative;
+	padding: $panel-body-padding;
+}
+
+/* FRAMED PANEL
+ * ------------ */
+.x-panel-default-framed{	
+	border:1px solid wha(.5);
+	border-top-color: wha(1);
+	@include border-radius($base-border-radius-width);
+}
+
+.x-panel-default-framed .x-panel-header{
+	border-top:0;
+	@include border-radius($base-border-radius-width $base-border-radius-width 0 0);
+	margin:{
+		top:1px;
+		left:1px;
+		right:1px;
+	};
+}
+
+/* MASKED PANEL
+ * ------------ */
+
+.x-mask-msg{
+	background:#333 !important;
+	@include background-image($gloss-gradient !important);
+	@include border-radius(4px);
+	@include box-shadow(0 0 0 1px bla(.75));
+	border:1px solid #333 !important;
+	border-top:1px solid #888 !important;
+	div{
+		background-color:#000 !important;
+		@include border-radius(3px);
+		border:1px solid #333 !important;
+		border-bottom:1px solid #888 !important;
+		color:#CCC !important;
+	}
+}

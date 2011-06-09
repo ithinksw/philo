@@ -1,0 +1,31 @@
+.x-scroller{
+	border:none !important;
+	&::-webkit-scrollbar {
+		width: 16px;
+		height: 16px;
+		&-track{
+			background:transparent;
+		}
+		&-track-piece:start{
+			margin-left:1px;
+			margin-top:1px;
+		}
+		&-track-piece:end{
+			margin-right:1px;
+			margin-bottom:1px;
+		}
+		&-thumb{
+			border:1px solid #000;
+			@include background($gloss-gradient);
+			background-color:#222;
+			@include border-radius(8px);
+			@include box-shadow(0 1px 0 0 wha(.35) inset, 0 -1px 0 0 #000 inset);
+			&:hover{
+				background-color:#333;
+			}
+			&:active{
+				background-color:#444;
+			}
+		}
+	}
+}

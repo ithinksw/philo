@@ -1,0 +1,188 @@
+button{
+	margin:0;
+	padding:0;
+	background:none;
+	border-width:0;
+}
+
+.x-btn{
+	@include background($gloss-gradient);
+	@include box-shadow(0 0 0 1px bla($base-background-alpha*.25));
+	@include border-radius(2px);
+	background-color: bla($base-background-alpha*.5);
+	border:1px solid wha(.3);
+	border-top-color:wha(.5);
+	border-bottom-color:wha(.05);
+	margin:{
+		top:1px;
+		bottom:1px;
+	};
+	position:relative;
+	white-space:nowrap;
+	display:inline-block;
+	padding:2px;
+	em{
+		display:block;
+	}
+}
+
+.x-btn-over{
+	border-color:$accent-color;
+	border-top-color:lighten($accent-color, 20%);
+	border-bottom-color:darken($accent-color, 10%);
+}
+
+.x-btn-pressed{
+	@extend .x-btn;
+	background-color:wha(.2);
+	border-color:wha(.2);
+	border-top-color:wha(.4);
+	border-bottom-color:wha(.1);
+}
+
+.x-btn-menu-active{
+	background: bla(.5);
+	@include box-shadow(0 2px 4px 0 rgba(0,0,0,.5) inset, 0 0 0 1px bla($base-background-alpha*.25));
+	border:1px solid wha(.5);
+}
+
+.x-btn-inner{
+	display:block;
+	padding:0 5px;
+	color:$base-text-color;
+	background-repeat:no-repeat;
+}
+
+$small: 16px;
+$medium: 24px;
+$large: 32px;
+
+/* different sizes */
+
+.x-btn-noicon, .x-btn-default-icon, .x-btn-icon-text-left, .x-btn-icon-text-right{
+	.x-btn-inner{
+		line-height:$small;
+	}
+}
+
+.x-btn-default-medium-noicon, .x-btn-default-medium-icon-text-left, .x-btn-default-medium-icon-text-right{
+	.x-btn-inner{
+		line-height:$medium;
+	}
+}
+
+.x-btn-default-large-noicon, .x-btn-default-large-icon-text-left, .x-btn-default-large-icon-text-right{
+	.x-btn-inner{
+		line-height:$large;
+	}
+}
+
+/* icons
+ * ----- */
+
+/* icon only */
+
+.x-btn-default-small-icon .x-btn-inner, .x-btn-icon .x-btn-inner{
+	padding:0;
+	width:$small;
+	height:$small;
+}
+.x-btn-default-medium-icon .x-btn-inner{
+	padding:0;
+	width:$medium;
+	height:$medium;
+}
+.x-btn-default-large-icon .x-btn-inner{
+	padding:0;
+	width:$large;
+	height:$large;
+}
+
+/* text w/ icon left */
+
+.x-btn-icon-text-left{
+	background-position:0 center;
+}
+
+.x-btn-icon-text-left .x-btn-inner{
+	padding-left:$small+2px;
+}
+.x-btn-default-medium-icon-text-left .x-btn-inner{
+	padding-left:$medium+2px;
+}
+.x-btn-default-large-icon-text-left .x-btn-inner{
+	padding-left:$large+2px;
+}
+
+/* text w/ icon top */
+
+.x-btn-icon-text-top .x-btn-inner{
+	background-position:center 2px;
+}
+.x-btn-default-small-icon-text-top .x-btn-inner{
+	padding-top:$small+2px;
+}
+.x-btn-default-medium-icon-text-top .x-btn-inner{
+	padding-top:$medium+2px;
+}
+.x-btn-default-large-icon-text-top .x-btn-inner{
+	padding-top:$large+2px;
+}
+
+/* text w/ icon right */
+
+.x-btn-icon-text-right .x-btn-inner{
+	background-position: right center;
+}
+.x-btn-default-small-icon-text-right .x-btn-inner{
+	padding-right:$small+2px;
+}
+.x-btn-default-medium-icon-text-right .x-btn-inner{
+	padding-right:$medium+2px;
+}
+.x-btn-default-large-icon-text-right .x-btn-inner{
+	padding-right:$large+2px;
+}
+
+/* text w/ icon bottom */
+
+.x-btn-icon-text-bottom .x-btn-inner{
+	background-position: center bottom;
+}
+.x-btn-default-small-icon-text-bottom .x-btn-inner{
+	padding-bottom:$small;
+}
+.x-btn-default-medium-icon-text-bottom .x-btn-inner{
+	padding-bottom:$medium;
+}
+.x-btn-default-large-icon-text-bottom .x-btn-inner{
+	padding-bottom:$large;
+}
+
+/* arrow on right */
+.x-btn-arrow-right{
+	padding-right:14px;
+	background: transparent theme-image($theme-name, 'btn/menu.png') right center no-repeat;
+}
+
+/* arrow on botton */
+.x-btn-arrow-bottom{
+	padding-bottom:14px;
+	background: transparent theme-image($theme-name, 'btn/menu.png') center bottom no-repeat;
+}
+
+/* split on right */
+
+.x-btn-split-right{
+	padding-right:16px;
+	background: transparent theme-image($theme-name, 'btn/splith.png') right center no-repeat;
+	display:block;
+}
+
+/* split on bottom */
+
+.x-btn-split-bottom{
+	padding-bottom:16px;
+	background: transparent theme-image($theme-name, 'btn/splitv.png') center bottom no-repeat;
+	display:block;
+}

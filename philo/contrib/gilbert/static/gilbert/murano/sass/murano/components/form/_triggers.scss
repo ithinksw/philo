@@ -1,0 +1,85 @@
+@mixin trigger($type, $image){
+	.x-form-#{$type}-trigger{
+		@include background-image(linear-gradient(bla(.2), bla(0)), $gloss-gradient, $image);
+	}
+}
+
+.x-form-trigger-wrap{
+	float:left;
+	@include box-shadow(0 1px 0 0 wha(.35));
+	overflow:hidden;
+	border:1px solid #000;
+	border-left:0;
+	@include border-radius(0 4px 4px 0);
+}
+
+.x-form-trigger-wrap{
+	.x-form-spinner-up{
+		height:10px;
+		@include border-radius(0 3px 0 0);
+		background:#666 theme-image($theme-name,'triggericons/spinner-up.png') center top no-repeat;
+		border-bottom:1px solid #444;
+		&-over{
+			background-color:#999;
+		}
+	}
+	.x-form-spinner-down{
+		height:9px;
+		border-top:none;
+		@include border-radius(0 0 3px 0);
+		background:#555 theme-image($theme-name,'triggericons/spinner-down.png') center top no-repeat;
+		border-top:1px solid #888;
+		&-over{
+			background-color:#888;
+			border-color:#888;
+		}
+	}
+}
+.x-form-trigger-wrap-focus{
+	.x-form-spinner-up{
+		background-color:#999;
+	}
+	.x-form-spinner-down{
+		background-color:#888;
+	}
+}
+
+.x-form-trigger-wrap-focus{
+	.x-form-trigger{
+		background-color:#AAA;
+		border-color:#AAA;
+		&-click{
+			background-color:#888;
+			border-color:#888;
+		}
+	}
+}
+
+.x-form-trigger{
+	@include border-radius(0 3px 3px 0);
+	width:16px;
+	height:19px;
+	float:left;
+	background-color:#666;
+	border:1px solid #666;
+	&-over{
+		background-color:#AAA;
+		border-color:#AAA;
+	}
+	&-click{
+		background-color:#888;
+		border-color:#888;
+	}
+}
+
+
+.x-form-clear-trigger{
+	@include border-radius(0);
+	border-right-color:#888;
+}
+
+@include trigger(arrow, theme-image($theme-name,'triggericons/chev.png'));
+@include trigger(time, theme-image($theme-name,'triggericons/time.png'));
+@include trigger(date, theme-image($theme-name,'triggericons/date.png'));
+@include trigger(clear, theme-image($theme-name,'triggericons/clear.png'));
+@include trigger(search, theme-image($theme-name,'triggericons/search.png'));

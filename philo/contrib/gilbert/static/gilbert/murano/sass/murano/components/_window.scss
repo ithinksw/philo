@@ -1,0 +1,22 @@
+.x-window{
+	background: $base-background-color;
+	@include border-radius($base-border-radius-width);
+	@include box-shadow(0 0 0 1px bla($base-background-alpha*.5), 0 0 0 1px bla($base-background-alpha*.5) inset);
+	border:1px solid wha(.5);
+	border-top-color: wha(1);
+}
+
+.x-window-header{
+	@include background($gloss-gradient);
+	@include border-radius($base-border-radius-width $base-border-radius-width 0 0);
+	@include box-shadow(0 1px 0 0 bla(.35));
+	padding: $window-header-padding;
+	line-height: $window-header-height;
+	height: $window-header-height;
+}
+
+.x-window-body{
+	position:relative;
+	padding: $window-body-padding;
+	background-color:bla(.1);
+}

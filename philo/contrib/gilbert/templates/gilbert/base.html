@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>{% block head %}
+	<title>{% block title %}{{ gilbert.title }}{% endblock %}</title>
+	
+	{% block css %}
+	<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}gilbert/extjs/resources/css/ext-all-notheme.css" />
+	<link rel="stylesheet" type="text/css" class="gilbert.theme" id="gilbert.theme.murano" title="murano" href="{{ STATIC_URL }}gilbert/murano/murano.css"{% if request.GET.theme and request.GET.theme != 'murano' %} disabled="disabled"{% endif %} />
+	<link rel="stylesheet" type="text/css" class="gilbert.theme" id="gilbert.theme.access" title="access" href="{{ STATIC_URL }}gilbert/extjs/resources/css/xtheme-access.css"{% if request.GET.theme != 'access' %} disabled="disabled"{% endif %} />
+	<link rel="stylesheet" type="text/css" class="gilbert.theme" id="gilbert.theme.blue" title="blue" href="{{ STATIC_URL }}gilbert/extjs/resources/css/xtheme-blue.css"{% if request.GET.theme != 'blue' %} disabled="disabled"{% endif %} />
+	<link rel="stylesheet" type="text/css" class="gilbert.theme" id="gilbert.theme.gray" title="gray" href="{{ STATIC_URL }}gilbert/extjs/resources/css/xtheme-gray.css"{% if request.GET.theme != 'gray' %} disabled="disabled"{% endif %} />
+	{% endblock %}
+	
+	{% block js %}
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/extjs/adapter/ext/ext-base.js"></script>
+	{% if request.GET.debug %}
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/extjs/ext-all-debug.js"></script>
+	{% else %}
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/extjs/ext-all.js"></script>
+	{% endif %}
+	<script type="text/javascript">
+		Ext.BLANK_IMAGE_URL = '{{ STATIC_URL }}gilbert/extjs/resources/images/default/s.gif';
+	</script>
+	{% endblock %}
+	
+	{% block extrahead %}
+	{% endblock %}
+	
+{% endblock %}</head>
+<body style="background-image: url({{ STATIC_URL }}gilbert/wallpaper.jpg);">{% block body %}{% endblock %}</body>
+</html>

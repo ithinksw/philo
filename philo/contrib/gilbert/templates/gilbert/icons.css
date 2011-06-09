@@ -1,0 +1,5 @@
+{% for icon_name in icon_names %}
+.icon-{{ icon_name }} {
+	background: url({{ STATIC_URL }}gilbert/fugue-icons/icons-shadowless/{{ icon_name }}.png) 0 no-repeat !important;
+}
+{% endfor %}

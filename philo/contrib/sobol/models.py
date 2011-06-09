@@ -79,6 +79,8 @@ class Search(models.Model):
 					self._favored_results += subresults
 				else:
 					break
+			if len(self._favored_results) == len(results):
+				self._favored_results = []
 		return self._favored_results
 	
 	class Meta:
@@ -168,7 +170,7 @@ try:
 except ImportError:
 	pass
 else:
-	add_introspection_rules([], ["^philo\.contrib\.shipherd\.models\.RegistryChoiceField"])
+	add_introspection_rules([], ["^philo\.contrib\.sobol\.models\.RegistryChoiceField"])
 
 
 class SearchView(MultiView):
@@ -255,8 +257,16 @@ class SearchView(MultiView):
 					pool.waitall()
 				
 				context.update({
-					'searches': search_instances
+					'searches': search_instances,
+					'favored_results': []
 				})
+				
+				try:
+					search = Search.objects.get(string=search_string)
+				except Search.DoesNotExist:
+					pass
+				else:
+					context['favored_results'] = [r.url for r in search.get_favored_results()]
 		else:
 			form = SearchForm()
 		
@@ -267,8 +277,10 @@ class SearchView(MultiView):
 	
 	def ajax_api_view(self, request, slug, extra_context=None):
 		"""
-		Returns a JSON string containing two keyed lists.
+		Returns a JSON object containing the following variables:
 		
+		search
+			Contains the slug for the search.
 		results
 			Contains the results of :meth:`.Result.get_context` for each result.
 		rendered
@@ -276,7 +288,7 @@ class SearchView(MultiView):
 		hasMoreResults
 			``True`` or ``False`` whether the search has more results according to :meth:`BaseSearch.has_more_results`
 		moreResultsURL
-			Contains None or a querystring which, once accessed, will note the :class:`Click` and redirect the user to a page containing more results.
+			Contains ``None`` or a querystring which, once accessed, will note the :class:`Click` and redirect the user to a page containing more results.
 		
 		"""
 		search_string = request.GET.get(SEARCH_ARG_GET_KEY)
@@ -288,7 +300,8 @@ class SearchView(MultiView):
 		
 		return HttpResponse(json.dumps({
 			'search': search_instance.slug,
-			'results': [result.render() for result in search_instance.results],
+			'results': [result.get_context() for result in search_instance.results],
+			'rendered': [result.render() for result in search_instance.results],
 			'hasMoreResults': search_instance.has_more_results,
-			'moreResultsURL': (u"?%s" % search_instance.more_results_querydict.urlencode()) if search_instance.more_results_querydict else None,
+			'moreResultsURL': search_instance.more_results_url,
 		}), mimetype="application/json")

@@ -22,7 +22,7 @@
 		// hook for success!
 		ele.removeClass('loading')
 		if (data['results'].length) {
-			ele[0].innerHTML += "<dl>" + data['results'].join("") + "</dl>";
+			ele[0].innerHTML += "<dl>" + data['rendered'].join("") + "</dl>";
 			if(data['hasMoreResults'] && data['moreResultsURL']) ele[0].innerHTML += "<footer><p><a href='" + data['moreResultsURL'] + "'>See more results</a></p></footer>";
 		} else {
 			ele.addClass('empty');

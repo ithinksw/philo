@@ -1,5 +1,13 @@
 {% with node.view.enable_ajax_api as ajax %}
-{% if ajax and not suppress_scripts %}<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script><script type="text/javascript" src="{{ STATIC_URL }}sobol/ajax_search.js"></script>{% endif %}
+{% if ajax %}
+	{% if not suppress_scripts %}<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script><script type="text/javascript" src="{{ STATIC_URL }}sobol/ajax_search.js"></script>{% endif %}
+	<script type="text/javascript">
+		(function($){
+			var sobol = window.sobol;
+			sobol.favoredResults = [{% for r in favored_results %}"{{ r }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+		}(jQuery));
+	</script>
+{% endif %}
 {% for search in searches %}
 <article {% if ajax %}class="search loading {{ search.slug }}" data-url="{{ search.ajax_api_url }}"{% else %}class="search {{ search.slug }}{% if not search.results %} empty{% endif %}"{% endif %}>
 	<header>
@@ -10,7 +18,7 @@
 		{% if search.results %}
 			<dl>
 			{% for result in search.results %}
-			{{ result }}
+				{{ result }}
 			{% endfor %}
 			</dl>
 			{% if search.has_more_results and search.more_results_url %}

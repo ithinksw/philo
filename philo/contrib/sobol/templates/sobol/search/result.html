@@ -1,0 +1,2 @@
+<dt>{% if url %}<a href="{{ url }}">{% endif %}{{ title|safe }}{% if url %}</a>{% endif %}</dt>
+{% if content %}<dd>{{ content|safe|truncatewords_html:20 }}</dd>{% endif %}

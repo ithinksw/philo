@@ -139,19 +139,20 @@ class Result(object):
 		return self.search.get_result_title(self.result)
 	
 	def get_url(self):
-		"""Returns the url of the result or an empty string by calling :meth:`BaseSearch.get_result_querydict` on the raw result and then encoding the querydict returned."""
-		qd = self.search.get_result_querydict(self.result)
-		if qd is None:
-			return ""
-		return "?%s" % qd.urlencode()
+		"""Returns the url of the result or an empty string by calling :meth:`BaseSearch.get_result_url` on the raw result."""
+		return self.search.get_result_url(self.result)
 	
-	def get_template(self):
-		"""Returns the template for the result by calling :meth:`BaseSearch.get_result_template` on the raw result."""
-		return self.search.get_result_template(self.result)
+	def get_content(self):
+		"""Returns the content of the result by calling :meth:`BaseSearch.get_result_content` on the raw result."""
+		return self.search.get_result_content(self.result)
 	
 	def get_extra_context(self):
 		"""Returns any extra context for the result by calling :meth:`BaseSearch.get_result_extra_context` on the raw result."""
 		return self.search.get_result_extra_context(self.result)
+	
+	def get_template(self):
+		"""Returns the template which will be used to render the :class:`Result` by calling :meth:`BaseSearch.get_result_template` on the raw result."""
+		return self.search.get_result_template(self.result)
 	
 	def get_context(self):
 		"""
@@ -161,15 +162,15 @@ class Result(object):
 			The result of calling :meth:`get_title`
 		url
 			The result of calling :meth:`get_url`
-		result
-			The raw result which the :class:`Result` was instantiated with.
+		content
+			The result of calling :meth:`get_content`
 		
 		"""
 		context = self.get_extra_context()
 		context.update({
 			'title': self.get_title(),
 			'url': self.get_url(),
-			'result': self.result
+			'content': self.get_content()
 		})
 		return context
 	
@@ -205,8 +206,8 @@ class BaseSearch(object):
 	result_limit = 5
 	#: How long the items for the search should be cached (in minutes). Default: 48 hours.
 	_cache_timeout = 60*48
-	#: The path to the template which will be used to render the :class:`Result`\ s for this search.
-	result_template = "sobol/search/basesearch.html"
+	#: The path to the template which will be used to render the :class:`Result`\ s for this search. If this is ``None``, then the framework will try "sobol/search/<slug>/result.html" and "sobol/search/result.html".
+	result_template = None
 	
 	def __init__(self, search_arg):
 		self.search_arg = search_arg
@@ -255,7 +256,7 @@ class BaseSearch(object):
 		"""Returns the title of the ``result``. Must be implemented by subclasses."""
 		raise NotImplementedError
 	
-	def get_result_url(self, result):
+	def get_actual_result_url(self, result):
 		"""Returns the actual URL for the ``result`` or ``None`` if there is no URL. Must be implemented by subclasses."""
 		raise NotImplementedError
 	
@@ -266,31 +267,53 @@ class BaseSearch(object):
 			return None
 		return make_tracking_querydict(self.search_arg, url)
 	
-	def get_result_template(self, result):
-		"""Returns the template to be used for rendering the ``result``."""
-		return loader.get_template(self.result_template)
+	def get_result_url(self, result):
+		"""Returns ``None`` or a url which, when accessed, will register a :class:`.Click` for that url."""
+		qd = self.get_result_querydict(result)
+		if qd is None:
+			return None
+		return "?%s" % qd.urlencode()
+	
+	def get_result_content(self, result):
+		"""Returns the content for the ``result`` or ``None`` if there is no content. Must be implemented by subclasses."""
+		raise NotImplementedError
 	
 	def get_result_extra_context(self, result):
-		"""Returns any extra context to be used when rendering the ``result``."""
+		"""Returns any extra context to be used when rendering the ``result``. Make sure that any extra context can be serialized as JSON."""
 		return {}
+	
+	def get_result_template(self, result):
+		"""Returns the template to be used for rendering the ``result``. For a search with slug ``google``, this would first try ``sobol/search/google/result.html``, then fall back on ``sobol/search/result.html``. Subclasses can override this by setting :attr:`result_template` to the path of another template."""
+		if self.result_template:
+			return loader.get_template(self.result_template)
+		return loader.select_template([
+			'sobol/search/%s/result.html' % self.slug,
+			'sobol/search/result.html'
+		])
 	
 	@property
 	def has_more_results(self):
 		"""Returns ``True`` if there are more results than :attr:`result_limit` and ``False`` otherwise."""
 		return len(self.results) > self.result_limit
 	
-	@property
-	def more_results_url(self):
-		"""Returns the actual url for more results. This should be accessed through :attr:`more_results_querydict` in the template so that the click can be tracked. By default, simply returns ``None``."""
+	def get_actual_more_results_url(self):
+		"""Returns the actual url for more results. By default, simply returns ``None``."""
 		return None
 	
-	@property
-	def more_results_querydict(self):
+	def get_more_results_querydict(self):
 		"""Returns a :class:`QueryDict` for tracking whether people click on a 'more results' link."""
-		url = self.more_results_url
+		url = self.get_actual_more_results_url()
 		if url:
 			return make_tracking_querydict(self.search_arg, url)
 		return None
+	
+	@property
+	def more_results_url(self):
+		"""Returns a URL which consists of a querystring which, when accessed, will log a :class:`.Click` for the actual URL."""
+		qd = self.get_more_results_querydict()
+		if qd is None:
+			return None
+		return "?%s" % qd.urlencode()
 	
 	def __unicode__(self):
 		return self.verbose_name
@@ -325,9 +348,8 @@ class URLSearch(BaseSearch):
 	def url(self):
 		"""The URL where the search gets its results. Composed from :attr:`search_url` and :attr:`query_format_str`."""
 		return self.search_url + self.query_format_str % urlquote_plus(self.search_arg)
-
-	@property
-	def more_results_url(self):
+	
+	def get_actual_more_results_url(self):
 		return self.url
 	
 	def parse_response(self, response, limit=None):
@@ -349,7 +371,6 @@ class GoogleSearch(JSONSearch):
 	search_url = "http://ajax.googleapis.com/ajax/services/search/web"
 	_cache_timeout = 60
 	verbose_name = "Google search (current site)"
-	result_template = "sobol/search/googlesearch.html"
 	_more_results_url = None
 	
 	@property
@@ -389,8 +410,7 @@ class GoogleSearch(JSONSearch):
 			return True
 		return False
 	
-	@property
-	def more_results_url(self):
+	def get_actual_more_results_url(self):
 		return self._more_results_url
 	
 	def get_result_title(self, result):
@@ -398,6 +418,9 @@ class GoogleSearch(JSONSearch):
 	
 	def get_result_url(self, result):
 		return result['unescapedUrl']
+	
+	def get_result_content(self, result):
+		return result['content']
 
 
 registry.register(GoogleSearch)

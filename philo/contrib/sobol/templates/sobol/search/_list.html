@@ -1,21 +1,25 @@
 {% with node.view.enable_ajax_api as ajax %}
-{% if ajax %}<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script><script type="text/javascript" src="{{ STATIC_URL }}sobol/ajax_search.js"></script>{% endif %}
+{% if ajax and not suppress_scripts %}<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script><script type="text/javascript" src="{{ STATIC_URL }}sobol/ajax_search.js"></script>{% endif %}
 {% for search in searches %}
-<article {% if ajax %}class="search loading {{ search.slug }}" data-url="{{ search.ajax_api_url }}" data-title="{{ search }}"{% else %}class="search {{ search.slug }}"{% endif %}>
+<article {% if ajax %}class="search loading {{ search.slug }}" data-url="{{ search.ajax_api_url }}"{% else %}class="search {{ search.slug }}{% if not search.results %} empty{% endif %}"{% endif %}>
 	<header>
 		<a name='{{ search.slug }}'></a>
 		<h1>{{ search }}</h1>
 	</header>
 	{% if not ajax %}
-		<dl>
-		{% for result in search.results %}
-		{{ result }}
-		{% endfor %}
-		</dl>
-		{% if search.has_more_results and search.more_results_url %}
-		<footer>
-			<p><a href="?{{ search.more_results_querydict.urlencode }}">See more results</a></p>
-		</footer>
+		{% if search.results %}
+			<dl>
+			{% for result in search.results %}
+			{{ result }}
+			{% endfor %}
+			</dl>
+			{% if search.has_more_results and search.more_results_url %}
+			<footer>
+				<p><a href="?{{ search.more_results_querydict.urlencode }}">See more results</a></p>
+			</footer>
+			{% endif %}
+		{% else %}
+			<p>No results found.</p>
 		{% endif %}
 	{% endif %}
 </article>

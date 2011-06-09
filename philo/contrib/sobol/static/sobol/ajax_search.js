@@ -1,33 +1,40 @@
 (function($){
-	var sobol = window.sobol = {}
-	sobol.setup = function(){
+	var sobol = window.sobol = {};
+	sobol.search = function(){
 		var searches = sobol.searches = $('article.search');
-		for (i=0;i<searches.length;i++) {
+		for (var i=0;i<searches.length;i++) {
 			(function(){
 				var s = searches[i];
 				$.ajax({
 					url: s.getAttribute('data-url'),
 					dataType: 'json',
 					success: function(data){
-						$(s).removeClass('loading')
-						if (data['results'].length) {
-							s.innerHTML += "<dl>" + data['results'].join("") + "</dl>";
-							if(data['hasMoreResults'] && data['moreResultsURL']) s.innerHTML += "<footer><p><a href='" + data['moreResultsURL'] + "'>See more results</a></p></footer>";
-						} else {
-							$(s).addClass('empty')
-							s.innerHTML += "<p>No results found.</p>"
-						}
+						sobol.onSuccess($(s), data);
 					},
 					error: function(data, textStatus, errorThrown){
-						$(s).removeClass('loading');
-						text = errorThrown ? errorThrown : textStatus ? textStatus : "Error occurred."
-						if (errorThrown) {
-							s.innerHTML += "<p>" + errorThrown + "</p>"
-						};
+						sobol.onError($(s), textStatus, errorThrown);
 					}
 				});
 			}());
 		};
+	}
+	sobol.onSuccess = function(ele, data){
+		// hook for success!
+		ele.removeClass('loading')
+		if (data['results'].length) {
+			ele[0].innerHTML += "<dl>" + data['results'].join("") + "</dl>";
+			if(data['hasMoreResults'] && data['moreResultsURL']) ele[0].innerHTML += "<footer><p><a href='" + data['moreResultsURL'] + "'>See more results</a></p></footer>";
+		} else {
+			ele.addClass('empty');
+			ele[0].innerHTML += "<p>No results found.</p>";
+			ele.slideUp();
+		}
 	};
-	$(sobol.setup);
+	sobol.onError = function(ele, textStatus, errorThrown){
+		// Hook for error...
+		ele.removeClass('loading');
+		text = errorThrown ? errorThrown : textStatus ? textStatus : "Error occurred.";
+		ele[0].innerHTML += "<p>" + text + "</p>";
+	};
+	$(sobol.search);
 }(jQuery));

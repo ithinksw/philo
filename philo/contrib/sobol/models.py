@@ -287,6 +287,7 @@ class SearchView(MultiView):
 		search_instance = get_search_instance(slug, search_string)
 		
 		return HttpResponse(json.dumps({
+			'search': search_instance.slug,
 			'results': [result.render() for result in search_instance.results],
 			'hasMoreResults': search_instance.has_more_results,
 			'moreResultsURL': (u"?%s" % search_instance.more_results_querydict.urlencode()) if search_instance.more_results_querydict else None,

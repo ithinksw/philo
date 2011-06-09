@@ -116,7 +116,9 @@ def get_search_instance(slug, search_arg):
 		cached = cache.get(key)
 		if cached:
 			return cached
-	return search(search_arg)
+	instance = search(search_arg)
+	instance.slug = slug
+	return instance
 	
 
 

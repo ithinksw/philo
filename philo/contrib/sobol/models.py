@@ -301,7 +301,6 @@ class SearchView(MultiView):
 		return HttpResponse(json.dumps({
 			'search': search_instance.slug,
 			'results': [result.get_context() for result in search_instance.results],
-			'rendered': [result.render() for result in search_instance.results],
 			'hasMoreResults': search_instance.has_more_results,
 			'moreResultsURL': search_instance.more_results_url,
 		}), mimetype="application/json")

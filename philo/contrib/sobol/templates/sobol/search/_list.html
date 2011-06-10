@@ -1,0 +1,56 @@
+{% with node.view.enable_ajax_api as ajax %}
+{% if ajax %}
+	{% if not suppress_scripts %}<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script><script type="text/javascript" src="{{ STATIC_URL }}sobol/ajax_search.js"></script>{% endif %}
+	<script type="text/javascript">
+		(function($){
+			var sobol = window.sobol;
+			sobol.favoredResults = [{% for r in favored_results %}"{{ r }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+		}(jQuery));
+	</script>
+{% endif %}
+{% if favored_results %}
+	<article class="search favored{% if ajax %} loading{% endif %}">
+		<header>
+			<h1>Favored results</h1>
+		</header>
+		{% if not ajax %}
+		<dl>
+			{% for search in searches %}
+			{% for result in search.results %}
+				{% if result.get_actual_url in favored_results %}
+				{{ result }}
+				{% endif %}
+			{% endfor %}
+			{% endfor %}
+			{% if search.get_actual_more_results_url in favored_results %}
+				<dt><a href="{{ search.more_results_url }}">More results for {{ search }}</a></dt>
+			{% endif %}
+		</dl>
+		{% endif %}
+	</article>
+{% endif %}
+{% for search in searches %}
+<article {% if ajax %}class="search loading {{ search.slug }}" data-url="{{ search.ajax_api_url }}"{% else %}class="search {{ search.slug }}{% if not search.results %} empty{% endif %}"{% endif %}>
+	<header>
+		<a name='{{ search.slug }}'></a>
+		<h1>{{ search }}</h1>
+	</header>
+	{% if not ajax %}
+		{% if search.results %}
+			<dl>
+			{% for result in search.results %}
+				{{ result }}
+			{% endfor %}
+			</dl>
+			{% if search.has_more_results and search.more_results_url %}
+			<footer>
+				<p><a href="{{ search.more_results_url }}">See more results</a></p>
+			</footer>
+			{% endif %}
+		{% else %}
+			<p>No results found.</p>
+		{% endif %}
+	{% endif %}
+</article>
+{% endfor %}
+{% endwith %}

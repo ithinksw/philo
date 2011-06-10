@@ -1,0 +1,23 @@
+{% extends 'admin/sobol/search/change_form.html' %}
+{% load i18n %}
+
+{% block extrastyle %}
+	<style type="text/css">
+		.favored td{
+			font-weight:bold;
+		}
+		#changelist{
+			border:none;
+			background:none;
+		}
+		thead th{color:#444;font-weight:bold;}
+	</style>
+{% endblock %}
+
+{% block submit_row %}
+	<div class="module footer">
+		<ul class="submit-row">
+			{% if not is_popup and has_delete_permission %}{% if change or show_delete %}<li class="left delete-link-container"><a href="delete/" class="delete-link">{% trans "Delete" %}</a></li>{% endif %}{% endif %}
+		</ul>
+	</div>
+{% endblock %}

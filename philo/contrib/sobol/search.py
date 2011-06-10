@@ -31,7 +31,7 @@ __all__ = (
 
 
 SEARCH_CACHE_SEED = 'philo_sobol_search_results'
-USE_CACHE = getattr(settings, 'SOBOL_USE_SEARCH', True)
+USE_CACHE = getattr(settings, 'SOBOL_USE_CACHE', True)
 
 
 #: A registry for :class:`BaseSearch` subclasses that should be available in the admin.

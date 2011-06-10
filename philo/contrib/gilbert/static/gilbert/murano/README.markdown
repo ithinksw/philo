@@ -11,4 +11,8 @@ Include ```path/to/murano/css/murano.css``` in place of the default Ext JS style
 Modifying Murano
 ================
 
+Editing Murano requires [Compass][].
+
 To edit Murano for contribution or your own use, you will need to update ```$ext_path``` in config.rb and run ```compass watch``` or ```compass compile``` from this directory.
+
+[Compass]:http://compass-style.org/

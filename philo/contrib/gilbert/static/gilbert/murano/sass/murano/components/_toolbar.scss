@@ -17,12 +17,6 @@
 	white-space:nowrap;
 }
 
-.x-window, .x-panel-default-framed{
-	.x-toolbar-docked-bottom{
-		@include border-radius(0 0 #{$base-border-radius-width - 2px} #{$base-border-radius-width - 2px});
-	}
-}
-
 .x-toolbar-separator{
 	border-right:1px solid wha(.25);
 	border-left:1px solid bla(.25);

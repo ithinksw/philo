@@ -2,6 +2,10 @@
 	background: $panel-background;
 	overflow:hidden;
 	position:relative;
+	border:1px solid wha(.15);
+	border-top:0;
+	margin-top:0;
+	margin:-1px;
 }
 
 .x-panel, .x-window{
@@ -21,6 +25,10 @@
 	padding: $panel-header-padding;
 }
 
+.x-panel-header-vertical{
+	@include background($gloss-vertical-gradient);
+}
+
 .x-panel-body{
 	position:relative;
 	padding: $panel-body-padding;
@@ -31,7 +39,7 @@
 .x-panel-default-framed{	
 	border:1px solid wha(.5);
 	border-top-color: wha(1);
-	@include border-radius($base-border-radius-width);
+	@include border-radius($base-border-radius-width $base-border-radius-width 0 0);
 }
 
 .x-panel-default-framed .x-panel-header{

@@ -1,8 +1,11 @@
 $include-default: false;
 $scope-reset-css: false;
 
+html, body{
+	background: #444;
+}
+
 body{
-	background:#CCC url('http://apod.nasa.gov/apod/image/1010/LagoonClose_hst.jpg') center center repeat fixed;
 	text-shadow: 0 -1px 0 rgba(0,0,0,.25);
 }
 

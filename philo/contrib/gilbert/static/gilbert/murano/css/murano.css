@@ -5,50 +5,53 @@
 /* WINDOW VARIABLES *
  * ---------------- */
 /* line 4, ../sass/murano/_core.scss */
+html, body {
+  background: #444; }
+
+/* line 8, ../sass/murano/_core.scss */
 body {
-  background: #cccccc url("http://apod.nasa.gov/apod/image/1010/LagoonClose_hst.jpg") center center repeat fixed;
   text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25); }
 
 /* WAT IS THIS I DON'T EVEN  *
  * ------------------------- */
-/* line 12, ../sass/murano/_core.scss */
+/* line 15, ../sass/murano/_core.scss */
 .x-border-layout-ct {
   background: transparent !important; }
 
-/* line 16, ../sass/murano/_core.scss */
+/* line 19, ../sass/murano/_core.scss */
 .x-css-shadow {
   display: none !important; }
 
-/* line 20, ../sass/murano/_core.scss */
+/* line 23, ../sass/murano/_core.scss */
 .x-tool img {
   background-image: url("../img/tools/tool-sprites.png") !important; }
 
-/* line 24, ../sass/murano/_core.scss */
+/* line 27, ../sass/murano/_core.scss */
 .x-layout-split-left {
   background: url("../img/util/splitter/mini-left.png") no-repeat top right !important; }
 
-/* line 28, ../sass/murano/_core.scss */
+/* line 31, ../sass/murano/_core.scss */
 .x-layout-split-right {
   background: url("../img/util/splitter/mini-right.png") no-repeat top left !important; }
 
-/* line 32, ../sass/murano/_core.scss */
+/* line 35, ../sass/murano/_core.scss */
 .x-layout-split-top {
   background: url("../img/util/splitter/mini-bottom.png") no-repeat top left !important; }
 
-/* line 36, ../sass/murano/_core.scss */
+/* line 39, ../sass/murano/_core.scss */
 .x-layout-split-bottom {
   background: url("../img/util/splitter/mini-top.png") no-repeat top left !important; }
 
-/* line 41, ../sass/murano/_core.scss */
+/* line 44, ../sass/murano/_core.scss */
 .x-splitter-collapsed .x-layout-split-left {
   background: url("../img/util/splitter/mini-right.png") no-repeat top left !important; }
-/* line 45, ../sass/murano/_core.scss */
+/* line 48, ../sass/murano/_core.scss */
 .x-splitter-collapsed .x-layout-split-right {
   background: url("../img/util/splitter/mini-left.png") no-repeat top right !important; }
-/* line 49, ../sass/murano/_core.scss */
+/* line 52, ../sass/murano/_core.scss */
 .x-splitter-collapsed .x-layout-split-top {
   background: url("../img/util/splitter/mini-top.png") no-repeat top left !important; }
-/* line 53, ../sass/murano/_core.scss */
+/* line 56, ../sass/murano/_core.scss */
 .x-splitter-collapsed .x-layout-split-bottom {
   background: url("../img/util/splitter/mini-bottom.png") no-repeat top left !important; }
 
@@ -58,13 +61,17 @@ body {
 .x-panel {
   background: rgba(0, 0, 0, 0.85);
   overflow: hidden;
-  position: relative; }
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-top: 0;
+  margin-top: 0;
+  margin: -1px; }
 
-/* line 9, ../sass/murano/components/_panel.scss */
+/* line 13, ../sass/murano/components/_panel.scss */
 .x-panel .x-panel .x-panel-body, .x-window .x-panel .x-panel-body {
   background: #222; }
 
-/* line 15, ../sass/murano/components/_panel.scss */
+/* line 19, ../sass/murano/components/_panel.scss */
 .x-panel-header {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0)));
   background: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
@@ -80,25 +87,33 @@ body {
   height: 24px;
   padding: 0 3px 0 6px; }
 
-/* line 24, ../sass/murano/components/_panel.scss */
+/* line 28, ../sass/murano/components/_panel.scss */
+.x-panel-header-vertical {
+  background: -webkit-gradient(linear, 0% 50%, 100% 50%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0)));
+  background: -webkit-linear-gradient(left, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
+  background: -moz-linear-gradient(left, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
+  background: -o-linear-gradient(left, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(left, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%); }
+
+/* line 32, ../sass/murano/components/_panel.scss */
 .x-panel-body {
   position: relative;
   padding: 0; }
 
 /* FRAMED PANEL
  * ------------ */
-/* line 31, ../sass/murano/components/_panel.scss */
+/* line 39, ../sass/murano/components/_panel.scss */
 .x-panel-default-framed {
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-top-color: white;
-  -moz-border-radius: 6px;
-  -webkit-border-radius: 6px;
-  -o-border-radius: 6px;
-  -ms-border-radius: 6px;
-  -khtml-border-radius: 6px;
-  border-radius: 6px; }
+  -moz-border-radius: 6px 6px 0 0;
+  -webkit-border-radius: 6px 6px 0 0;
+  -o-border-radius: 6px 6px 0 0;
+  -ms-border-radius: 6px 6px 0 0;
+  -khtml-border-radius: 6px 6px 0 0;
+  border-radius: 6px 6px 0 0; }
 
-/* line 37, ../sass/murano/components/_panel.scss */
+/* line 45, ../sass/murano/components/_panel.scss */
 .x-panel-default-framed .x-panel-header {
   border-top: 0;
   -moz-border-radius: 6px 6px 0 0;
@@ -113,7 +128,7 @@ body {
 
 /* MASKED PANEL
  * ------------ */
-/* line 50, ../sass/murano/components/_panel.scss */
+/* line 58, ../sass/murano/components/_panel.scss */
 .x-mask-msg {
   background: #333333 !important;
   background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0))) !important;
@@ -133,7 +148,7 @@ body {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.75);
   border: 1px solid #333333 !important;
   border-top: 1px solid #888888 !important; }
-  /* line 57, ../sass/murano/components/_panel.scss */
+  /* line 65, ../sass/murano/components/_panel.scss */
   .x-mask-msg div {
     background-color: black !important;
     -moz-border-radius: 3px;
@@ -149,12 +164,12 @@ body {
 /* line 1, ../sass/murano/components/_window.scss */
 .x-window {
   background: rgba(0, 0, 0, 0.85);
-  -moz-border-radius: 6px;
-  -webkit-border-radius: 6px;
-  -o-border-radius: 6px;
-  -ms-border-radius: 6px;
-  -khtml-border-radius: 6px;
-  border-radius: 6px;
+  -moz-border-radius: 6px 6px 0 0;
+  -webkit-border-radius: 6px 6px 0 0;
+  -o-border-radius: 6px 6px 0 0;
+  -ms-border-radius: 6px 6px 0 0;
+  -khtml-border-radius: 6px 6px 0 0;
+  border-radius: 6px 6px 0 0;
   -moz-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.425), 0 0 0 1px rgba(0, 0, 0, 0.425) inset;
   -webkit-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.425), 0 0 0 1px rgba(0, 0, 0, 0.425) inset;
   -o-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.425), 0 0 0 1px rgba(0, 0, 0, 0.425) inset;
@@ -407,24 +422,25 @@ button {
   padding: 2px 5px;
   color: #222;
   text-shadow: 0 1px 0 #FFF;
-  white-space: nowrap; }
+  white-space: nowrap;
+  border-right: 1px solid rgba(0, 0, 0, 0.1); }
 
-/* line 19, ../sass/murano/components/_grid.scss */
+/* line 20, ../sass/murano/components/_grid.scss */
 .x-column-header {
   overflow: hidden; }
-  /* line 21, ../sass/murano/components/_grid.scss */
+  /* line 22, ../sass/murano/components/_grid.scss */
   .x-column-header .x-column-header-trigger {
     display: none;
     background: transparent url("../img/triggericons/spinner-down.png") center 6px no-repeat;
     width: 20px; }
-  /* line 27, ../sass/murano/components/_grid.scss */
+  /* line 28, ../sass/murano/components/_grid.scss */
   .x-column-header-over .x-column-header-trigger, .x-column-header-open .x-column-header-trigger {
     display: block;
     background-color: #AAA;
     border-left: 1px solid #FFF;
     border-right: 1px solid #888; }
 
-/* line 37, ../sass/murano/components/_grid.scss */
+/* line 38, ../sass/murano/components/_grid.scss */
 .x-column-header-sort-DESC, .x-column-header-sort-ASC {
   border-top: 1px solid #BBB;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #aaaaaa), color-stop(100%, #888888));
@@ -438,7 +454,7 @@ button {
   box-shadow: 0 1px 0 0 #777777;
   text-shadow: 0 1px 0 #DDD; }
 
-/* line 44, ../sass/murano/components/_grid.scss */
+/* line 45, ../sass/murano/components/_grid.scss */
 .x-column-header-trigger {
   width: 14px;
   height: 100%;
@@ -446,44 +462,44 @@ button {
   top: 0;
   right: 0; }
 
-/* line 53, ../sass/murano/components/_grid.scss */
+/* line 54, ../sass/murano/components/_grid.scss */
 .x-grid-table {
   font-size: inherit;
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed; }
-  /* line 58, ../sass/murano/components/_grid.scss */
+  /* line 59, ../sass/murano/components/_grid.scss */
   .x-grid-table td, .x-grid-table th {
     overflow: hidden;
     text-align: left;
     white-space: nowrap;
     vertical-align: top; }
 
-/* line 65, ../sass/murano/components/_grid.scss */
+/* line 66, ../sass/murano/components/_grid.scss */
 .x-grid-cell-inner {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 3px 6px; }
 
-/* line 74, ../sass/murano/components/_grid.scss */
+/* line 75, ../sass/murano/components/_grid.scss */
 .x-grid-row td {
   border-top: 1px solid transparent;
   border-bottom: 1px solid transparent; }
 
-/* line 80, ../sass/murano/components/_grid.scss */
+/* line 81, ../sass/murano/components/_grid.scss */
 .x-grid-row-alt {
   background: rgba(255, 255, 255, 0.1); }
-  /* line 82, ../sass/murano/components/_grid.scss */
+  /* line 83, ../sass/murano/components/_grid.scss */
   .x-grid-row-alt td {
     border-top: 1px solid rgba(255, 255, 255, 0.05);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 
-/* line 89, ../sass/murano/components/_grid.scss */
+/* line 90, ../sass/murano/components/_grid.scss */
 .x-grid-row-over td {
   background: rgba(255, 255, 255, 0.05); }
 
-/* line 94, ../sass/murano/components/_grid.scss */
+/* line 95, ../sass/murano/components/_grid.scss */
 .x-grid-row-selected {
   background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0)));
   background-image: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
@@ -491,12 +507,12 @@ button {
   background-image: -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
   background-image: linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
   background-color: #222; }
-  /* line 97, ../sass/murano/components/_grid.scss */
+  /* line 98, ../sass/murano/components/_grid.scss */
   .x-grid-row-selected td {
     border-top: 1px solid #CCC;
     border-bottom: 1px solid #777; }
 
-/* line 103, ../sass/murano/components/_grid.scss */
+/* line 104, ../sass/murano/components/_grid.scss */
 .x-grid-resize-marker {
   background: #FFF;
   width: 1px;
@@ -523,16 +539,7 @@ button {
   margin-left: 10px;
   white-space: nowrap; }
 
-/* line 21, ../sass/murano/components/_toolbar.scss */
-.x-window .x-toolbar-docked-bottom, .x-panel-default-framed .x-toolbar-docked-bottom {
-  -moz-border-radius: 0 0 4px 4px;
-  -webkit-border-radius: 0 0 4px 4px;
-  -o-border-radius: 0 0 4px 4px;
-  -ms-border-radius: 0 0 4px 4px;
-  -khtml-border-radius: 0 0 4px 4px;
-  border-radius: 0 0 4px 4px; }
-
-/* line 26, ../sass/murano/components/_toolbar.scss */
+/* line 20, ../sass/murano/components/_toolbar.scss */
 .x-toolbar-separator {
   border-right: 1px solid rgba(255, 255, 255, 0.25);
   border-left: 1px solid rgba(0, 0, 0, 0.25);

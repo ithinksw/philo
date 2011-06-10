@@ -10,9 +10,8 @@
 		.favored td{
 			font-weight:bold;
 		}
-		#changelist{
-			border:none;
-			background:none;
+		#changelist table{
+			width:100%;
 		}
 	</style>
 {% endblock %}
@@ -36,9 +35,9 @@
 			</tbody>
 		</table>
 	</div>
-	<div class="module footer">
-		<ul class="submit-row">
-			{% if not is_popup and has_delete_permission %}{% if change or show_delete %}<li class="left delete-link-container"><a href="delete/" class="delete-link">{% trans "Delete" %}</a></li>{% endif %}{% endif %}
-		</ul>
+	{% block submit_row %}
+	<div class="submit-row">
+		{% if not is_popup and has_delete_permission %}{% if change or show_delete %}<p class="deletelink-box"><a href="delete/" class="deletelink">{% trans "Delete" %}</a></p>{% endif %}{% endif %}
 	</div>
+	{% endblock %}
 {% endblock %}

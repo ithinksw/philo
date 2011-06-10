@@ -56,7 +56,7 @@
 	right:3px;
 	width:11px;
 	height:11px;
-	background: theme-image($theme-name, 'tab/tab-close.png');
+	background: murano-image('tab/tab-close.png');
 	text-indent:-119988px;
 }
 
@@ -76,7 +76,7 @@
 }
 
 .x-tabbar-scroll-left{
-	background: theme-image($theme-name, 'tab-bar/l.png') !important;
+	background: murano-image('tab-bar/l.png') !important;
 	&-hover{
 		background-position:left center !important;
 	}
@@ -87,7 +87,7 @@
 
 
 .x-tabbar-scroll-right{
-	background: theme-image($theme-name, 'tab-bar/r.png') !important;
+	background: murano-image('tab-bar/r.png') !important;
 	&-hover{
 		background-position:left center !important;
 	}

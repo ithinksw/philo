@@ -17,7 +17,7 @@
 	.x-form-spinner-up{
 		height:10px;
 		@include border-radius(0 3px 0 0);
-		background:#666 theme-image($theme-name,'triggericons/spinner-up.png') center top no-repeat;
+		background:#666 murano-image('triggericons/spinner-up.png') center top no-repeat;
 		border-bottom:1px solid #444;
 		&-over{
 			background-color:#999;
@@ -27,7 +27,7 @@
 		height:9px;
 		border-top:none;
 		@include border-radius(0 0 3px 0);
-		background:#555 theme-image($theme-name,'triggericons/spinner-down.png') center top no-repeat;
+		background:#555 murano-image('triggericons/spinner-down.png') center top no-repeat;
 		border-top:1px solid #888;
 		&-over{
 			background-color:#888;
@@ -78,8 +78,8 @@
 	border-right-color:#888;
 }
 
-@include trigger(arrow, theme-image($theme-name,'triggericons/chev.png'));
-@include trigger(time, theme-image($theme-name,'triggericons/time.png'));
-@include trigger(date, theme-image($theme-name,'triggericons/date.png'));
-@include trigger(clear, theme-image($theme-name,'triggericons/clear.png'));
-@include trigger(search, theme-image($theme-name,'triggericons/search.png'));
+@include trigger(arrow, murano-image('triggericons/chev.png'));
+@include trigger(time, murano-image('triggericons/time.png'));
+@include trigger(date, murano-image('triggericons/date.png'));
+@include trigger(clear, murano-image('triggericons/clear.png'));
+@include trigger(search, murano-image('triggericons/search.png'));

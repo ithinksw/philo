@@ -21,36 +21,36 @@ body {
 
 /* line 20, ../sass/murano/_core.scss */
 .x-tool img {
-  background-image: url('../../extjs/resources/themes/images/murano/tools/tool-sprites.png') !important; }
+  background-image: url("../img/tools/tool-sprites.png") !important; }
 
 /* line 24, ../sass/murano/_core.scss */
 .x-layout-split-left {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-left.png') no-repeat top right !important; }
+  background: url("../img/util/splitter/mini-left.png") no-repeat top right !important; }
 
 /* line 28, ../sass/murano/_core.scss */
 .x-layout-split-right {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-right.png') no-repeat top left !important; }
+  background: url("../img/util/splitter/mini-right.png") no-repeat top left !important; }
 
 /* line 32, ../sass/murano/_core.scss */
 .x-layout-split-top {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-bottom.png') no-repeat top left !important; }
+  background: url("../img/util/splitter/mini-bottom.png") no-repeat top left !important; }
 
 /* line 36, ../sass/murano/_core.scss */
 .x-layout-split-bottom {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-top.png') no-repeat top left !important; }
+  background: url("../img/util/splitter/mini-top.png") no-repeat top left !important; }
 
 /* line 41, ../sass/murano/_core.scss */
 .x-splitter-collapsed .x-layout-split-left {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-right.png') no-repeat top left !important; }
+  background: url("../img/util/splitter/mini-right.png") no-repeat top left !important; }
 /* line 45, ../sass/murano/_core.scss */
 .x-splitter-collapsed .x-layout-split-right {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-left.png') no-repeat top right !important; }
+  background: url("../img/util/splitter/mini-left.png") no-repeat top right !important; }
 /* line 49, ../sass/murano/_core.scss */
 .x-splitter-collapsed .x-layout-split-top {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-top.png') no-repeat top left !important; }
+  background: url("../img/util/splitter/mini-top.png") no-repeat top left !important; }
 /* line 53, ../sass/murano/_core.scss */
 .x-splitter-collapsed .x-layout-split-bottom {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-bottom.png') no-repeat top left !important; }
+  background: url("../img/util/splitter/mini-bottom.png") no-repeat top left !important; }
 
 /* VARIABLES THAT $include-default: false; DOES NOT GET RID OF *
  * ----------------------------------------------------------- */
@@ -362,26 +362,26 @@ button {
 /* line 163, ../sass/murano/components/_button.scss */
 .x-btn-arrow-right {
   padding-right: 14px;
-  background: transparent url('../../extjs/resources/themes/images/murano/btn/menu.png') right center no-repeat; }
+  background: transparent url("../img/btn/menu.png") right center no-repeat; }
 
 /* arrow on botton */
 /* line 169, ../sass/murano/components/_button.scss */
 .x-btn-arrow-bottom {
   padding-bottom: 14px;
-  background: transparent url('../../extjs/resources/themes/images/murano/btn/menu.png') center bottom no-repeat; }
+  background: transparent url("../img/btn/menu.png") center bottom no-repeat; }
 
 /* split on right */
 /* line 176, ../sass/murano/components/_button.scss */
 .x-btn-split-right {
   padding-right: 16px;
-  background: transparent url('../../extjs/resources/themes/images/murano/btn/splith.png') right center no-repeat;
+  background: transparent url("../img/btn/splith.png") right center no-repeat;
   display: block; }
 
 /* split on bottom */
 /* line 184, ../sass/murano/components/_button.scss */
 .x-btn-split-bottom {
   padding-bottom: 16px;
-  background: transparent url('../../extjs/resources/themes/images/murano/btn/splitv.png') center bottom no-repeat;
+  background: transparent url("../img/btn/splitv.png") center bottom no-repeat;
   display: block; }
 
 /* line 1, ../sass/murano/components/_grid.scss */
@@ -415,7 +415,7 @@ button {
   /* line 21, ../sass/murano/components/_grid.scss */
   .x-column-header .x-column-header-trigger {
     display: none;
-    background: transparent url('../../extjs/resources/themes/images/murano/triggericons/spinner-down.png') center 6px no-repeat;
+    background: transparent url("../img/triggericons/spinner-down.png") center 6px no-repeat;
     width: 20px; }
   /* line 27, ../sass/murano/components/_grid.scss */
   .x-column-header-over .x-column-header-trigger, .x-column-header-open .x-column-header-trigger {
@@ -557,91 +557,91 @@ button {
   padding: 0;
   height: 16px;
   margin: 4px 2px;
-  background: transparent url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png') no-repeat; }
+  background: transparent url("../img/editor/tb-sprite.png") no-repeat; }
 
 /* line 26, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-bold,
 .x-menu-item img.x-edit-bold {
   background-position: 0 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 32, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-italic,
 .x-menu-item img.x-edit-italic {
   background-position: -16px 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 38, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-underline,
 .x-menu-item img.x-edit-underline {
   background-position: -32px 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 44, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-forecolor,
 .x-menu-item img.x-edit-forecolor {
   background-position: -160px 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 50, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-backcolor,
 .x-menu-item img.x-edit-backcolor {
   background-position: -176px 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 56, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-justifyleft,
 .x-menu-item img.x-edit-justifyleft {
   background-position: -112px 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 62, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-justifycenter,
 .x-menu-item img.x-edit-justifycenter {
   background-position: -128px 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 68, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-justifyright,
 .x-menu-item img.x-edit-justifyright {
   background-position: -144px 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 74, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-insertorderedlist,
 .x-menu-item img.x-edit-insertorderedlist {
   background-position: -80px 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 80, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-insertunorderedlist,
 .x-menu-item img.x-edit-insertunorderedlist {
   background-position: -96px 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 86, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-increasefontsize,
 .x-menu-item img.x-edit-increasefontsize {
   background-position: -48px 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 92, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-decreasefontsize,
 .x-menu-item img.x-edit-decreasefontsize {
   background-position: -64px 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 98, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-sourceedit,
 .x-menu-item img.x-edit-sourceedit {
   background-position: -192px 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 104, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tb .x-edit-createlink,
 .x-menu-item img.x-edit-createlink {
   background-position: -208px 0;
-  background-image: url('../../extjs/resources/themes/images/murano/editor/tb-sprite.png'); }
+  background-image: url("../img/editor/tb-sprite.png"); }
 
 /* line 109, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-tip .x-tip-bd .x-tip-bd-inner {
@@ -714,19 +714,19 @@ input.x-form-text {
 
 /* line 50, ../sass/murano/components/_form.scss */
 .x-form-checkbox {
-  background: url('../../extjs/resources/themes/images/murano/form/unchecked.png'); }
+  background: url("../img/form/unchecked.png"); }
 
 /* line 53, ../sass/murano/components/_form.scss */
 .x-form-cb-checked .x-form-checkbox {
-  background: url('../../extjs/resources/themes/images/murano/form/checked.png'); }
+  background: url("../img/form/checked.png"); }
 
 /* line 57, ../sass/murano/components/_form.scss */
 .x-form-radio {
-  background: url('../../extjs/resources/themes/images/murano/form/unradioed.png'); }
+  background: url("../img/form/unradioed.png"); }
 
 /* line 60, ../sass/murano/components/_form.scss */
 .x-form-cb-checked .x-form-radio {
-  background: url('../../extjs/resources/themes/images/murano/form/radioed.png'); }
+  background: url("../img/form/radioed.png"); }
 
 /* line 64, ../sass/murano/components/_form.scss */
 .x-form-cb-label-after {
@@ -737,7 +737,7 @@ input.x-form-text {
   width: 20px;
   height: 19px;
   float: left;
-  background: url('../../extjs/resources/themes/images/murano/form/exclamation.png') right center no-repeat; }
+  background: url("../img/form/exclamation.png") right center no-repeat; }
 
 /* line 76, ../sass/murano/components/_form.scss */
 .x-form-field, .x-form-display-field {
@@ -846,7 +846,7 @@ input.x-form-text {
   -ms-border-radius: 0 3px 0 0;
   -khtml-border-radius: 0 3px 0 0;
   border-radius: 0 3px 0 0;
-  background: #666666 url('../../extjs/resources/themes/images/murano/triggericons/spinner-up.png') center top no-repeat;
+  background: #666666 url("../img/triggericons/spinner-up.png") center top no-repeat;
   border-bottom: 1px solid #444; }
   /* line 22, ../sass/murano/components/form/_triggers.scss */
   .x-form-trigger-wrap .x-form-spinner-up-over {
@@ -861,7 +861,7 @@ input.x-form-text {
   -ms-border-radius: 0 0 3px 0;
   -khtml-border-radius: 0 0 3px 0;
   border-radius: 0 0 3px 0;
-  background: #555555 url('../../extjs/resources/themes/images/murano/triggericons/spinner-down.png') center top no-repeat;
+  background: #555555 url("../img/triggericons/spinner-down.png") center top no-repeat;
   border-top: 1px solid #888; }
   /* line 32, ../sass/murano/components/form/_triggers.scss */
   .x-form-trigger-wrap .x-form-spinner-down-over {
@@ -918,43 +918,43 @@ input.x-form-text {
 
 /* line 2, ../sass/murano/components/form/_triggers.scss */
 .x-form-arrow-trigger {
-  background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(0, 0, 0, 0.2)), color-stop(100%, rgba(0, 0, 0, 0))), -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0))), url('../../extjs/resources/themes/images/murano/triggericons/chev.png');
-  background-image: -webkit-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/chev.png');
-  background-image: -moz-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -moz-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/chev.png');
-  background-image: -o-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/chev.png');
-  background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/chev.png'); }
+  background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(0, 0, 0, 0.2)), color-stop(100%, rgba(0, 0, 0, 0))), -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0))), url("../img/triggericons/chev.png");
+  background-image: -webkit-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/chev.png");
+  background-image: -moz-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -moz-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/chev.png");
+  background-image: -o-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/chev.png");
+  background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/chev.png"); }
 
 /* line 2, ../sass/murano/components/form/_triggers.scss */
 .x-form-time-trigger {
-  background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(0, 0, 0, 0.2)), color-stop(100%, rgba(0, 0, 0, 0))), -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0))), url('../../extjs/resources/themes/images/murano/triggericons/time.png');
-  background-image: -webkit-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/time.png');
-  background-image: -moz-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -moz-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/time.png');
-  background-image: -o-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/time.png');
-  background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/time.png'); }
+  background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(0, 0, 0, 0.2)), color-stop(100%, rgba(0, 0, 0, 0))), -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0))), url("../img/triggericons/time.png");
+  background-image: -webkit-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/time.png");
+  background-image: -moz-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -moz-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/time.png");
+  background-image: -o-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/time.png");
+  background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/time.png"); }
 
 /* line 2, ../sass/murano/components/form/_triggers.scss */
 .x-form-date-trigger {
-  background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(0, 0, 0, 0.2)), color-stop(100%, rgba(0, 0, 0, 0))), -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0))), url('../../extjs/resources/themes/images/murano/triggericons/date.png');
-  background-image: -webkit-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/date.png');
-  background-image: -moz-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -moz-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/date.png');
-  background-image: -o-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/date.png');
-  background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/date.png'); }
+  background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(0, 0, 0, 0.2)), color-stop(100%, rgba(0, 0, 0, 0))), -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0))), url("../img/triggericons/date.png");
+  background-image: -webkit-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/date.png");
+  background-image: -moz-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -moz-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/date.png");
+  background-image: -o-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/date.png");
+  background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/date.png"); }
 
 /* line 2, ../sass/murano/components/form/_triggers.scss */
 .x-form-clear-trigger {
-  background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(0, 0, 0, 0.2)), color-stop(100%, rgba(0, 0, 0, 0))), -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0))), url('../../extjs/resources/themes/images/murano/triggericons/clear.png');
-  background-image: -webkit-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/clear.png');
-  background-image: -moz-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -moz-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/clear.png');
-  background-image: -o-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/clear.png');
-  background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/clear.png'); }
+  background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(0, 0, 0, 0.2)), color-stop(100%, rgba(0, 0, 0, 0))), -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0))), url("../img/triggericons/clear.png");
+  background-image: -webkit-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/clear.png");
+  background-image: -moz-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -moz-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/clear.png");
+  background-image: -o-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/clear.png");
+  background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/clear.png"); }
 
 /* line 2, ../sass/murano/components/form/_triggers.scss */
 .x-form-search-trigger {
-  background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(0, 0, 0, 0.2)), color-stop(100%, rgba(0, 0, 0, 0))), -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0))), url('../../extjs/resources/themes/images/murano/triggericons/search.png');
-  background-image: -webkit-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/search.png');
-  background-image: -moz-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -moz-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/search.png');
-  background-image: -o-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/search.png');
-  background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url('../../extjs/resources/themes/images/murano/triggericons/search.png'); }
+  background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(0, 0, 0, 0.2)), color-stop(100%, rgba(0, 0, 0, 0))), -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0))), url("../img/triggericons/search.png");
+  background-image: -webkit-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/search.png");
+  background-image: -moz-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -moz-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/search.png");
+  background-image: -o-linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/search.png");
+  background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)), linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%), url("../img/triggericons/search.png"); }
 
 /* line 1, ../sass/murano/components/form/_slider.scss */
 .x-slider {
@@ -992,38 +992,47 @@ input.x-form-text {
   box-shadow: 0 0 3px 0 rgba(0, 0, 0, 0.35); }
 
 /* line 19, ../sass/murano/components/form/_slider.scss */
+.x-slider-thumb-over {
+  border-color: #FFF;
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #cccccc), color-stop(100%, #ffffff));
+  background: -webkit-linear-gradient(#cccccc, #ffffff);
+  background: -moz-linear-gradient(#cccccc, #ffffff);
+  background: -o-linear-gradient(#cccccc, #ffffff);
+  background: linear-gradient(#cccccc, #ffffff); }
+
+/* line 24, ../sass/murano/components/form/_slider.scss */
 .x-slider-horz {
   -moz-box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.15), 0 2px 5px 0 rgba(0, 0, 0, 0.25) inset;
   -webkit-box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.15), 0 2px 5px 0 rgba(0, 0, 0, 0.25) inset;
   -o-box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.15), 0 2px 5px 0 rgba(0, 0, 0, 0.25) inset;
   box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.15), 0 2px 5px 0 rgba(0, 0, 0, 0.25) inset;
   height: 10px; }
-  /* line 22, ../sass/murano/components/form/_slider.scss */
+  /* line 27, ../sass/murano/components/form/_slider.scss */
   .x-slider-horz .x-slider-end {
     padding-right: 12px;
     height: 10px; }
-  /* line 26, ../sass/murano/components/form/_slider.scss */
+  /* line 31, ../sass/murano/components/form/_slider.scss */
   .x-slider-horz .x-slider-inner {
     height: 10px; }
-  /* line 29, ../sass/murano/components/form/_slider.scss */
+  /* line 34, ../sass/murano/components/form/_slider.scss */
   .x-slider-horz .x-slider-thumb {
     margin-left: 5px; }
 
-/* line 34, ../sass/murano/components/form/_slider.scss */
+/* line 39, ../sass/murano/components/form/_slider.scss */
 .x-slider-vert {
   -moz-box-shadow: 1px 0 0 0 rgba(255, 255, 255, 0.15), 2px 0 5px 0 rgba(0, 0, 0, 0.25) inset;
   -webkit-box-shadow: 1px 0 0 0 rgba(255, 255, 255, 0.15), 2px 0 5px 0 rgba(0, 0, 0, 0.25) inset;
   -o-box-shadow: 1px 0 0 0 rgba(255, 255, 255, 0.15), 2px 0 5px 0 rgba(0, 0, 0, 0.25) inset;
   box-shadow: 1px 0 0 0 rgba(255, 255, 255, 0.15), 2px 0 5px 0 rgba(0, 0, 0, 0.25) inset;
   width: 10px; }
-  /* line 37, ../sass/murano/components/form/_slider.scss */
+  /* line 42, ../sass/murano/components/form/_slider.scss */
   .x-slider-vert .x-slider-inner {
     width: 10px; }
-  /* line 40, ../sass/murano/components/form/_slider.scss */
+  /* line 45, ../sass/murano/components/form/_slider.scss */
   .x-slider-vert .x-slider-end {
     padding-bottom: 10px;
     width: 10px; }
-  /* line 44, ../sass/murano/components/form/_slider.scss */
+  /* line 49, ../sass/murano/components/form/_slider.scss */
   .x-slider-vert .x-slider-thumb {
     margin-top: 4px;
     margin-bottom: 4px; }
@@ -1100,7 +1109,7 @@ input.x-form-text {
   right: 3px;
   width: 11px;
   height: 11px;
-  background: url('../../extjs/resources/themes/images/murano/tab/tab-close.png');
+  background: url("../img/tab/tab-close.png");
   text-indent: -119988px; }
 
 /* line 63, ../sass/murano/components/_tab.scss */
@@ -1120,7 +1129,7 @@ input.x-form-text {
 
 /* line 78, ../sass/murano/components/_tab.scss */
 .x-tabbar-scroll-left {
-  background: url('../../extjs/resources/themes/images/murano/tab-bar/l.png') !important; }
+  background: url("../img/tab-bar/l.png") !important; }
   /* line 80, ../sass/murano/components/_tab.scss */
   .x-tabbar-scroll-left-hover {
     background-position: left center !important; }
@@ -1130,7 +1139,7 @@ input.x-form-text {
 
 /* line 89, ../sass/murano/components/_tab.scss */
 .x-tabbar-scroll-right {
-  background: url('../../extjs/resources/themes/images/murano/tab-bar/r.png') !important; }
+  background: url("../img/tab-bar/r.png") !important; }
   /* line 91, ../sass/murano/components/_tab.scss */
   .x-tabbar-scroll-right-hover {
     background-position: left center !important; }
@@ -1249,7 +1258,7 @@ input.x-form-text {
     display: block;
     height: 15px;
     width: 15px;
-    background: url('../../extjs/resources/themes/images/murano/shared/btn-left.png'); }
+    background: url("../img/shared/btn-left.png"); }
 
 /* line 18, ../sass/murano/components/_datepicker.scss */
 .x-datepicker-next {
@@ -1257,7 +1266,7 @@ input.x-form-text {
   left: auto; }
   /* line 21, ../sass/murano/components/_datepicker.scss */
   .x-datepicker-next a {
-    background: url('../../extjs/resources/themes/images/murano/shared/btn-right.png'); }
+    background: url("../img/shared/btn-right.png"); }
 
 /* line 25, ../sass/murano/components/_datepicker.scss */
 .x-datepicker-header, .x-datepicker-footer {
@@ -1402,11 +1411,11 @@ input.x-form-text {
   display: block;
   height: 15px;
   width: 15px;
-  background: url('../../extjs/resources/themes/images/murano/shared/btn-left.png'); }
+  background: url("../img/shared/btn-left.png"); }
 
 /* line 130, ../sass/murano/components/_datepicker.scss */
 .x-monthpicker-yearnav-next {
-  background: url('../../extjs/resources/themes/images/murano/shared/btn-right.png'); }
+  background: url("../img/shared/btn-right.png"); }
 
 /* line 133, ../sass/murano/components/_datepicker.scss */
 .x-monthpicker .x-btn, .x-monthpicker .x-btn-pressed {
@@ -1438,35 +1447,35 @@ input.x-form-text {
 
 /* line 1, ../sass/murano/components/_sizer.scss */
 .x-resizable-handle-west {
-  background: transparent url('../../extjs/resources/themes/images/murano/sizer/w.png') left center no-repeat !important; }
+  background: transparent url("../img/sizer/w.png") left center no-repeat !important; }
 
 /* line 4, ../sass/murano/components/_sizer.scss */
 .x-resizable-handle-east {
-  background: transparent url('../../extjs/resources/themes/images/murano/sizer/e.png') right center no-repeat !important; }
+  background: transparent url("../img/sizer/e.png") right center no-repeat !important; }
 
 /* line 7, ../sass/murano/components/_sizer.scss */
 .x-resizable-handle-north {
-  background: transparent url('../../extjs/resources/themes/images/murano/sizer/n.png') top center no-repeat !important; }
+  background: transparent url("../img/sizer/n.png") top center no-repeat !important; }
 
 /* line 10, ../sass/murano/components/_sizer.scss */
 .x-resizable-handle-south {
-  background: transparent url('../../extjs/resources/themes/images/murano/sizer/s.png') bottom center no-repeat !important; }
+  background: transparent url("../img/sizer/s.png") bottom center no-repeat !important; }
 
 /* line 13, ../sass/murano/components/_sizer.scss */
 .x-resizable-handle-northwest {
-  background: transparent url('../../extjs/resources/themes/images/murano/sizer/nw.png') left top no-repeat !important; }
+  background: transparent url("../img/sizer/nw.png") left top no-repeat !important; }
 
 /* line 16, ../sass/murano/components/_sizer.scss */
 .x-resizable-handle-northeast {
-  background: transparent url('../../extjs/resources/themes/images/murano/sizer/ne.png') right top no-repeat !important; }
+  background: transparent url("../img/sizer/ne.png") right top no-repeat !important; }
 
 /* line 19, ../sass/murano/components/_sizer.scss */
 .x-resizable-handle-southwest {
-  background: transparent url('../../extjs/resources/themes/images/murano/sizer/sw.png') left bottom no-repeat !important; }
+  background: transparent url("../img/sizer/sw.png") left bottom no-repeat !important; }
 
 /* line 22, ../sass/murano/components/_sizer.scss */
 .x-resizable-handle-southeast {
-  background: transparent url('../../extjs/resources/themes/images/murano/sizer/se.png') right bottom no-repeat !important; }
+  background: transparent url("../img/sizer/se.png") right bottom no-repeat !important; }
 
 /* line 10, ../sass/murano/components/_tree.scss */
 .x-tree-panel .x-grid-row-selected {
@@ -1548,47 +1557,47 @@ input.x-form-text {
 
 /* line 90, ../sass/murano/components/_tree.scss */
 .x-tree-lines .x-tree-elbow {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/elbow.gif'); }
+  background-image: url("../img/tree/elbow.gif"); }
 /* line 94, ../sass/murano/components/_tree.scss */
 .x-tree-lines .x-tree-elbow-end {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/elbow-end.gif'); }
+  background-image: url("../img/tree/elbow-end.gif"); }
 /* line 98, ../sass/murano/components/_tree.scss */
 .x-tree-lines .x-tree-elbow-plus {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/elbow-plus.gif'); }
-/* line 102, ../sass/murano/components/_tree.scss */
+  background-image: url("../../fugue-icons/icons-shadowless/plus-small-white.png"); }
+/* line 103, ../sass/murano/components/_tree.scss */
 .x-tree-lines .x-tree-elbow-end-plus {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/elbow-end-plus.gif'); }
-/* line 106, ../sass/murano/components/_tree.scss */
+  background-image: url("../../fugue-icons/icons-shadowless/plus-small-white.png"); }
+/* line 108, ../sass/murano/components/_tree.scss */
 .x-tree-lines .x-grid-tree-node-expanded .x-tree-elbow-plus {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/elbow-minus.gif'); }
-/* line 110, ../sass/murano/components/_tree.scss */
+  background-image: url("../../fugue-icons/icons-shadowless/minus-small-white.png"); }
+/* line 113, ../sass/murano/components/_tree.scss */
 .x-tree-lines .x-grid-tree-node-expanded .x-tree-elbow-end-plus {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/elbow-end-minus.gif'); }
-/* line 114, ../sass/murano/components/_tree.scss */
+  background-image: url("../../fugue-icons/icons-shadowless/minus-small-white.png"); }
+/* line 118, ../sass/murano/components/_tree.scss */
 .x-tree-lines .x-tree-elbow-line {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/elbow-line.gif'); }
+  background-image: url("../img/tree/elbow-line.gif"); }
 
-/* line 121, ../sass/murano/components/_tree.scss */
+/* line 125, ../sass/murano/components/_tree.scss */
 .x-tree-no-lines .x-tree-elbow-plus,
 .x-tree-no-lines .x-tree-elbow-end-plus {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/elbow-plus-nl.gif'); }
-/* line 126, ../sass/murano/components/_tree.scss */
+  background-image: url("../img/tree/elbow-plus-nl.gif"); }
+/* line 130, ../sass/murano/components/_tree.scss */
 .x-tree-no-lines .x-grid-tree-node-expanded .x-tree-elbow-plus,
 .x-tree-no-lines .x-grid-tree-node-expanded .x-tree-elbow-end-plus {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/elbow-end-minus-nl.gif'); }
+  background-image: url("../img/tree/elbow-end-minus-nl.gif"); }
 
-/* line 135, ../sass/murano/components/_tree.scss */
+/* line 139, ../sass/murano/components/_tree.scss */
 .x-tree-arrows .x-tree-elbow-plus,
 .x-tree-arrows .x-tree-elbow-minus,
 .x-tree-arrows .x-tree-elbow-end-plus,
 .x-tree-arrows .x-tree-elbow-end-minus {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/arrows.gif'); }
+  background-image: url("../img/tree/arrows.gif"); }
 
-/* line 140, ../sass/murano/components/_tree.scss */
+/* line 144, ../sass/murano/components/_tree.scss */
 .x-tree-icon {
   margin-right: 3px; }
 
-/* line 149, ../sass/murano/components/_tree.scss */
+/* line 153, ../sass/murano/components/_tree.scss */
 .x-tree-elbow,
 .x-tree-elbow-end,
 .x-tree-elbow-plus,
@@ -1598,112 +1607,112 @@ input.x-form-text {
   height: 16px;
   width: 16px; }
 
-/* line 154, ../sass/murano/components/_tree.scss */
+/* line 158, ../sass/murano/components/_tree.scss */
 .x-tree-icon-leaf {
   width: 16px;
-  background-image: url('../../extjs/resources/themes/images/murano/tree/leaf.gif'); }
+  background-image: url("../../fugue-icons/icons-shadowless/leaf.png"); }
 
-/* line 159, ../sass/murano/components/_tree.scss */
+/* line 163, ../sass/murano/components/_tree.scss */
 .x-tree-icon-parent {
   width: 16px;
-  background-image: url('../../extjs/resources/themes/images/murano/tree/folder.gif'); }
-
-/* line 164, ../sass/murano/components/_tree.scss */
-.x-grid-tree-node-expanded .x-tree-icon-parent {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/folder-open.gif'); }
+  background-image: url("../../fugue-icons/icons-shadowless/folder-horizontal.png"); }
 
 /* line 168, ../sass/murano/components/_tree.scss */
+.x-grid-tree-node-expanded .x-tree-icon-parent {
+  background-image: url("../../fugue-icons/icons-shadowless/folder-horizontal-open.png"); }
+
+/* line 172, ../sass/murano/components/_tree.scss */
 .x-grid-rowbody {
   padding: 0; }
 
-/* line 172, ../sass/murano/components/_tree.scss */
+/* line 176, ../sass/murano/components/_tree.scss */
 .x-tree-panel .x-grid-cell-inner {
   padding: 0px; }
 
-/* line 176, ../sass/murano/components/_tree.scss */
+/* line 180, ../sass/murano/components/_tree.scss */
 .x-tree-panel .x-grid-row .x-grid-cell {
   border: none; }
 
-/* line 180, ../sass/murano/components/_tree.scss */
+/* line 184, ../sass/murano/components/_tree.scss */
 .x-tree-panel .x-grid-row .x-grid-cell-inner {
   height: 16px;
   line-height: 16px;
   vertical-align: middle;
   cursor: pointer; }
-  /* line 187, ../sass/murano/components/_tree.scss */
+  /* line 191, ../sass/murano/components/_tree.scss */
   .x-tree-panel .x-grid-row .x-grid-cell-inner img {
     float: left; }
 
-/* line 193, ../sass/murano/components/_tree.scss */
+/* line 197, ../sass/murano/components/_tree.scss */
 .x-ie .x-tree-panel .x-grid-row .x-grid-cell-inner {
   white-space: normal; }
 
-/* line 199, ../sass/murano/components/_tree.scss */
+/* line 203, ../sass/murano/components/_tree.scss */
 .x-tree-checkbox {
   float: left;
   margin: 2px 3px 0 0;
   display: block;
   width: 16px;
   height: 16px;
-  background: url('../../extjs/resources/themes/images/murano/url('../../extjs/resources/themes/images/murano/form/unchecked.png')') no-repeat;
+  background: url('../img/url("../img/form/unchecked.png")') no-repeat;
   overflow: hidden;
   padding: 0;
   border: 0; }
-  /* line 211, ../sass/murano/components/_tree.scss */
+  /* line 215, ../sass/murano/components/_tree.scss */
   .x-tree-checkbox::-moz-focus-inner {
     padding: 0;
     border: 0; }
 
 /* Hack for IE; causes alignment problem in IE9 standards mode so exclude that */
-/* line 219, ../sass/murano/components/_tree.scss */
+/* line 223, ../sass/murano/components/_tree.scss */
 .x-nbr.x-ie .x-tree-checkbox {
   font-size: 0; }
 
-/* line 224, ../sass/murano/components/_tree.scss */
+/* line 228, ../sass/murano/components/_tree.scss */
 .x-tree-checkbox-checked {
-  background: url('../../extjs/resources/themes/images/murano/url('../../extjs/resources/themes/images/murano/form/checked.png')') no-repeat; }
+  background: url('../img/url("../img/form/checked.png")') no-repeat; }
 
-/* line 229, ../sass/murano/components/_tree.scss */
+/* line 233, ../sass/murano/components/_tree.scss */
 .x-tree-panel .x-grid-cell-inner {
   border-width: 0 !important; }
 
-/* line 236, ../sass/murano/components/_tree.scss */
+/* line 240, ../sass/murano/components/_tree.scss */
 .x-gecko .x-tree-panel .x-grid-row .x-grid-cell-inner {
   line-height: 14px; }
 
-/* line 242, ../sass/murano/components/_tree.scss */
-.x-tree-drop-ok-append .x-dd-drop-icon {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/drop-append.gif'); }
-
 /* line 246, ../sass/murano/components/_tree.scss */
-.x-tree-drop-ok-above .x-dd-drop-icon {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/drop-above.gif'); }
+.x-tree-drop-ok-append .x-dd-drop-icon {
+  background-image: url("../img/tree/drop-append.gif"); }
 
 /* line 250, ../sass/murano/components/_tree.scss */
-.x-tree-drop-ok-below .x-dd-drop-icon {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/drop-below.gif'); }
+.x-tree-drop-ok-above .x-dd-drop-icon {
+  background-image: url("../img/tree/drop-above.gif"); }
 
 /* line 254, ../sass/murano/components/_tree.scss */
-.x-tree-drop-ok-between .x-dd-drop-icon {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/drop-between.gif'); }
+.x-tree-drop-ok-below .x-dd-drop-icon {
+  background-image: url("../img/tree/drop-below.gif"); }
 
 /* line 258, ../sass/murano/components/_tree.scss */
-.x-grid-tree-loading .x-tree-icon {
-  background-image: url('../../extjs/resources/themes/images/murano/tree/loading.gif'); }
+.x-tree-drop-ok-between .x-dd-drop-icon {
+  background-image: url("../img/tree/drop-between.gif"); }
 
 /* line 262, ../sass/murano/components/_tree.scss */
+.x-grid-tree-loading .x-tree-icon {
+  background-image: url("../img/tree/loading.gif"); }
+
+/* line 266, ../sass/murano/components/_tree.scss */
 .x-tree-ddindicator {
   height: 1px;
   border-width: 1px 0px 0px;
   border-style: dotted;
   border-color: green; }
 
-/* line 269, ../sass/murano/components/_tree.scss */
+/* line 273, ../sass/murano/components/_tree.scss */
 .x-grid-tree-loading span {
   font-style: italic;
   color: #444444; }
 
-/* line 274, ../sass/murano/components/_tree.scss */
+/* line 278, ../sass/murano/components/_tree.scss */
 .x-tree-animator-wrap {
   overflow: hidden; }
 
@@ -1759,17 +1768,17 @@ input.x-form-text {
 
 /* line 38, ../sass/murano/components/_menu.scss */
 .x-menu-item-unchecked .x-menu-item-icon {
-  background: url('../../extjs/resources/themes/images/murano/form/unchecked.png'); }
+  background: url("../img/form/unchecked.png"); }
 /* line 41, ../sass/murano/components/_menu.scss */
 .x-menu-item-unchecked .x-menu-group-icon {
-  background: url('../../extjs/resources/themes/images/murano/form/unradioed.png'); }
+  background: url("../img/form/unradioed.png"); }
 
 /* line 46, ../sass/murano/components/_menu.scss */
 .x-menu-item-checked .x-menu-item-icon {
-  background: url('../../extjs/resources/themes/images/murano/form/checked.png'); }
+  background: url("../img/form/checked.png"); }
 /* line 49, ../sass/murano/components/_menu.scss */
 .x-menu-item-checked .x-menu-group-icon {
-  background: url('../../extjs/resources/themes/images/murano/form/radioed.png'); }
+  background: url("../img/form/radioed.png"); }
 
 /* line 54, ../sass/murano/components/_menu.scss */
 .x-menu-item-separator {
@@ -1778,33 +1787,28 @@ input.x-form-text {
   margin: 3px 9px 3px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.25); }
 
-/* line 1, ../sass/murano/components/_scroller.scss */
+/* line 3, ../sass/murano/components/_scroller.scss */
 .x-scroller {
   border: none !important; }
-  /* line 3, ../sass/murano/components/_scroller.scss */
+  /* line 5, ../sass/murano/components/_scroller.scss */
   .x-scroller::-webkit-scrollbar {
     width: 16px;
     height: 16px; }
-    /* line 6, ../sass/murano/components/_scroller.scss */
+    /* line 8, ../sass/murano/components/_scroller.scss */
     .x-scroller::-webkit-scrollbar-track {
       background: transparent; }
-    /* line 9, ../sass/murano/components/_scroller.scss */
+    /* line 11, ../sass/murano/components/_scroller.scss */
     .x-scroller::-webkit-scrollbar-track-piece:start {
       margin-left: 1px;
       margin-top: 1px; }
-    /* line 13, ../sass/murano/components/_scroller.scss */
+    /* line 15, ../sass/murano/components/_scroller.scss */
     .x-scroller::-webkit-scrollbar-track-piece:end {
       margin-right: 1px;
       margin-bottom: 1px; }
-    /* line 17, ../sass/murano/components/_scroller.scss */
+    /* line 19, ../sass/murano/components/_scroller.scss */
     .x-scroller::-webkit-scrollbar-thumb {
       border: 1px solid #000;
-      background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0)));
-      background: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
-      background: -moz-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
-      background: -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
-      background: linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
-      background-color: #222;
+      background-color: #666666;
       -moz-border-radius: 8px;
       -webkit-border-radius: 8px;
       -o-border-radius: 8px;
@@ -1815,16 +1819,52 @@ input.x-form-text {
       -webkit-box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.35) inset, 0 -1px 0 0 black inset;
       -o-box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.35) inset, 0 -1px 0 0 black inset;
       box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.35) inset, 0 -1px 0 0 black inset; }
-      /* line 23, ../sass/murano/components/_scroller.scss */
+      /* line 24, ../sass/murano/components/_scroller.scss */
       .x-scroller::-webkit-scrollbar-thumb:hover {
-        background-color: #333; }
-      /* line 26, ../sass/murano/components/_scroller.scss */
+        background-color: #737373; }
+      /* line 27, ../sass/murano/components/_scroller.scss */
       .x-scroller::-webkit-scrollbar-thumb:active {
-        background-color: #444; }
+        background-color: gray; }
+
+/* line 34, ../sass/murano/components/_scroller.scss */
+.x-scroller-vertical::-webkit-scrollbar-thumb {
+  background-image: -webkit-gradient(linear, 0% 50%, 100% 50%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0)));
+  background-image: -webkit-linear-gradient(left, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
+  background-image: -moz-linear-gradient(left, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
+  background-image: -o-linear-gradient(left, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
+  background-image: linear-gradient(left, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%); }
+
+/* line 37, ../sass/murano/components/_scroller.scss */
+.x-scroller-horizontal::-webkit-scrollbar-thumb {
+  background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0)));
+  background-image: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
+  background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
+  background-image: -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
+  background-image: linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%); }
 
 /* line 1, ../sass/murano/components/_splitter.scss */
 .x-splitter {
   background-color: #000; }
+
+/* line 1, ../sass/murano/components/_icons.scss */
+.x-tbar-page-prev {
+  background: transparent url("../../fugue-icons/icons-shadowless/control-180.png") center center no-repeat; }
+
+/* line 4, ../sass/murano/components/_icons.scss */
+.x-tbar-page-first {
+  background: transparent url("../../fugue-icons/icons-shadowless/control-stop-180.png") center center no-repeat; }
+
+/* line 7, ../sass/murano/components/_icons.scss */
+.x-tbar-page-next {
+  background: transparent url("../../fugue-icons/icons-shadowless/control.png") center center no-repeat; }
+
+/* line 10, ../sass/murano/components/_icons.scss */
+.x-tbar-page-last {
+  background: transparent url("../../fugue-icons/icons-shadowless/control-stop.png") center center no-repeat; }
+
+/* line 13, ../sass/murano/components/_icons.scss */
+.x-tbar-loading {
+  background: transparent url("../../fugue-icons/icons-shadowless/arrow-circle-double-135.png") center center no-repeat; }
 
 /**
  * @var {string} $prefix 
@@ -2158,7 +2198,7 @@ body {
   width: 6px;
   height: 6px;
   float: left;
-  background-image: url('../../extjs/resources/themes/images/murano/shared/shadow.png'); }
+  background-image: url('../extjs/resources/themes/images/default/shared/shadow.png'); }
 
 /* line 157, ../../extjs/resources/themes/stylesheets/ext4/default/core/_core.scss */
 .x-frame-shadow .xsml,
@@ -2166,13 +2206,13 @@ body {
   width: 6px;
   float: left;
   height: 100%;
-  background-image: url('../../extjs/resources/themes/images/murano/shared/shadow-lr.png'); }
+  background-image: url('../extjs/resources/themes/images/default/shared/shadow-lr.png'); }
 
 /* line 164, ../../extjs/resources/themes/stylesheets/ext4/default/core/_core.scss */
 .x-frame-shadow .xsmc {
   float: left;
   height: 100%;
-  background-image: url('../../extjs/resources/themes/images/murano/shared/shadow-c.png'); }
+  background-image: url('../extjs/resources/themes/images/default/shared/shadow-c.png'); }
 
 /* line 171, ../../extjs/resources/themes/stylesheets/ext4/default/core/_core.scss */
 .x-frame-shadow .xst,
@@ -2288,7 +2328,7 @@ body {
   /* line 40, ../../extjs/resources/themes/stylesheets/ext4/default/widgets/_loadmask.scss */
   .x-mask-msg div {
     padding: 5px 10px 5px 25px;
-    background-image: url('../../extjs/resources/themes/images/murano/grid/loading.gif');
+    background-image: url('../extjs/resources/themes/images/default/grid/loading.gif');
     background-repeat: no-repeat;
     background-position: 5px center;
     cursor: wait;
@@ -2355,15 +2395,15 @@ body {
 
 /* line 65, ../../extjs/resources/themes/stylesheets/ext4/default/util/_dragdrop.scss */
 .x-dd-drop-nodrop .x-dd-drop-icon {
-  background-image: url('../../extjs/resources/themes/images/murano/dd/drop-no.gif'); }
+  background-image: url('../extjs/resources/themes/images/default/dd/drop-no.gif'); }
 
 /* line 69, ../../extjs/resources/themes/stylesheets/ext4/default/util/_dragdrop.scss */
 .x-dd-drop-ok .x-dd-drop-icon {
-  background-image: url('../../extjs/resources/themes/images/murano/dd/drop-yes.gif'); }
+  background-image: url('../extjs/resources/themes/images/default/dd/drop-yes.gif'); }
 
 /* line 73, ../../extjs/resources/themes/stylesheets/ext4/default/util/_dragdrop.scss */
 .x-dd-drop-ok-add .x-dd-drop-icon {
-  background-image: url('../../extjs/resources/themes/images/murano/dd/drop-add.gif'); }
+  background-image: url('../extjs/resources/themes/images/default/dd/drop-add.gif'); }
 
 /* line 2, ../../extjs/resources/themes/stylesheets/ext4/default/util/_resizable.scss */
 .x-resizable-handle {
@@ -2524,34 +2564,34 @@ body {
 .x-resizable-pinned .x-resizable-handle-east,
 .x-resizable-pinned .x-resizable-handle-west {
   background-position: left;
-  background-image: url('../../extjs/resources/themes/images/murano/sizer/e-handle.gif'); }
+  background-image: url('../extjs/resources/themes/images/default/sizer/e-handle.gif'); }
 /* line 197, ../../extjs/resources/themes/stylesheets/ext4/default/util/_resizable.scss */
 .x-resizable-over .x-resizable-handle-south,
 .x-resizable-over .x-resizable-handle-north,
 .x-resizable-pinned .x-resizable-handle-south,
 .x-resizable-pinned .x-resizable-handle-north {
   background-position: top;
-  background-image: url('../../extjs/resources/themes/images/murano/sizer/s-handle.gif'); }
+  background-image: url('../extjs/resources/themes/images/default/sizer/s-handle.gif'); }
 /* line 202, ../../extjs/resources/themes/stylesheets/ext4/default/util/_resizable.scss */
 .x-resizable-over .x-resizable-handle-southeast,
 .x-resizable-pinned .x-resizable-handle-southeast {
   background-position: top left;
-  background-image: url('../../extjs/resources/themes/images/murano/sizer/se-handle.gif'); }
+  background-image: url('../extjs/resources/themes/images/default/sizer/se-handle.gif'); }
 /* line 207, ../../extjs/resources/themes/stylesheets/ext4/default/util/_resizable.scss */
 .x-resizable-over .x-resizable-handle-northwest,
 .x-resizable-pinned .x-resizable-handle-northwest {
   background-position: bottom right;
-  background-image: url('../../extjs/resources/themes/images/murano/sizer/nw-handle.gif'); }
+  background-image: url('../extjs/resources/themes/images/default/sizer/nw-handle.gif'); }
 /* line 212, ../../extjs/resources/themes/stylesheets/ext4/default/util/_resizable.scss */
 .x-resizable-over .x-resizable-handle-northeast,
 .x-resizable-pinned .x-resizable-handle-northeast {
   background-position: bottom left;
-  background-image: url('../../extjs/resources/themes/images/murano/sizer/ne-handle.gif'); }
+  background-image: url('../extjs/resources/themes/images/default/sizer/ne-handle.gif'); }
 /* line 217, ../../extjs/resources/themes/stylesheets/ext4/default/util/_resizable.scss */
 .x-resizable-over .x-resizable-handle-southwest,
 .x-resizable-pinned .x-resizable-handle-southwest {
   background-position: top right;
-  background-image: url('../../extjs/resources/themes/images/murano/sizer/sw-handle.gif'); }
+  background-image: url('../extjs/resources/themes/images/default/sizer/sw-handle.gif'); }
 
 /* line 3, ../../extjs/resources/themes/stylesheets/ext4/default/util/_splitter.scss */
 .x-splitter .x-collapse-el {
@@ -2578,32 +2618,32 @@ body {
 
 /* line 33, ../../extjs/resources/themes/stylesheets/ext4/default/util/_splitter.scss */
 .x-layout-split-left {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-left.gif') no-repeat top right; }
+  background: url('../extjs/resources/themes/images/default/util/splitter/mini-left.gif') no-repeat top right; }
 
 /* line 37, ../../extjs/resources/themes/stylesheets/ext4/default/util/_splitter.scss */
 .x-layout-split-right {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-right.gif') no-repeat top left; }
+  background: url('../extjs/resources/themes/images/default/util/splitter/mini-right.gif') no-repeat top left; }
 
 /* line 41, ../../extjs/resources/themes/stylesheets/ext4/default/util/_splitter.scss */
 .x-layout-split-top {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-top.gif') no-repeat top left; }
+  background: url('../extjs/resources/themes/images/default/util/splitter/mini-top.gif') no-repeat top left; }
 
 /* line 45, ../../extjs/resources/themes/stylesheets/ext4/default/util/_splitter.scss */
 .x-layout-split-bottom {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-bottom.gif') no-repeat top left; }
+  background: url('../extjs/resources/themes/images/default/util/splitter/mini-bottom.gif') no-repeat top left; }
 
 /* line 50, ../../extjs/resources/themes/stylesheets/ext4/default/util/_splitter.scss */
 .x-splitter-collapsed .x-layout-split-left {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-right.gif') no-repeat top left; }
+  background: url('../extjs/resources/themes/images/default/util/splitter/mini-right.gif') no-repeat top left; }
 /* line 54, ../../extjs/resources/themes/stylesheets/ext4/default/util/_splitter.scss */
 .x-splitter-collapsed .x-layout-split-right {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-left.gif') no-repeat top right; }
+  background: url('../extjs/resources/themes/images/default/util/splitter/mini-left.gif') no-repeat top right; }
 /* line 58, ../../extjs/resources/themes/stylesheets/ext4/default/util/_splitter.scss */
 .x-splitter-collapsed .x-layout-split-top {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-bottom.gif') no-repeat top left; }
+  background: url('../extjs/resources/themes/images/default/util/splitter/mini-bottom.gif') no-repeat top left; }
 /* line 62, ../../extjs/resources/themes/stylesheets/ext4/default/util/_splitter.scss */
 .x-splitter-collapsed .x-layout-split-bottom {
-  background: url('../../extjs/resources/themes/images/murano/util/splitter/mini-top.gif') no-repeat top left; }
+  background: url('../extjs/resources/themes/images/default/util/splitter/mini-top.gif') no-repeat top left; }
 
 /* line 67, ../../extjs/resources/themes/stylesheets/ext4/default/util/_splitter.scss */
 .x-splitter-horizontal {
@@ -2821,7 +2861,7 @@ body {
     position: relative;
     cursor: pointer;
     height: 20px;
-    background: url('../../extjs/resources/themes/images/murano/tab-bar/scroll-left.gif') transparent no-repeat -18px 0; }
+    background: url('../extjs/resources/themes/images/default/tab-bar/scroll-left.gif') transparent no-repeat -18px 0; }
   /* line 188, ../../extjs/resources/themes/stylesheets/ext4/default/layout/_layout.scss */
   .x-box-scroller-left .x-toolbar-scroll-left-hover {
     background-position: 0 0; }
@@ -2834,7 +2874,7 @@ body {
     opacity: 0.5; }
   /* line 197, ../../extjs/resources/themes/stylesheets/ext4/default/layout/_layout.scss */
   .x-box-scroller-left .x-toolbar-scroll-left {
-    background-image: url('../../extjs/resources/themes/images/murano/toolbar/scroll-left.gif');
+    background-image: url('../extjs/resources/themes/images/default/toolbar/scroll-left.gif');
     background-position: -14px 0; }
   /* line 201, ../../extjs/resources/themes/stylesheets/ext4/default/layout/_layout.scss */
   .x-box-scroller-left .x-toolbar-scroll-left-hover {
@@ -2864,7 +2904,7 @@ body {
     position: relative;
     cursor: pointer;
     height: 20px;
-    background: url('../../extjs/resources/themes/images/murano/tab-bar/scroll-right.gif') transparent no-repeat 0 0; }
+    background: url('../extjs/resources/themes/images/default/tab-bar/scroll-right.gif') transparent no-repeat 0 0; }
   /* line 233, ../../extjs/resources/themes/stylesheets/ext4/default/layout/_layout.scss */
   .x-box-scroller-right .x-toolbar-scroll-right-hover {
     background-position: -18px 0; }
@@ -2877,7 +2917,7 @@ body {
     opacity: 0.5; }
   /* line 242, ../../extjs/resources/themes/stylesheets/ext4/default/layout/_layout.scss */
   .x-box-scroller-right .x-toolbar-scroll-right {
-    background-image: url('../../extjs/resources/themes/images/murano/toolbar/scroll-right.gif'); }
+    background-image: url('../extjs/resources/themes/images/default/toolbar/scroll-right.gif'); }
   /* line 245, ../../extjs/resources/themes/stylesheets/ext4/default/layout/_layout.scss */
   .x-box-scroller-right .x-toolbar-scroll-right-hover {
     background-position: -14px 0; }
@@ -2896,7 +2936,7 @@ body {
   font-size: 0; }
 /* line 266, ../../extjs/resources/themes/stylesheets/ext4/default/layout/_layout.scss */
 .x-box-scroller-top .x-menu-scroll-top {
-  background: url('../../extjs/resources/themes/images/murano/layout/mini-top.gif') transparent no-repeat center center;
+  background: url('../extjs/resources/themes/images/default/layout/mini-top.gif') transparent no-repeat center center;
   height: 8px;
   cursor: pointer; }
 
@@ -2906,7 +2946,7 @@ body {
   font-size: 0; }
 /* line 277, ../../extjs/resources/themes/stylesheets/ext4/default/layout/_layout.scss */
 .x-box-scroller-bottom .x-menu-scroll-bottom {
-  background: url('../../extjs/resources/themes/images/murano/layout/mini-bottom.gif') transparent no-repeat center center;
+  background: url('../extjs/resources/themes/images/default/layout/mini-bottom.gif') transparent no-repeat center center;
   height: 8px;
   cursor: pointer; }
 
@@ -2935,7 +2975,7 @@ body {
     cursor: pointer;
     background-color: transparent;
     background-repeat: no-repeat;
-    background-image: url('../../extjs/resources/themes/images/murano/tools/tool-sprites.gif');
+    background-image: url('../extjs/resources/themes/images/default/tools/tool-sprites.gif');
     margin: 0; }
 
 /* line 23, ../../extjs/resources/themes/stylesheets/ext4/default/util/_tool.scss */

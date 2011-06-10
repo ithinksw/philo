@@ -1,24 +1,24 @@
 .x-resizable-handle-west {
-	background: transparent theme-image($theme-name, 'sizer/w.png') left center no-repeat !important;
+	background: transparent murano-image('sizer/w.png') left center no-repeat !important;
 }
 .x-resizable-handle-east {
-	background: transparent theme-image($theme-name, 'sizer/e.png') right center no-repeat !important;
+	background: transparent murano-image('sizer/e.png') right center no-repeat !important;
 }
 .x-resizable-handle-north {
-	background: transparent theme-image($theme-name, 'sizer/n.png') top center no-repeat !important;
+	background: transparent murano-image('sizer/n.png') top center no-repeat !important;
 }
 .x-resizable-handle-south {
-	background: transparent theme-image($theme-name, 'sizer/s.png') bottom center no-repeat !important;
+	background: transparent murano-image('sizer/s.png') bottom center no-repeat !important;
 }
 .x-resizable-handle-northwest {
-	background: transparent theme-image($theme-name, 'sizer/nw.png') left top no-repeat !important;
+	background: transparent murano-image('sizer/nw.png') left top no-repeat !important;
 }
 .x-resizable-handle-northeast {
-	background: transparent theme-image($theme-name, 'sizer/ne.png') right top no-repeat !important;
+	background: transparent murano-image('sizer/ne.png') right top no-repeat !important;
 }
 .x-resizable-handle-southwest {
-	background: transparent theme-image($theme-name, 'sizer/sw.png') left bottom no-repeat !important;
+	background: transparent murano-image('sizer/sw.png') left bottom no-repeat !important;
 }
 .x-resizable-handle-southeast {
-	background: transparent theme-image($theme-name, 'sizer/se.png') right bottom no-repeat !important;
+	background: transparent murano-image('sizer/se.png') right bottom no-repeat !important;
 }

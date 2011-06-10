@@ -12,14 +12,14 @@
 		display:block;
 		height:15px;
 		width:15px;
-		background: theme-image($theme-name, 'shared/btn-left.png');
+		background: murano-image('shared/btn-left.png');
 	}
 }
 .x-datepicker-next{
 	right:5px;
 	left:auto;
 	a{
-		background: theme-image($theme-name, 'shared/btn-right.png');
+		background: murano-image('shared/btn-right.png');
 	}
 }
 .x-datepicker-header, .x-datepicker-footer{
@@ -125,10 +125,10 @@
 	display:block;
 	height:15px;
 	width:15px;
-	background: theme-image($theme-name, 'shared/btn-left.png');
+	background: murano-image('shared/btn-left.png');
 }
 .x-monthpicker-yearnav-next{
-	background: theme-image($theme-name, 'shared/btn-right.png');
+	background: murano-image('shared/btn-right.png');
 }
 .x-monthpicker .x-btn{
 	width:80px;

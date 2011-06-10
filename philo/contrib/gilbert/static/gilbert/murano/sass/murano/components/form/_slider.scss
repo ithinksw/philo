@@ -16,6 +16,11 @@
 	@include box-shadow(0 0 3px 0 bla(.35))
 }
 
+.x-slider-thumb-over{
+	border-color:#FFF;
+	@include background(linear-gradient(#CCC, #FFF));
+}
+
 .x-slider-horz{
 	@include box-shadow(0 1px 0 0 wha(.15), 0 2px 5px 0 bla(.25) inset);
 	height:10px;

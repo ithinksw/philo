@@ -20,7 +20,7 @@
 	overflow:hidden;
 	.x-column-header-trigger{
 		display:none;
-		background: transparent theme-image($theme-name, 'triggericons/spinner-down.png') center 6px no-repeat;
+		background: transparent murano-image('triggericons/spinner-down.png') center 6px no-repeat;
 		width:20px;
 	}
 	&-over, &-open{

@@ -1,3 +1,5 @@
+$scroller-thumb-color: #666 !default;
+
 .x-scroller{
 	border:none !important;
 	&::-webkit-scrollbar {
@@ -16,16 +18,22 @@
 		}
 		&-thumb{
 			border:1px solid #000;
-			@include background($gloss-gradient);
-			background-color:#222;
+			background-color:$scroller-thumb-color;
 			@include border-radius(8px);
 			@include box-shadow(0 1px 0 0 wha(.35) inset, 0 -1px 0 0 #000 inset);
 			&:hover{
-				background-color:#333;
+				background-color:lighten($scroller-thumb-color, 5%);
 			}
 			&:active{
-				background-color:#444;
+				background-color:lighten($scroller-thumb-color, 10%);
 			}
 		}
 	}
+}
+
+.x-scroller-vertical::-webkit-scrollbar-thumb{
+	@include background-image($gloss-vertical-gradient);
+}
+.x-scroller-horizontal::-webkit-scrollbar-thumb{
+	@include background-image($gloss-gradient);
 }

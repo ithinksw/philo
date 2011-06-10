@@ -36,18 +36,18 @@
 
 .x-menu-item-unchecked{
 	.x-menu-item-icon{
-		background: theme-image($theme-name, 'form/unchecked.png');
+		background: murano-image('form/unchecked.png');
 	}
 	.x-menu-group-icon{
-		background: theme-image($theme-name, 'form/unradioed.png');
+		background: murano-image('form/unradioed.png');
 	}
 }
 .x-menu-item-checked{
 	.x-menu-item-icon{
-		background: theme-image($theme-name, 'form/checked.png');
+		background: murano-image('form/checked.png');
 	}
 	.x-menu-group-icon{
-		background: theme-image($theme-name, 'form/radioed.png');
+		background: murano-image('form/radioed.png');
 	}
 }
 

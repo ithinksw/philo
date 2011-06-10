@@ -162,20 +162,20 @@ $large: 32px;
 /* arrow on right */
 .x-btn-arrow-right{
 	padding-right:14px;
-	background: transparent theme-image($theme-name, 'btn/menu.png') right center no-repeat;
+	background: transparent murano-image('btn/menu.png') right center no-repeat;
 }
 
 /* arrow on botton */
 .x-btn-arrow-bottom{
 	padding-bottom:14px;
-	background: transparent theme-image($theme-name, 'btn/menu.png') center bottom no-repeat;
+	background: transparent murano-image('btn/menu.png') center bottom no-repeat;
 }
 
 /* split on right */
 
 .x-btn-split-right{
 	padding-right:16px;
-	background: transparent theme-image($theme-name, 'btn/splith.png') right center no-repeat;
+	background: transparent murano-image('btn/splith.png') right center no-repeat;
 	display:block;
 }
 
@@ -183,6 +183,6 @@ $large: 32px;
 
 .x-btn-split-bottom{
 	padding-bottom:16px;
-	background: transparent theme-image($theme-name, 'btn/splitv.png') center bottom no-repeat;
+	background: transparent murano-image('btn/splitv.png') center bottom no-repeat;
 	display:block;
 }

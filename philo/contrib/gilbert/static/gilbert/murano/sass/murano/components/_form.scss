@@ -48,17 +48,17 @@ input.x-form-text{
 }
 
 .x-form-checkbox{
-	background: theme-image($theme-name, 'form/unchecked.png');
+	background: murano-image('form/unchecked.png');
 }
 .x-form-cb-checked .x-form-checkbox{
-	background: theme-image($theme-name, 'form/checked.png');
+	background: murano-image('form/checked.png');
 }
 
 .x-form-radio{
-	background: theme-image($theme-name, 'form/unradioed.png');
+	background: murano-image('form/unradioed.png');
 }
 .x-form-cb-checked .x-form-radio{
-	background: theme-image($theme-name, 'form/radioed.png');
+	background: murano-image('form/radioed.png');
 }
 
 .x-form-cb-label-after{
@@ -69,7 +69,7 @@ input.x-form-text{
 	width:20px;
 	height:19px;
 	float:left;
-	background: theme-image($theme-name, 'form/exclamation.png') right center no-repeat;
+	background: murano-image('form/exclamation.png') right center no-repeat;
 }
 
 

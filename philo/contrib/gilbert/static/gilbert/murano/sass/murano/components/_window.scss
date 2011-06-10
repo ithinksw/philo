@@ -1,7 +1,7 @@
 .x-window{
 	background: $base-background-color;
 	@include border-radius($base-border-radius-width $base-border-radius-width 0 0);
-	@include box-shadow(0 0 0 1px bla($base-background-alpha*.5), 0 0 0 1px bla($base-background-alpha*.5) inset);
+	@include box-shadow(0 0 0 1px bla($base-background-alpha*.5), 0 3px 8px 0 bla(.35), 0 0 0 1px bla($base-background-alpha*.5) inset);
 	border:1px solid wha(.5);
 	border-top-color: wha(1);
 }

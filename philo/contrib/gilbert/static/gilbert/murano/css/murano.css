@@ -170,10 +170,10 @@ body {
   -ms-border-radius: 6px 6px 0 0;
   -khtml-border-radius: 6px 6px 0 0;
   border-radius: 6px 6px 0 0;
-  -moz-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.425), 0 0 0 1px rgba(0, 0, 0, 0.425) inset;
-  -webkit-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.425), 0 0 0 1px rgba(0, 0, 0, 0.425) inset;
-  -o-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.425), 0 0 0 1px rgba(0, 0, 0, 0.425) inset;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.425), 0 0 0 1px rgba(0, 0, 0, 0.425) inset;
+  -moz-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.425), 0 3px 8px 0 rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.425) inset;
+  -webkit-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.425), 0 3px 8px 0 rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.425) inset;
+  -o-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.425), 0 3px 8px 0 rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.425) inset;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.425), 0 3px 8px 0 rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.425) inset;
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-top-color: white; }
 

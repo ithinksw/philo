@@ -30,7 +30,7 @@ __all__ = (
 
 
 SEARCH_CACHE_SEED = 'philo_sobol_search_results'
-USE_CACHE = getattr(settings, 'SOBOL_USE_SEARCH', True)
+USE_CACHE = getattr(settings, 'SOBOL_USE_CACHE', True)
 
 
 class RegistrationError(Exception):

@@ -1,0 +1,32 @@
+.embed-widget{
+	background:#DDD;
+	padding:2px;
+	border:1px solid #CCC;
+	border-radius:5px;
+	-webkit-border-radius:5px;
+	-moz-border-radius:5px;
+	display:inline-block;
+	margin:0 -3px;
+}
+.embed-toolbar{
+	padding-bottom:3px;
+}
+.embed-toolbar button{
+	background:#FFF;
+	border:1px solid #CCC;
+	border-radius:3px;
+	-webkit-border-radius:3px;
+	-moz-border-radius:3px;
+	color:#666;
+}
+.embed-toolbar select, .embed-toolbar button{
+	margin-right:3px;
+}
+.embed-toolbar button:hover{
+	color:#444;
+}
+.embed-toolbar button:active{
+	color:#FFF;
+	background:#666;
+	border-color:#666;
+}

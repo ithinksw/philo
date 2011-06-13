@@ -545,6 +545,14 @@ button {
   border-left: 1px solid rgba(0, 0, 0, 0.25);
   height: 14px; }
 
+/* line 26, ../sass/murano/components/_toolbar.scss */
+.x-toolbar-separator-vertical {
+  width: 100%;
+  height: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  margin: 9px 0; }
+
 /* line 2, ../sass/murano/components/form/_htmleditor.scss */
 .x-html-editor-wrap {
   border: 1px solid black; }

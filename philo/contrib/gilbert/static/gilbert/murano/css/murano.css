@@ -62,16 +62,13 @@ body {
   background: rgba(0, 0, 0, 0.85);
   overflow: hidden;
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-top: 0;
-  margin-top: 0;
-  margin: -1px; }
+  margin-top: 0; }
 
-/* line 13, ../sass/murano/components/_panel.scss */
+/* line 10, ../sass/murano/components/_panel.scss */
 .x-panel .x-panel .x-panel-body, .x-window .x-panel .x-panel-body {
   background: #222; }
 
-/* line 19, ../sass/murano/components/_panel.scss */
+/* line 16, ../sass/murano/components/_panel.scss */
 .x-panel-header {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0)));
   background: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
@@ -87,7 +84,7 @@ body {
   height: 24px;
   padding: 0 3px 0 6px; }
 
-/* line 28, ../sass/murano/components/_panel.scss */
+/* line 25, ../sass/murano/components/_panel.scss */
 .x-panel-header-vertical {
   background: -webkit-gradient(linear, 0% 50%, 100% 50%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0)));
   background: -webkit-linear-gradient(left, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
@@ -95,14 +92,14 @@ body {
   background: -o-linear-gradient(left, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
   background: linear-gradient(left, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%); }
 
-/* line 32, ../sass/murano/components/_panel.scss */
+/* line 29, ../sass/murano/components/_panel.scss */
 .x-panel-body {
   position: relative;
   padding: 0; }
 
 /* FRAMED PANEL
  * ------------ */
-/* line 39, ../sass/murano/components/_panel.scss */
+/* line 36, ../sass/murano/components/_panel.scss */
 .x-panel-default-framed {
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-top-color: white;
@@ -113,7 +110,7 @@ body {
   -khtml-border-radius: 6px 6px 0 0;
   border-radius: 6px 6px 0 0; }
 
-/* line 45, ../sass/murano/components/_panel.scss */
+/* line 42, ../sass/murano/components/_panel.scss */
 .x-panel-default-framed .x-panel-header {
   border-top: 0;
   -moz-border-radius: 6px 6px 0 0;
@@ -128,7 +125,7 @@ body {
 
 /* MASKED PANEL
  * ------------ */
-/* line 58, ../sass/murano/components/_panel.scss */
+/* line 55, ../sass/murano/components/_panel.scss */
 .x-mask-msg {
   background: #333333 !important;
   background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(255, 255, 255, 0.25)), color-stop(50%, rgba(255, 255, 255, 0.15)), color-stop(50%, rgba(255, 255, 255, 0)), color-stop(100%, rgba(255, 255, 255, 0))) !important;
@@ -148,7 +145,7 @@ body {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.75);
   border: 1px solid #333333 !important;
   border-top: 1px solid #888888 !important; }
-  /* line 65, ../sass/murano/components/_panel.scss */
+  /* line 62, ../sass/murano/components/_panel.scss */
   .x-mask-msg div {
     background-color: black !important;
     -moz-border-radius: 3px;

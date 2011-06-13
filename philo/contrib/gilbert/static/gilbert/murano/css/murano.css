@@ -1129,7 +1129,7 @@ input.x-form-text {
   -webkit-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
   -o-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
-  padding: 3px;
+  padding: 3px 5px 6px 5px;
   white-space: nowrap; }
   /* line 13, ../sass/murano/components/_tab.scss */
   .x-tab button {
@@ -1215,6 +1215,15 @@ input.x-form-text {
   /* line 94, ../sass/murano/components/_tab.scss */
   .x-tabbar-scroll-right-disabled {
     background-position: left top !important; }
+
+/* line 99, ../sass/murano/components/_tab.scss */
+.x-tab-inner {
+  display: block; }
+  /* line 101, ../sass/murano/components/_tab.scss */
+  .x-tab-icon-text-left .x-tab-inner {
+    padding-left: 20px;
+    background-repeat: no-repeat;
+    background-position: left top; }
 
 /* line 1, ../sass/murano/components/_tooltip.scss */
 .x-tip, .x-form-invalid-tip {

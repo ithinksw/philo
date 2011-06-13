@@ -14,7 +14,7 @@
 		color:#CCC;
 		text-shadow: 0 -1px 0 bla(.75);
 	}
-	padding:3px;
+	padding:3px 5px 6px 5px;
 	white-space: nowrap;
 }
 
@@ -93,5 +93,14 @@
 	}
 	&-disabled{
 		background-position:left top !important;
+	}
+}
+
+.x-tab-inner{
+	display:block;
+	.x-tab-icon-text-left &{
+		padding-left:20px;
+		background-repeat:no-repeat;
+		background-position:left top;
 	}
 }

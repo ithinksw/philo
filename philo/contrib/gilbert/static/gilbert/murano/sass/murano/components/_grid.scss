@@ -106,3 +106,71 @@
 	width:1px;
 	position:absolute;
 }
+
+
+// Row Editor
+.#{$prefix}grid-row-editor {
+	position: absolute !important;
+	z-index: 1;
+	zoom: 1;
+	overflow: visible !important;
+
+	.#{$prefix}form-field {
+	}
+	.#{$prefix}form-display-field {
+		padding-top: 0;
+	}
+
+	.#{$prefix}panel-body {
+		border:{
+			top:1px solid $accent-color !important;
+			bottom:1px solid $accent-color !important;
+			left:none !important;
+			right:none !important;
+		};
+	}
+}
+
+// Perfect alignment of input text with cell text
+.#{$prefix}grid-row-editor {
+	// Align input text with text value in cell
+	.#{$prefix}form-text {
+		padding-left: 2px;
+	}
+}
+.#{$prefix}grid-editor {
+	// Align checkboxes input
+	.#{$prefix}form-cb-wrap {
+		text-align: center;
+	}
+}
+
+.#{$prefix}grid-row-editor-buttons {
+		position: absolute;
+		bottom: -31px;
+		padding: 4px;
+		width: 200px;
+		height: 32px;
+		background:#222;
+		@include border-radius(0 0 4px 4px);
+		border:{
+			bottom: 1px solid $accent-color;
+			left: 1px solid $accent-color;
+			right: 1px solid $accent-color;
+		};
+
+		.#{$prefix}strict & {
+			width: 192px;
+			height: 24px;
+		}
+	}
+
+	.#{$prefix}grid-row-editor-errors {
+		ul {
+			margin-left: 5px;
+		}
+		li {
+			list-style: disc;
+			margin-left: 15px;
+		}
+	}

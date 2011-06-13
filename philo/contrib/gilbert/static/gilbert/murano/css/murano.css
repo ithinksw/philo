@@ -518,6 +518,60 @@ button {
   width: 1px;
   position: absolute; }
 
+/* line 112, ../sass/murano/components/_grid.scss */
+.x-grid-row-editor {
+  position: absolute !important;
+  z-index: 1;
+  zoom: 1;
+  overflow: visible !important; }
+  /* line 120, ../sass/murano/components/_grid.scss */
+  .x-grid-row-editor .x-form-display-field {
+    padding-top: 0; }
+  /* line 124, ../sass/murano/components/_grid.scss */
+  .x-grid-row-editor .x-panel-body {
+    border-top: 1px solid #066cd1 !important;
+    border-bottom: 1px solid #066cd1 !important;
+    border-left: none !important;
+    border-right: none !important; }
+
+/* line 137, ../sass/murano/components/_grid.scss */
+.x-grid-row-editor .x-form-text {
+  padding-left: 2px; }
+
+/* line 143, ../sass/murano/components/_grid.scss */
+.x-grid-editor .x-form-cb-wrap {
+  text-align: center; }
+
+/* line 148, ../sass/murano/components/_grid.scss */
+.x-grid-row-editor-buttons {
+  position: absolute;
+  bottom: -31px;
+  padding: 4px;
+  width: 200px;
+  height: 32px;
+  background: #222;
+  -moz-border-radius: 0 0 4px 4px;
+  -webkit-border-radius: 0 0 4px 4px;
+  -o-border-radius: 0 0 4px 4px;
+  -ms-border-radius: 0 0 4px 4px;
+  -khtml-border-radius: 0 0 4px 4px;
+  border-radius: 0 0 4px 4px;
+  border-bottom: 1px solid #066cd1;
+  border-left: 1px solid #066cd1;
+  border-right: 1px solid #066cd1; }
+  /* line 162, ../sass/murano/components/_grid.scss */
+  .x-strict .x-grid-row-editor-buttons {
+    width: 192px;
+    height: 24px; }
+
+/* line 169, ../sass/murano/components/_grid.scss */
+.x-grid-row-editor-errors ul {
+  margin-left: 5px; }
+/* line 172, ../sass/murano/components/_grid.scss */
+.x-grid-row-editor-errors li {
+  list-style: disc;
+  margin-left: 15px; }
+
 /* line 1, ../sass/murano/components/_toolbar.scss */
 .x-toolbar {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #222222), color-stop(10%, #444444), color-stop(90%, #666666), color-stop(100%, #444444));

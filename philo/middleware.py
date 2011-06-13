@@ -36,7 +36,12 @@ def get_node(path):
 
 
 class RequestNodeMiddleware(object):
-	"""Adds a ``node`` attribute, representing the currently-viewed node, to every incoming :class:`HttpRequest` object. This is required by :func:`philo.views.node_view`."""
+	"""
+	Adds a ``node`` attribute, representing the currently-viewed :class:`.Node`, to every incoming :class:`HttpRequest` object. This is required by :func:`philo.views.node_view`.
+	
+	:class:`RequestNodeMiddleware` also catches all exceptions raised while handling requests that have attached :class:`.Node`\ s if :setting:`settings.DEBUG` is ``True``. If a :exc:`django.http.Http404` error was caught, :class:`RequestNodeMiddleware` will look for an "Http404" :class:`.Attribute` on the request's :class:`.Node`; otherwise it will look for an "Http500" :class:`.Attribute`. If an appropriate :class:`.Attribute` is found, and the value of the attribute is a :class:`.View` instance, then the :class:`.View` will be rendered with the exception in the ``extra_context``, bypassing any later handling of exceptions.
+	
+	"""
 	def process_view(self, request, view_func, view_args, view_kwargs):
 		try:
 			path = view_kwargs['path']
@@ -51,12 +56,16 @@ class RequestNodeMiddleware(object):
 		
 		if isinstance(exception, Http404):
 			error_view = request.node.attributes.get('Http404', None)
+			status_code = 404
 		else:
 			error_view = request.node.attributes.get('Http500', None)
+			status_code = 500
 		
 		if error_view is None or not isinstance(error_view, View):
 			# Should this be duck-typing? Perhaps even no testing?
 			return
 		
 		extra_context = {'exception': exception}
-		return error_view.render_to_response(request, extra_context)
+		response = error_view.render_to_response(request, extra_context)
+		response.status_code = status_code
+		return response

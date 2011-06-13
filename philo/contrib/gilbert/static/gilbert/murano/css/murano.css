@@ -506,11 +506,11 @@ button {
   background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
   background-image: -o-linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
   background-image: linear-gradient(top, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 100%);
-  background-color: #222; }
+  background-color: #000; }
   /* line 98, ../sass/murano/components/_grid.scss */
   .x-grid-row-selected td {
-    border-top: 1px solid #CCC;
-    border-bottom: 1px solid #777; }
+    border-top: 1px solid #1286f8;
+    border-bottom: 1px solid #066cd1; }
 
 /* line 104, ../sass/murano/components/_grid.scss */
 .x-grid-resize-marker {

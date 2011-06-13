@@ -94,10 +94,10 @@
 
 .x-grid-row-selected{
 	@include background-image($gloss-gradient);
-	background-color:#222;
+	background-color:#000;
 	td{
-		border-top:1px solid #CCC;
-		border-bottom:1px solid #777;
+		border-top:1px solid lighten($accent-color, 10%);
+		border-bottom:1px solid $accent-color;
 	}
 }
 

@@ -94,8 +94,8 @@
 			object_name = val.split('.')[1];
 			
 			// generate the url
-			// TODO: abstract this so it can calculate the admin url dynamically
-			href=["/admin", app_label, object_name, '?pop=1'].join('/');
+			// TODO: Find a better way to get ADMIN_URL. Currently this only works with grappelli, which provides the javascript global ADMIN_URL
+			href=[ADMIN_URL, app_label,  '/', object_name, '/?pop=1'].join('');
 			
 			// this is a bit hackish. let's walk through it.
 			// TODO: best to write our own template for this in the future

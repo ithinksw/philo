@@ -53,7 +53,7 @@ Now that you've got everything configured, it's time to set up your first page! 
 
 Next, add a philo :class:`.Page` - let's call it "Hello World Page" and use the template you just made.
 
-Now make a philo :class:`.Node`. Give it the slug ``hello-world``. Set the view content type to "Page" and use the page that you just made. If you navigate to ``/hello-world``, you will see the results of rendering the page!
+Now make a philo :class:`.Node`. Give it the slug ``hello-world``. Set the ``view_content_type`` to "Page" and the ``view_object_id`` to the id of the page that you just made - probably 1. If you navigate to ``/hello-world``, you will see the results of rendering the page!
 
 Setting the root node
 +++++++++++++++++++++
@@ -78,7 +78,7 @@ Great! We've got a page that says "Hello World". But what if we want it to say s
 	        {% if content %}
 	            <p>{{ content }}</p>
 	        {% endif %}
-	        <p>The time is {% now %}.</p>
+	        <p>The time is {% now "jS F Y H:i" %}.</p>
 	    </body>
 	</html>
 

@@ -3,7 +3,7 @@ Using Shipherd in the Admin
 
 The navigation mechanism is fairly complex; unfortunately, there's no real way around that - without a lot of equally complex code that you are quite welcome to write and contribute! ;-)
 
-For this guide, we'll assume that you have the setup described in :doc:`getting-started`. We'll be adding a main :class:`.Navigation` to the root :class:`.Node` and making it display as part of the :class:`.Template`.
+For this guide, we'll assume that you have the setup described in :doc:`getting-started`. We'll be adding a main :class:`.Navigation` to the root :class:`.Node` and making it display as part of the :class:`.Template`. Before getting started, make sure that you've added :mod:`philo.contrib.shipherd` to your :setting:`INSTALLED_APPS`.
 
 Creating the Navigation
 +++++++++++++++++++++++

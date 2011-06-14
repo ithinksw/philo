@@ -1,0 +1,14 @@
+.x-accordion-hd{
+	.x-panel-header-text{
+		color:#FFF !important;
+		text-shadow:0 -1px 0 bla(.35);
+	}
+	@include background-image($gloss-gradient !important);
+	background-color:#666 !important;
+	padding:0 5px;
+	border-top:1px solid #999 !important;
+	border-bottom:1px solid #555 !important;
+	.x-tool{
+		top:3px !important;
+	}
+}

@@ -1,0 +1,36 @@
+$gloss-gradient: linear-gradient(top, rgba(255,255,255, .25) 0%, rgba(255,255,255, .15) 50%,rgba(255,255,255, 0) 50%, rgba(255,255,255, 0) 100%);
+$gloss-vertical-gradient: linear-gradient(left, rgba(255,255,255, .25) 0%, rgba(255,255,255, .15) 50%,rgba(255,255,255, 0) 50%, rgba(255,255,255, 0) 100%);
+
+
+/* BASE VARIABLES *
+ * -------------- */
+
+$base-text-color: #FFF;
+
+$base-background-alpha: .85;
+$base-background-color: bla($base-background-alpha);
+
+$base-border-radius-width: 6px;
+
+$base-header-padding: 0 3px 0 6px;
+$base-header-height: 24px;
+$base-body-padding: 0;
+
+$accent-color: #066cd1;
+
+
+/* PANEL VARIABLES *
+ * --------------- */
+
+$panel-background: $base-background-color;
+$panel-header-padding: $base-header-padding;
+$panel-header-height: $base-header-height;
+$panel-body-padding: $base-body-padding;
+
+
+/* WINDOW VARIABLES *
+ * ---------------- */
+
+$window-header-padding: $base-header-padding;
+$window-header-height: $base-header-height;
+$window-body-padding: $base-body-padding;

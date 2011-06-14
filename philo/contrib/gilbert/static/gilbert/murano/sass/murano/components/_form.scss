@@ -1,0 +1,128 @@
+$html-editor-border-color: #000;
+$html-editor-background-color: #FFF;
+@import 'form/htmleditor';
+@include extjs-form-htmleditor;
+
+.x-form-item{
+	margin-bottom:6px;
+}
+
+.x-form-item-body, .x-form-item-label-left{
+	float:left;
+	position:relative;
+}
+
+.x-form-text{
+	background:#444;
+	@include box-shadow(0 5px 8px 0 bla(.35) inset, 0 1px 0 0 wha(.35), 0 0 0 1px wha(.05) inset);
+	border:1px solid #000;
+	color:#FFF;
+	color:#FFF;
+	padding:0 3px;
+}
+
+.x-form-text:focus, .x-form-trigger-wrap-focus .x-form-text{
+	outline:none;
+	background:#666;
+}
+
+input.x-form-text{
+	height:21px;
+}
+.x-form-invalid-field{
+	background:#700;
+}
+.x-form-invalid-icon{
+	text-indent:-9999px;
+}
+.x-form-invalid-icon ul{
+	display:none;
+}
+
+.x-form-checkbox, .x-form-radio{
+	@include reset-box-model;
+	@include reset-focus;
+	height:16px;
+	width:16px;
+	
+}
+
+.x-form-checkbox{
+	background: murano-image('form/unchecked.png');
+}
+.x-form-cb-checked .x-form-checkbox{
+	background: murano-image('form/checked.png');
+}
+
+.x-form-radio{
+	background: murano-image('form/unradioed.png');
+}
+.x-form-cb-checked .x-form-radio{
+	background: murano-image('form/radioed.png');
+}
+
+.x-form-cb-label-after{
+	margin-left:3px;
+}
+
+.x-form-invalid-icon{
+	width:20px;
+	height:19px;
+	float:left;
+	background: murano-image('form/exclamation.png') right center no-repeat;
+}
+
+
+.x-form-field, .x-form-display-field{
+	float:left;
+	margin:0;
+}
+
+
+.x-fieldset{
+	border:1px solid #666;
+	padding:10px;
+	margin-bottom:10px;
+}
+.x-fieldset-header{
+	white-space:nowrap;
+	padding:0 5px;
+}
+.x-fieldset-header-text{
+	float:left;
+}
+.x-fieldset-header .x-tool, .x-fieldset-header .x-form-item{
+	float:left;
+	margin-right:3px;
+}
+.x-fieldset-collapsed{
+	border-width: 1px 1px 0 1px !important;
+	padding-bottom:0px !important;
+	border-left-color:transparent;
+	border-right-color:transparent;
+}
+
+.x-boundlist{
+	background:#000;
+	border:1px solid #333;
+}
+
+.x-boundlist-floating{
+	@include box-shadow(0 1px 3px 0 bla(.35));
+}
+.x-boundlist-item{
+	padding:1px 4px;
+	border:1px solid transparent;
+	margin:1px;
+	@include border-radius(5px);
+	&-over{
+		border:1px solid lighten($accent-color, 10%);
+		@include background-image(linear-gradient(lighten($accent-color, 10%),$accent-color));
+		@include box-shadow(0 -1px 0 0 bla(.15) inset);
+	}
+}
+.x-boundlist-selected{
+	border:1px solid $accent-color;
+	@include background-image(linear-gradient($accent-color,darken($accent-color, 10%)));
+	@include box-shadow(0 -1px 0 0 bla(.15) inset);
+}

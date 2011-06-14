@@ -1,0 +1,15 @@
+@function bla($value){
+	@return rgba(0,0,0,$value);
+}
+
+@function wha($value){
+	@return rgba(255,255,255,$value);
+}
+
+@function murano-image($file){
+	@return url("../img/"+$file)
+}
+
+@function fugue-image($file){
+	@return url("../../fugue-icons/icons-shadowless/"+$file)
+}

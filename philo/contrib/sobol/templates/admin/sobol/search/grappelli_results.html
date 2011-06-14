@@ -1,0 +1,52 @@
+{% extends "admin/base_site.html" %}
+
+<!-- LOADING -->
+{% load i18n %}
+
+<!-- EXTRASTYLES -->
+{% block extrastyle %}<style type="text/css">.favored{font-weight:bold;}</style>{% endblock %}
+
+<!-- BREADCRUMBS -->
+{% block breadcrumbs %}
+	<div id="breadcrumbs">
+		{% if queryset|length > 1 %}
+		<a href="../../">{% trans "Home" %}</a> &rsaquo;
+		<a href="../">{{ app_label|capfirst }}</a> &rsaquo;
+		<a href="./">{{ opts.verbose_name_plural|capfirst }}</a> &rsaquo;
+		{% trans 'Search results for multiple objects' %}
+		{% else %}
+		<a href="../../../../">{% trans "Home" %}</a> &rsaquo;
+		<a href="../../../">{{ app_label|capfirst }}</a> &rsaquo;
+		<a href="../../">{{ opts.verbose_name_plural|capfirst }}</a> &rsaquo;
+		<a href="../">{{ queryset|first|truncatewords:"18" }}</a> &rsaquo;
+		{% trans 'Results' %}
+		{% endif %}
+	</div>
+{% endblock %}
+
+<!-- CONTENT -->
+{% block content %}
+	<div class="container-grid delete-confirmation">
+		{% for search in queryset %}
+		<div class="group tabular">
+			<h2>{{ search_string }}</h2>
+			<div class="module table">
+				<div class="module thead">
+					<div class="tr">
+						<div class="th">Weight</div>
+						<div class="th">URL</div>
+					</div>
+				</div>
+				<div class="module tbody">
+					{% for result in search.get_weighted_results %}
+					<div class="tr{% if result in search.get_favored_results %} favored{% endif %}">
+						<div class="td">{{ result.weight }}</div>
+						<div class="td">{{ result.url }}</div>
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+		</div>
+		{% endfor %}
+	</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+$include-default: false;
+$scope-reset-css: false;
+
+html, body{
+	background: #444;
+}
+
+body{
+	text-shadow: 0 -1px 0 rgba(0,0,0,.25);
+}
+
+/* WAT IS THIS I DON'T EVEN  *
+ * ------------------------- */
+
+.x-border-layout-ct{
+	background: transparent !important;
+}
+
+.x-css-shadow{
+	display:none !important;
+}
+
+.x-tool img{
+    background-image: murano-image('tools/tool-sprites.png') !important;
+}
+
+.x-layout-split-left {
+    background: murano-image('util/splitter/mini-left.png') no-repeat top right !important;
+}
+
+.x-layout-split-right {
+    background: murano-image('util/splitter/mini-right.png') no-repeat top left !important;
+}
+
+.x-layout-split-top {
+    background: murano-image('util/splitter/mini-bottom.png') no-repeat top left !important;
+}
+
+.x-layout-split-bottom {
+    background: murano-image('util/splitter/mini-top.png') no-repeat top left !important;
+}
+
+.x-splitter-collapsed {
+    .x-layout-split-left {
+        background: murano-image('util/splitter/mini-right.png') no-repeat top left !important;
+    }
+
+    .x-layout-split-right {
+        background: murano-image('util/splitter/mini-left.png') no-repeat top right !important;
+    }
+
+    .x-layout-split-top {
+        background: murano-image('util/splitter/mini-top.png') no-repeat top left !important;
+    }
+
+    .x-layout-split-bottom {
+        background: murano-image('util/splitter/mini-bottom.png') no-repeat top left !important;
+    }
+}
+
+
+/* VARIABLES THAT $include-default: false; DOES NOT GET RID OF *
+ * ----------------------------------------------------------- */
+
+$font-family: "Lucida Grande", "Lucida Sans", Tahoma, Verdana, sans-serif;
+$font-size: 12px;
+$color: $base-text-color;
+$datepicker-tool-sprite-image: 'tools/tool-sprites.png';

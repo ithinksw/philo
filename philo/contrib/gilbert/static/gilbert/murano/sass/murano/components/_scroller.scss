@@ -1,0 +1,39 @@
+$scroller-thumb-color: #666 !default;
+
+.x-scroller{
+	border:none !important;
+	&::-webkit-scrollbar {
+		width: 16px;
+		height: 16px;
+		&-track{
+			background:transparent;
+		}
+		&-track-piece:start{
+			margin-left:1px;
+			margin-top:1px;
+		}
+		&-track-piece:end{
+			margin-right:1px;
+			margin-bottom:1px;
+		}
+		&-thumb{
+			border:1px solid #000;
+			background-color:$scroller-thumb-color;
+			@include border-radius(8px);
+			@include box-shadow(0 1px 0 0 wha(.35) inset, 0 -1px 0 0 #000 inset);
+			&:hover{
+				background-color:lighten($scroller-thumb-color, 5%);
+			}
+			&:active{
+				background-color:lighten($scroller-thumb-color, 10%);
+			}
+		}
+	}
+}
+
+.x-scroller-vertical::-webkit-scrollbar-thumb{
+	@include background-image($gloss-vertical-gradient);
+}
+.x-scroller-horizontal::-webkit-scrollbar-thumb{
+	@include background-image($gloss-gradient);
+}

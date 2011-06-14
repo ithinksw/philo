@@ -1,0 +1,19 @@
+.x-tip, .x-form-invalid-tip{
+	background-color: darken($accent-color, 10%);
+	@include background-image($gloss-gradient);
+	padding:4px;
+	@include border-radius(5px);
+	@include box-shadow(0 0 0 1px bla(.7), 0 0 0 1px wha(.25) inset);
+}
+
+.x-form-invalid-tip{
+	background-color:#800000;
+}
+
+.x-tip-header{
+	font-weight:bold;
+}
+
+.x-tip-body{
+	position:relative;
+}

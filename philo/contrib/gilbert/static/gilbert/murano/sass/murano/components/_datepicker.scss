@@ -1,0 +1,149 @@
+.x-datepicker{
+	background-color: #000;
+	@include background-image(linear-gradient(#333, #000));
+	border-left:1px solid #000;
+	border-right:1px solid #000;
+}
+.x-datepicker-prev, .x-datepicker-next{
+	position:absolute;
+	top:8px;
+	left:5px;
+	a{
+		display:block;
+		height:15px;
+		width:15px;
+		background: murano-image('shared/btn-left.png');
+	}
+}
+.x-datepicker-next{
+	right:5px;
+	left:auto;
+	a{
+		background: murano-image('shared/btn-right.png');
+	}
+}
+.x-datepicker-header, .x-datepicker-footer{
+	@include background-image(linear-gradient(#333, #111));
+	border-bottom:1px solid #000;
+	border-top:1px solid #444;
+	padding:3px 28px;
+	text-align:center;
+}
+.x-datepicker-inner{
+	font-size:inherit;
+	margin-bottom:0;
+	width:100%;
+	th, td{
+		text-align:center;
+	}
+	thead{
+		border-top:1px solid #777;
+		color:#CCC;
+		@include background-image(linear-gradient(#666, #444));
+		border-bottom:1px solid #222;
+	}
+	table-layout: fixed;
+}
+
+.x-datepicker-inner a{
+	display:block;
+	text-decoration:none;
+	color:#CCC;
+	border:1px solid transparent;
+	em, span{
+		display:block;
+	}
+	em{
+		border:1px solid transparent;
+	}
+}
+.x-datepicker-prevday a{
+	color: #666;
+}
+.x-datepicker-today span{
+	background-color:#555;
+	@include border-radius(2px);
+}
+.x-datepicker-selected a{
+	border-color:bla(.25);
+	em{
+		border-color:$accent-color;
+		border-top-color:lighten($accent-color, 20%);
+		border-bottom-color:darken($accent-color, 10%);
+	}
+	span{
+		@include background-image($gloss-gradient);
+		color:#FFF;
+		@include border-radius(0);
+	}
+}
+
+.x-monthpicker{
+	background:#000;
+	a{
+		text-decoration:none;
+		color:#CCC;
+	}
+	font-size:11px;
+}
+.x-monthpicker-years{
+	width:88px;
+	float:right;
+}
+.x-monthpicker-months{
+	width:87px;
+	float:left;
+	border-right:1px solid #444;
+}
+.x-monthpicker-item{
+	width:43px;
+	float:left;
+	margin:4px 0;
+	text-align:center;
+	a{
+		display:block;
+		border:1px solid transparent;
+		&:hover{
+			background-color:#333;
+		}
+		margin:0 3px;
+		padding:2px 0;
+		@include border-radius(3px);
+	}
+	.x-monthpicker-selected{
+		background-color:#333;
+		border:1px solid #555;
+		border-top-color:#999;
+		border-bottom-color:#444;
+		@include background-image($gloss-gradient);
+		color:#FFF;
+	}
+}
+.x-monthpicker-yearnav-prev, .x-monthpicker-yearnav-next{
+	margin:6px 12px 6px 15px;
+	float:left;
+	display:block;
+	height:15px;
+	width:15px;
+	background: murano-image('shared/btn-left.png');
+}
+.x-monthpicker-yearnav-next{
+	background: murano-image('shared/btn-right.png');
+}
+.x-monthpicker .x-btn{
+	width:80px;
+	float:left;
+	margin:4px;
+}
+.x-monthpicker-buttons{
+	border-top:1px solid #777;
+	@include background-image(linear-gradient(#666, #444));
+	padding:2px 1px;
+	@include clearfix;
+}
+
+.x-datepicker-footer{
+	@include background-image(linear-gradient(#666, #444));
+	border-top-color:#777;
+	border-bottom-color:#222;
+}

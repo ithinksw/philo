@@ -19,7 +19,7 @@ Displaying the Navigation
 
 All you need to do now is show the navigation in the template! This is quite easy, using the :ttag:`~philo.contrib.shipherd.templatetags.shipherd.recursenavigation` templatetag. For now we'll keep it simple. Adjust the "Hello World Template" to look like this::
 	
-	<html>
+	<html>{% load shipherd %}
 	    <head>
 	        <title>{% container page_title %}</title>
 	    </head>
@@ -29,7 +29,7 @@ All you need to do now is show the navigation in the template! This is quite eas
 	                <li{% if navloop.active %} class="active"{% endif %}>
 	                    {{ item.text }}
 	                </li>
-	            {% endnavigation %}
+	            {% endrecursenavigation %}
 	        </ul>
 	        {% container page_body as content %}
 	        {% if content %}

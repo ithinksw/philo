@@ -319,7 +319,12 @@ class Entity(models.Model):
 		
 		"""
 		return mapper(self)
-	attributes = property(get_attribute_mapper)
+	
+	@property
+	def attributes(self):
+		if not hasattr(self, '_attributes'):
+			self._attributes = self.get_attribute_mapper()
+		return self._attributes
 	
 	class Meta:
 		abstract = True
@@ -500,7 +505,6 @@ class TreeEntity(Entity, MPTTModel):
 			else:
 				mapper = AttributeMapper
 		return super(TreeEntity, self).get_attribute_mapper(mapper)
-	attributes = property(get_attribute_mapper)
 	
 	def __unicode__(self):
 		return self.path

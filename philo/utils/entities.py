@@ -20,8 +20,8 @@ class AttributeMapper(object, DictMixin):
 	
 	def __getitem__(self, key):
 		"""Returns the ultimate python value of the :class:`~philo.models.base.Attribute` with the given ``key`` from the cache, populating the cache if necessary."""
-		if not self._cache_populated:
-			self._populate_cache()
+		if not self._cache_filled:
+			self._fill_cache()
 		return self._cache[key]
 	
 	def __setitem__(self, key, value):
@@ -53,30 +53,30 @@ class AttributeMapper(object, DictMixin):
 	
 	def get_attribute(self, key, default=None):
 		"""Returns the :class:`~philo.models.base.Attribute` instance with the given ``key`` from the cache, populating the cache if necessary, or ``default`` if no such attribute is found."""
-		if not self._cache_populated:
-			self._populate_cache()
+		if not self._cache_filled:
+			self._fill_cache()
 		return self._attributes_cache.get(key, default)
 	
 	def keys(self):
 		"""Returns the keys from the cache, first populating the cache if necessary."""
-		if not self._cache_populated:
-			self._populate_cache()
+		if not self._cache_filled:
+			self._fill_cache()
 		return self._cache.keys()
 	
 	def items(self):
 		"""Returns the items from the cache, first populating the cache if necessary."""
-		if not self._cache_populated:
-			self._populate_cache()
+		if not self._cache_filled:
+			self._fill_cache()
 		return self._cache.items()
 	
 	def values(self):
 		"""Returns the values from the cache, first populating the cache if necessary."""
-		if not self._cache_populated:
-			self._populate_cache()
+		if not self._cache_filled:
+			self._fill_cache()
 		return self._cache.values()
 	
-	def _populate_cache(self):
-		if self._cache_populated:
+	def _fill_cache(self):
+		if self._cache_filled:
 			return
 		
 		attributes = self.get_attributes()
@@ -92,24 +92,24 @@ class AttributeMapper(object, DictMixin):
 			values_bulk[ct] = ct.model_class().objects.in_bulk(pks)
 		
 		self._cache.update(dict([(a.key, getattr(values_bulk[a.value_content_type].get(a.value_object_id), 'value', None)) for a in attributes]))
-		self._cache_populated = True
+		self._cache_filled = True
 	
 	def clear_cache(self):
 		"""Clears the cache."""
 		self._cache = {}
 		self._attributes_cache = {}
-		self._cache_populated = False
+		self._cache_filled = False
 
 
 class LazyAttributeMapperMixin(object):
 	"""In some cases, it may be that only one attribute value needs to be fetched. In this case, it is more efficient to avoid populating the cache whenever possible. This mixin overrides the :meth:`__getitem__` and :meth:`get_attribute` methods to prevent their populating the cache. If the cache has been populated (i.e. through :meth:`keys`, :meth:`values`, etc.), then the value or attribute will simply be returned from the cache."""
 	def __getitem__(self, key):
-		if key not in self._cache and not self._cache_populated:
+		if key not in self._cache and not self._cache_filled:
 			self._add_to_cache(key)
 		return self._cache[key]
 	
 	def get_attribute(self, key, default=None):
-		if key not in self._attributes_cache and not self._cache_populated:
+		if key not in self._attributes_cache and not self._cache_filled:
 			self._add_to_cache(key)
 		return self._attributes_cache.get(key, default)
 	
@@ -175,16 +175,16 @@ class PassthroughAttributeMapper(AttributeMapper):
 		self._attributes = [e.attributes for e in entities]
 		super(PassthroughAttributeMapper, self).__init__(self._attributes[0].entity)
 	
-	def _populate_cache(self):
-		if self._cache_populated:
+	def _fill_cache(self):
+		if self._cache_filled:
 			return
 		
 		for a in reversed(self._attributes):
-			a._populate_cache()
+			a._fill_cache()
 			self._attributes_cache.update(a._attributes_cache)
 			self._cache.update(a._cache)
 		
-		self._cache_populated = True
+		self._cache_filled = True
 	
 	def get_attributes(self):
 		raise NotImplementedError

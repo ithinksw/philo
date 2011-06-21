@@ -53,7 +53,7 @@ Now that you've got everything configured, it's time to set up your first page! 
 
 Next, add a philo :class:`.Page` - let's call it "Hello World Page" and use the template you just made.
 
-Now make a philo :class:`.Node`. Give it the slug ``hello-world``. Set the view content type to "Page" and use the page that you just made. If you navigate to ``/hello-world``, you will see the results of rendering the page!
+Now make a philo :class:`.Node`. Give it the slug ``hello-world``. Set the ``view_content_type`` to "Page" and the ``view_object_id`` to the id of the page that you just made - probably 1. If you navigate to ``/hello-world``, you will see the results of rendering the page!
 
 Setting the root node
 +++++++++++++++++++++
@@ -70,18 +70,20 @@ Editing page contents
 Great! We've got a page that says "Hello World". But what if we want it to say something else? Should we really have to edit the :class:`.Template` to change the content of the :class:`.Page`? And what if we want to share the :class:`.Template` but have different content? Adjust the :class:`.Template` to look like this::
 	
 	<html>
-		<head>
-			<title>{% container page_title %}</title>
-		</head>
-		<body>
-			{% container page_body as content %}
-			{% if content %}
-				<p>{{ content }}</p>
-			{% endif %}
-			<p>The time is {% now %}.</p>
-		</body>
+	    <head>
+	        <title>{% container page_title %}</title>
+	    </head>
+	    <body>
+	        {% container page_body as content %}
+	        {% if content %}
+	            <p>{{ content }}</p>
+	        {% endif %}
+	        <p>The time is {% now "jS F Y H:i" %}.</p>
+	    </body>
 	</html>
 
 Now go edit your :class:`.Page`. Two new fields called "Page title" and "Page body" have shown up! You can put anything you like in here and have it show up in the appropriate places when the page is rendered.
 
 .. seealso:: :ttag:`philo.templatetags.containers.container`
+
+Congrats! You've done it!

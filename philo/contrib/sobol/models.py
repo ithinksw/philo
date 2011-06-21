@@ -11,7 +11,7 @@ from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.utils import simplejson as json
 from django.utils.datastructures import SortedDict
 
-from philo.contrib.sobol import registry
+from philo.contrib.sobol import registry, get_search_instance
 from philo.contrib.sobol.forms import SearchForm
 from philo.contrib.sobol.utils import HASH_REDIRECT_GET_KEY, URL_REDIRECT_GET_KEY, SEARCH_ARG_GET_KEY, check_redirect_hash, RegistryIterator
 from philo.exceptions import ViewCanNotProvideSubpath
@@ -79,6 +79,8 @@ class Search(models.Model):
 					self._favored_results += subresults
 				else:
 					break
+			if len(self._favored_results) == len(results):
+				self._favored_results = []
 		return self._favored_results
 	
 	class Meta:
@@ -156,7 +158,7 @@ try:
 except ImportError:
 	pass
 else:
-	add_introspection_rules([], ["^philo\.contrib\.shipherd\.models\.RegistryChoiceField"])
+	add_introspection_rules([], ["^philo\.contrib\.sobol\.models\.RegistryChoiceField"])
 
 
 class SearchView(MultiView):
@@ -194,10 +196,6 @@ class SearchView(MultiView):
 			)
 		return urlpatterns
 	
-	def get_search_instance(self, slug, search_string):
-		"""Gets the :class:`.BaseSearch` subclass registered with :obj:`.sobol.search.registry` as ``slug`` and instantiates it with ``search_string``."""
-		return registry[slug](search_string.lower())
-	
 	def results_view(self, request, extra_context=None):
 		"""
 		Renders :attr:`results_page` with a context containing an instance of :attr:`search_form`. If the form was submitted and was valid, then one of two things has happened:
@@ -233,11 +231,12 @@ class SearchView(MultiView):
 				
 				search_instances = []
 				for slug in self.searches:
-					search_instance = self.get_search_instance(slug, search_string)
-					search_instances.append(search_instance)
+					if slug in registry:
+						search_instance = get_search_instance(slug, search_string)
+						search_instances.append(search_instance)
 					
-					if self.enable_ajax_api:
-						search_instance.ajax_api_url = "%s?%s=%s" % (self.reverse('ajax_api_view', kwargs={'slug': slug}, node=request.node), SEARCH_ARG_GET_KEY, search_string)
+						if self.enable_ajax_api:
+							search_instance.ajax_api_url = "%s?%s=%s" % (self.reverse('ajax_api_view', kwargs={'slug': slug}, node=request.node), SEARCH_ARG_GET_KEY, search_string)
 				
 				if eventlet and not self.enable_ajax_api:
 					pool = eventlet.GreenPool()
@@ -246,8 +245,16 @@ class SearchView(MultiView):
 					pool.waitall()
 				
 				context.update({
-					'searches': search_instances
+					'searches': search_instances,
+					'favored_results': []
 				})
+				
+				try:
+					search = Search.objects.get(string=search_string)
+				except Search.DoesNotExist:
+					pass
+				else:
+					context['favored_results'] = [r.url for r in search.get_favored_results()]
 		else:
 			form = SearchForm()
 		
@@ -258,8 +265,10 @@ class SearchView(MultiView):
 	
 	def ajax_api_view(self, request, slug, extra_context=None):
 		"""
-		Returns a JSON string containing two keyed lists.
+		Returns a JSON object containing the following variables:
 		
+		search
+			Contains the slug for the search.
 		results
 			Contains the results of :meth:`.Result.get_context` for each result.
 		rendered
@@ -267,19 +276,19 @@ class SearchView(MultiView):
 		hasMoreResults
 			``True`` or ``False`` whether the search has more results according to :meth:`BaseSearch.has_more_results`
 		moreResultsURL
-			Contains None or a querystring which, once accessed, will note the :class:`Click` and redirect the user to a page containing more results.
+			Contains ``None`` or a querystring which, once accessed, will note the :class:`Click` and redirect the user to a page containing more results.
 		
 		"""
 		search_string = request.GET.get(SEARCH_ARG_GET_KEY)
 		
-		if not request.is_ajax() or not self.enable_ajax_api or slug not in self.searches or search_string is None:
+		if not request.is_ajax() or not self.enable_ajax_api or slug not in registry or slug not in self.searches or search_string is None:
 			raise Http404
 		
-		search_instance = self.get_search_instance(slug, search_string)
+		search_instance = get_search_instance(slug, search_string)
 		
 		return HttpResponse(json.dumps({
+			'search': search_instance.slug,
 			'results': [result.get_context() for result in search_instance.results],
-			'rendered': [result.render() for result in search_instance.results],
-			'hasMoreResults': search.has_more_results(),
-			'moreResultsURL': (u"?%s" % search.more_results_querydict.urlencode()) if search.more_results_querydict else None,
+			'hasMoreResults': search_instance.has_more_results,
+			'moreResultsURL': search_instance.more_results_url,
 		}), mimetype="application/json")

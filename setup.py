@@ -44,7 +44,7 @@ setup(
 	version = '.'.join([str(v) for v in version]),
 	url = "http://philocms.org/",
 	description = "A foundation for developing web content management systems.",
-	long_description = open(os.path.join(root_dir, 'README.markdown')).read(),
+	long_description = open(os.path.join(root_dir, 'README')).read(),
 	maintainer = "iThink Software",
 	maintainer_email = "contact@ithinksw.com",
 	packages = packages,

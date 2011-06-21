@@ -131,7 +131,7 @@ def recursenavigation(parser, token):
 		<ul>
 		    {% recursenavigation node "main" %}
 		        <li{% if navloop.active %} class='active'{% endif %}>
-		            {{ navloop.item.text }}
+		            {{ item.text }}
 		            {% if item.get_children %}
 		                <ul>
 		                    {{ children }}
@@ -140,6 +140,22 @@ def recursenavigation(parser, token):
 		        </li>
 		    {% endrecursenavigation %}
 		</ul>
+	
+	.. note:: {% recursenavigation %} requires that the current :class:`HttpRequest` be present in the context as ``request``. The simplest way to do this is with the `request context processor`_. If this is installed with just the default template context processors, the entry in your settings file will look like this::
+
+		TEMPLATE_CONTEXT_PROCESSORS = (
+			# Defaults
+			"django.contrib.auth.context_processors.auth",
+			"django.core.context_processors.debug",
+			"django.core.context_processors.i18n",
+			"django.core.context_processors.media",
+			"django.core.context_processors.static",
+			"django.contrib.messages.context_processors.messages"
+			...
+			"django.core.context_processors.request"
+		)
+	
+	.. _request context processor: https://docs.djangoproject.com/en/dev/ref/templates/api/#django-core-context-processors-request
 	"""
 	bits = token.contents.split()
 	if len(bits) != 3:

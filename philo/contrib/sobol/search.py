@@ -1,5 +1,6 @@
 #encoding: utf-8
 import datetime
+from hashlib import sha1
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -9,7 +10,7 @@ from django.utils import simplejson as json
 from django.utils.http import urlquote_plus
 from django.utils.safestring import mark_safe
 from django.utils.text import capfirst
-from django.template import loader, Context, Template
+from django.template import loader, Context, Template, TemplateDoesNotExist
 
 from philo.contrib.sobol.utils import make_tracking_querydict
 from philo.utils.registry import Registry
@@ -25,20 +26,34 @@ else:
 
 
 __all__ = (
-	'Result', 'BaseSearch', 'DatabaseSearch', 'URLSearch', 'JSONSearch', 'GoogleSearch', 'registry'
+	'Result', 'BaseSearch', 'DatabaseSearch', 'URLSearch', 'JSONSearch', 'GoogleSearch', 'registry', 'get_search_instance'
 )
 
 
-SEARCH_CACHE_KEY = 'philo_sobol_search_results'
-DEFAULT_RESULT_TEMPLATE_STRING = "{% if url %}<a href='{{ url }}'>{% endif %}{{ title }}{% if url %}</a>{% endif %}"
-DEFAULT_RESULT_TEMPLATE = Template(DEFAULT_RESULT_TEMPLATE_STRING)
-
-# Determines the timeout on the entire result cache.
-MAX_CACHE_TIMEOUT = 60*24*7
+SEARCH_CACHE_SEED = 'philo_sobol_search_results'
+USE_CACHE = getattr(settings, 'SOBOL_USE_CACHE', True)
 
 
 #: A registry for :class:`BaseSearch` subclasses that should be available in the admin.
 registry = Registry()
+
+
+def _make_cache_key(search, search_arg):
+	return sha1(SEARCH_CACHE_SEED + search.slug + search_arg).hexdigest()
+
+
+def get_search_instance(slug, search_arg):
+	"""Returns a search instance for the given slug, either from the cache or newly-instantiated."""
+	search = registry[slug]
+	search_arg = search_arg.lower()
+	if USE_CACHE:
+		key = _make_cache_key(search, search_arg)
+		cached = cache.get(key)
+		if cached:
+			return cached
+	instance = search(search_arg)
+	instance.slug = slug
+	return instance
 
 
 class Result(object):
@@ -58,39 +73,41 @@ class Result(object):
 		return self.search.get_result_title(self.result)
 	
 	def get_url(self):
-		"""Returns the url of the result or an empty string by calling :meth:`BaseSearch.get_result_querydict` on the raw result and then encoding the querydict returned."""
-		qd = self.search.get_result_querydict(self.result)
-		if qd is None:
-			return ""
-		return "?%s" % qd.urlencode()
+		"""Returns the url of the result or ``None`` by calling :meth:`BaseSearch.get_result_url` on the raw result. This url will contain a querystring which, if used, will track a :class:`.Click` for the actual url."""
+		return self.search.get_result_url(self.result)
+	
+	def get_actual_url(self):
+		"""Returns the actual url of the result by calling :meth:`BaseSearch.get_actual_result_url` on the raw result."""
+		return self.search.get_actual_result_url(self.result)
+	
+	def get_content(self):
+		"""Returns the content of the result by calling :meth:`BaseSearch.get_result_content` on the raw result."""
+		return self.search.get_result_content(self.result)
 	
 	def get_template(self):
-		"""Returns the template for the result by calling :meth:`BaseSearch.get_result_template` on the raw result."""
+		"""Returns the template which will be used to render the :class:`Result` by calling :meth:`BaseSearch.get_result_template` on the raw result."""
 		return self.search.get_result_template(self.result)
-	
-	def get_extra_context(self):
-		"""Returns any extra context for the result by calling :meth:`BaseSearch.get_result_extra_context` on the raw result."""
-		return self.search.get_result_extra_context(self.result)
 	
 	def get_context(self):
 		"""
-		Returns the context dictionary for the result. This is used both in rendering the result and in the AJAX return value for :meth:`.SearchView.ajax_api_view`. The context will contain everything from :meth:`get_extra_context` as well as the following keys:
+		Returns the context dictionary for the result. This is used both in rendering the result and in the AJAX return value for :meth:`.SearchView.ajax_api_view`. The context will contain the following keys:
 		
 		title
 			The result of calling :meth:`get_title`
 		url
 			The result of calling :meth:`get_url`
-		result
-			The raw result which the :class:`Result` was instantiated with.
+		content
+			The result of calling :meth:`get_content`
 		
 		"""
-		context = self.get_extra_context()
-		context.update({
-			'title': self.get_title(),
-			'url': self.get_url(),
-			'result': self.result
-		})
-		return context
+		if not hasattr(self, '_context'):
+			self._context = {
+				'title': self.get_title(),
+				'url': self.get_url(),
+				'actual_url': self.get_actual_url(),
+				'content': self.get_content()
+			}
+		return self._context
 	
 	def render(self):
 		"""Returns the template from :meth:`get_template` rendered with the context from :meth:`get_context`."""
@@ -108,7 +125,7 @@ class BaseSearchMetaclass(type):
 		if 'verbose_name' not in attrs:
 			attrs['verbose_name'] = capfirst(' '.join(convert_camelcase(name).rsplit(' ', 1)[:-1]))
 		if 'slug' not in attrs:
-			attrs['slug'] = name.lower()
+			attrs['slug'] = name[:-6].lower() if name.endswith("Search") else name.lower()
 		return super(BaseSearchMetaclass, cls).__new__(cls, name, bases, attrs)
 
 
@@ -120,54 +137,44 @@ class BaseSearch(object):
 	
 	"""
 	__metaclass__ = BaseSearchMetaclass
-	#: The number of results to return from the complete list. Default: 10
-	result_limit = 10
+	#: The number of results to return from the complete list. Default: 5
+	result_limit = 5
 	#: How long the items for the search should be cached (in minutes). Default: 48 hours.
 	_cache_timeout = 60*48
+	#: The path to the template which will be used to render the :class:`Result`\ s for this search. If this is ``None``, then the framework will try ``sobol/search/<slug>/result.html`` and ``sobol/search/result.html``.
+	result_template = None
+	#: The path to the template which will be used to generate the title of the :class:`Result`\ s for this search. If this is ``None``, then the framework will try ``sobol/search/<slug>/title.html`` and ``sobol/search/title.html``.
+	title_template = None
+	#: The path to the template which will be used to generate the content of the :class:`Result`\ s for this search. If this is ``None``, then the framework will try ``sobol/search/<slug>/content.html`` and ``sobol/search/content.html``.
+	content_template = None
 	
 	def __init__(self, search_arg):
 		self.search_arg = search_arg
-	
-	def _get_cached_results(self):
-		"""Return the cached results if the results haven't timed out. Otherwise return None."""
-		result_cache = cache.get(SEARCH_CACHE_KEY)
-		if result_cache and self.__class__ in result_cache and self.search_arg.lower() in result_cache[self.__class__]:
-			cached = result_cache[self.__class__][self.search_arg.lower()]
-			if cached['timeout'] >= datetime.datetime.now():
-				return cached['results']
-		return None
-	
-	def _set_cached_results(self, results, timeout):
-		"""Sets the results to the cache for <timeout> minutes."""
-		result_cache = cache.get(SEARCH_CACHE_KEY) or {}
-		cached = result_cache.setdefault(self.__class__, {}).setdefault(self.search_arg.lower(), {})
-		cached.update({
-			'results': results,
-			'timeout': datetime.datetime.now() + datetime.timedelta(minutes=timeout)
-		})
-		cache.set(SEARCH_CACHE_KEY, result_cache, MAX_CACHE_TIMEOUT)
 	
 	@property
 	def results(self):
 		"""Retrieves cached results or initiates a new search via :meth:`get_results` and caches the results."""
 		if not hasattr(self, '_results'):
-			results = self._get_cached_results()
-			if results is None:
-				try:
-					# Cache one extra result so we can see if there are
-					# more results to be had.
-					limit = self.result_limit
-					if limit is not None:
-						limit += 1
-					results = self.get_results(limit)
-				except:
-					if settings.DEBUG:
-						raise
-					#  On exceptions, don't set any cache; just return.
-					return []
+			try:
+				# Cache one extra result so we can see if there are
+				# more results to be had.
+				limit = self.result_limit
+				if limit is not None:
+					limit += 1
+				results = self.get_results(limit)
+			except:
+				if settings.DEBUG:
+					raise
+				#  On exceptions, don't set any cache; just return.
+				return []
 			
-				self._set_cached_results(results, self._cache_timeout)
 			self._results = results
+			
+			if USE_CACHE:
+				for result in results:
+					result.get_context()
+				key = _make_cache_key(self, self.search_arg)
+				cache.set(key, self, self._cache_timeout)
 		
 		return self._results
 	
@@ -186,46 +193,73 @@ class BaseSearch(object):
 		"""Returns an iterable of up to ``limit`` results. The :meth:`get_result_title`, :meth:`get_result_url`, :meth:`get_result_template`, and :meth:`get_result_extra_context` methods will be used to interpret the individual items that this function returns, so the result can be an object with attributes as easily as a dictionary with keys. However, keep in mind that the raw results will be stored with django's caching mechanisms and will be converted to JSON."""
 		raise NotImplementedError
 	
-	def get_result_title(self, result):
-		"""Returns the title of the ``result``. Must be implemented by subclasses."""
-		raise NotImplementedError
-	
-	def get_result_url(self, result):
+	def get_actual_result_url(self, result):
 		"""Returns the actual URL for the ``result`` or ``None`` if there is no URL. Must be implemented by subclasses."""
 		raise NotImplementedError
 	
 	def get_result_querydict(self, result):
 		"""Returns a querydict for tracking selection of the result, or ``None`` if there is no URL for the result."""
-		url = self.get_result_url(result)
+		url = self.get_actual_result_url(result)
 		if url is None:
 			return None
 		return make_tracking_querydict(self.search_arg, url)
 	
+	def get_result_url(self, result):
+		"""Returns ``None`` or a url which, when accessed, will register a :class:`.Click` for that url."""
+		qd = self.get_result_querydict(result)
+		if qd is None:
+			return None
+		return "?%s" % qd.urlencode()
+	
+	def get_result_title(self, result):
+		"""Returns the title of the ``result``. By default, renders ``sobol/search/<slug>/title.html`` or ``sobol/search/title.html`` with the result in the context. This can be overridden by setting :attr:`title_template` or simply overriding :meth:`get_result_title`. If no template can be found, this will raise :exc:`TemplateDoesNotExist`."""
+		return loader.render_to_string(self.title_template or [
+			'sobol/search/%s/title.html' % self.slug,
+			'sobol/search/title.html'
+		], {'result': result})
+	
+	def get_result_content(self, result):
+		"""Returns the content for the ``result``. By default, renders ``sobol/search/<slug>/content.html`` or ``sobol/search/content.html`` with the result in the context. This can be overridden by setting :attr:`content_template` or simply overriding :meth:`get_result_content`. If no template is found, this will return an empty string."""
+		try:
+			return loader.render_to_string(self.content_template or [
+				'sobol/search/%s/content.html' % self.slug,
+				'sobol/search/content.html'
+			], {'result': result})
+		except TemplateDoesNotExist:
+			return ""
+	
 	def get_result_template(self, result):
-		"""Returns the template to be used for rendering the ``result``."""
-		if hasattr(self, 'result_template'):
+		"""Returns the template to be used for rendering the ``result``. For a search with slug ``google``, this would first try ``sobol/search/google/result.html``, then fall back on ``sobol/search/result.html``. Subclasses can override this by setting :attr:`result_template` to the path of another template."""
+		if self.result_template:
 			return loader.get_template(self.result_template)
-		if not hasattr(self, '_result_template'):
-			self._result_template = DEFAULT_RESULT_TEMPLATE
-		return self._result_template
+		return loader.select_template([
+			'sobol/search/%s/result.html' % self.slug,
+			'sobol/search/result.html'
+		])
 	
-	def get_result_extra_context(self, result):
-		"""Returns any extra context to be used when rendering the ``result``."""
-		return {}
-	
+	@property
 	def has_more_results(self):
 		"""Returns ``True`` if there are more results than :attr:`result_limit` and ``False`` otherwise."""
 		return len(self.results) > self.result_limit
 	
-	@property
-	def more_results_url(self):
-		"""Returns the actual url for more results. This should be accessed through :attr:`more_results_querydict` in the template so that the click can be tracked."""
-		raise NotImplementedError
+	def get_actual_more_results_url(self):
+		"""Returns the actual url for more results. By default, simply returns ``None``."""
+		return None
+	
+	def get_more_results_querydict(self):
+		"""Returns a :class:`QueryDict` for tracking whether people click on a 'more results' link."""
+		url = self.get_actual_more_results_url()
+		if url:
+			return make_tracking_querydict(self.search_arg, url)
+		return None
 	
 	@property
-	def more_results_querydict(self):
-		"""Returns a :class:`QueryDict` for tracking whether people click on a 'more results' link."""
-		return make_tracking_querydict(self.search_arg, self.more_results_url)
+	def more_results_url(self):
+		"""Returns a URL which consists of a querystring which, when accessed, will log a :class:`.Click` for the actual URL."""
+		qd = self.get_more_results_querydict()
+		if qd is None:
+			return None
+		return "?%s" % qd.urlencode()
 	
 	def __unicode__(self):
 		return self.verbose_name
@@ -260,9 +294,8 @@ class URLSearch(BaseSearch):
 	def url(self):
 		"""The URL where the search gets its results. Composed from :attr:`search_url` and :attr:`query_format_str`."""
 		return self.search_url + self.query_format_str % urlquote_plus(self.search_arg)
-
-	@property
-	def more_results_url(self):
+	
+	def get_actual_more_results_url(self):
 		return self.url
 	
 	def parse_response(self, response, limit=None):
@@ -282,9 +315,9 @@ class JSONSearch(URLSearch):
 class GoogleSearch(JSONSearch):
 	"""An example implementation of a :class:`JSONSearch`."""
 	search_url = "http://ajax.googleapis.com/ajax/services/search/web"
-	result_template = 'search/googlesearch.html'
 	_cache_timeout = 60
 	verbose_name = "Google search (current site)"
+	_more_results_url = None
 	
 	@property
 	def query_format_str(self):
@@ -323,15 +356,17 @@ class GoogleSearch(JSONSearch):
 			return True
 		return False
 	
-	@property
-	def more_results_url(self):
+	def get_actual_more_results_url(self):
 		return self._more_results_url
 	
-	def get_result_title(self, result):
-		return result['titleNoFormatting']
-	
-	def get_result_url(self, result):
+	def get_actual_result_url(self, result):
 		return result['unescapedUrl']
+	
+	def get_result_title(self, result):
+		return mark_safe(result['titleNoFormatting'])
+	
+	def get_result_content(self, result):
+		return mark_safe(result['content'])
 
 
 registry.register(GoogleSearch)

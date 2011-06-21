@@ -5,7 +5,7 @@ from django.conf.urls.defaults import url, patterns, include
 from django.db import models
 from django.http import Http404, HttpResponse
 
-from philo.contrib.syndication.models import FeedView
+from philo.contrib.winer.models import FeedView
 from philo.exceptions import ViewCanNotProvideSubpath
 from philo.models import Tag, Entity, Page, register_value_model
 from philo.models.fields import TemplateField

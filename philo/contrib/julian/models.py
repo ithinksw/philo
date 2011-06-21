@@ -15,8 +15,8 @@ from django.http import HttpResponse, Http404
 from django.utils.encoding import force_unicode
 
 from philo.contrib.julian.feedgenerator import ICalendarFeed
-from philo.contrib.syndication.models import FeedView
-from philo.contrib.syndication.feeds import registry
+from philo.contrib.winer.models import FeedView
+from philo.contrib.winer.feeds import registry
 from philo.exceptions import ViewCanNotProvideSubpath
 from philo.models import Tag, Entity, Page
 from philo.models.fields import TemplateField

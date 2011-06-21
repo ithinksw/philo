@@ -9,9 +9,9 @@ from django.utils import feedgenerator, tzinfo
 from django.utils.encoding import smart_unicode, force_unicode
 from django.utils.html import escape
 
-from philo.contrib.syndication.exceptions import HttpNotAcceptable
-from philo.contrib.syndication.feeds import registry, DEFAULT_FEED
-from philo.contrib.syndication.middleware import http_not_acceptable
+from philo.contrib.winer.exceptions import HttpNotAcceptable
+from philo.contrib.winer.feeds import registry, DEFAULT_FEED
+from philo.contrib.winer.middleware import http_not_acceptable
 from philo.models import Page, Template, MultiView
 
 try:

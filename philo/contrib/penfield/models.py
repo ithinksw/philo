@@ -486,9 +486,7 @@ class NewsletterView(FeedView):
 				url(r'^%s$' % self.issue_permalink_base, self.issue_archive_view, 'issue_archive')
 			)
 		if self.article_archive_page:
-			urlpatterns += patterns('',
-				url(r'^%s' % self.article_permalink_base, include(self.feed_patterns('get_all_articles', 'article_archive_page', 'articles')))
-			)
+			urlpatterns += self.feed_patterns(r'^%s' % self.article_permalink_base, 'get_all_articles', 'article_archive_page', 'articles')
 			if self.article_permalink_style in 'DMY':
 				urlpatterns += self.feed_patterns(r'^%s/(?P<year>\d{4})' % self.article_permalink_base, 'get_articles_by_ymd', 'article_archive_page', 'articles_by_year')
 				if self.article_permalink_style in 'DM':

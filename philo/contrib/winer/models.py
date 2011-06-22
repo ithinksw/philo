@@ -87,19 +87,15 @@ class FeedView(MultiView):
 		.. seealso:: :meth:`get_feed_type`
 		
 		"""
-		urlpatterns = patterns('')
+		feed_patterns = ()
 		if self.feeds_enabled:
 			suffixes = [(self.feed_suffix, None)] + [(slug, slug) for slug in registry]
 			for suffix, feed_type in suffixes:
 				feed_view = http_not_acceptable(self.feed_view(get_items_attr, reverse_name, feed_type))
 				feed_pattern = r'%s%s%s$' % (base, "/" if base and base[-1] != "^" else "", suffix)
-				urlpatterns += patterns('',
-					url(feed_pattern, feed_view, name="%s_%s" % (reverse_name, suffix)),
-				)
-		urlpatterns += patterns('',
-			url(r"%s$" % base, self.page_view(get_items_attr, page_attr), name=reverse_name)
-		)
-		return urlpatterns
+				feed_patterns += (url(feed_pattern, feed_view, name="%s_%s" % (reverse_name, suffix)),)
+		feed_patterns += (url(r"%s$" % base, self.page_view(get_items_attr, page_attr), name=reverse_name),)
+		return patterns('', *feed_patterns)
 	
 	def get_object(self, request, **kwargs):
 		"""By default, returns the object stored in the attribute named by :attr:`object_attr`. This can be overridden for subclasses that publish different data for different URL parameters. It is part of the :class:`django.contrib.syndication.views.Feed` API."""

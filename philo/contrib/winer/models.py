@@ -22,12 +22,14 @@ except:
 
 class FeedView(MultiView):
 	"""
-	:class:`FeedView` handles a number of pages and related feeds for a single object such as a blog or newsletter. In addition to all other methods and attributes, :class:`FeedView` supports the same generic API as `django.contrib.syndication.views.Feed <http://docs.djangoproject.com/en/dev/ref/contrib/syndication/#django.contrib.syndication.django.contrib.syndication.views.Feed>`_.
+	:class:`FeedView` is an abstract model which handles a number of pages and related feeds for a single object such as a blog or newsletter. In addition to all other methods and attributes, :class:`FeedView` supports the same generic API as `django.contrib.syndication.views.Feed <http://docs.djangoproject.com/en/dev/ref/contrib/syndication/#django.contrib.syndication.django.contrib.syndication.views.Feed>`_.
 	
 	"""
 	#: The type of feed which should be served by the :class:`FeedView`.
 	feed_type = models.CharField(max_length=50, choices=registry.choices, default=registry.get_slug(DEFAULT_FEED))
-	#: The suffix which will be appended to a page URL for a feed of its items. Default: "feed"
+	#: The suffix which will be appended to a page URL for a :attr:`feed_type` feed of its items. Default: "feed". Note that RSS and Atom feeds will always be available at ``<page_url>/rss`` and ``<page_url>/atom`` regardless of the value of this setting.
+	#:
+	#: .. seealso:: :meth:`get_feed_type`, :meth:`feed_patterns`
 	feed_suffix = models.CharField(max_length=255, blank=False, default="feed")
 	#: A :class:`BooleanField` - whether or not feeds are enabled.
 	feeds_enabled = models.BooleanField(default=True)
@@ -39,17 +41,25 @@ class FeedView(MultiView):
 	#: A :class:`ForeignKey` to a :class:`.Template` which will be used to render the description of each item in the feed if provided.
 	item_description_template = models.ForeignKey(Template, blank=True, null=True, related_name="%(app_label)s_%(class)s_description_related")
 	
-	#: The name of the context variable to be populated with the items managed by the :class:`FeedView`.
+	#: An attribute holding the name of the context variable to be populated with the items managed by the :class:`FeedView`. Default: "items"
 	item_context_var = 'items'
-	#: The attribute on a subclass of :class:`FeedView` which will contain the main object of a feed (such as a :class:`Blog`.)
+	#: An attribute holding the name of the attribute on a subclass of :class:`FeedView` which will contain the main object of a feed (such as a :class:`~philo.contrib.penfield.models.Blog`.) Default: "object"
+	#:
+	#: Example::
+	#:
+	#:     class BlogView(FeedView):
+	#:         blog = models.ForeignKey(Blog)
+	#:         
+	#:         object_attr = 'blog'
+	#:         item_context_var = 'entries'
 	object_attr = 'object'
 	
-	#: A description of the feeds served by the :class:`FeedView`. This is a required part of the :class:`django.contrib.syndication.view.Feed` API.
+	#: An attribute holding a description of the feeds served by the :class:`FeedView`. This is a required part of the :class:`django.contrib.syndication.view.Feed` API.
 	description = ""
 	
 	def feed_patterns(self, base, get_items_attr, page_attr, reverse_name):
 		"""
-		Given the name to be used to reverse this view and the names of the attributes for the function that fetches the objects, returns patterns suitable for inclusion in urlpatterns. In addition to ``base`` and ``base`` + :attr:`feed_suffix`, patterns will be provided for each registered feed type as ``base`` + ``slug``.
+		Given the name to be used to reverse this view and the names of the attributes for the function that fetches the objects, returns patterns suitable for inclusion in urlpatterns. In addition to ``base`` (which will serve the page at ``page_attr``) and ``base`` + :attr:`feed_suffix` (which will serve a :attr:`feed_type` feed), patterns will be provided for each registered feed type as ``base`` + ``slug``.
 		
 		:param base: The base of the returned patterns - that is, the subpath pattern which will reference the page for the items. The :attr:`feed_suffix` will be appended to this subpath.
 		:param get_items_attr: A callable or the name of a callable on the :class:`FeedView` which will return an (``items``, ``extra_context``) tuple. This will be passed directly to :meth:`feed_view` and :meth:`page_view`.
@@ -59,11 +69,22 @@ class FeedView(MultiView):
 		
 		Example::
 		
-			@property
-			def urlpatterns(self):
-				urlpatterns = self.feed_patterns(r'^', 'get_all_entries', 'index_page', 'index')
-				urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})', 'get_entries_by_ymd', 'entry_archive_page', 'entries_by_day')
-				return urlpatterns
+			class BlogView(FeedView):
+			    blog = models.ForeignKey(Blog)
+			    entry_archive_page = models.ForeignKey(Page)
+			    
+			    @property
+			    def urlpatterns(self):
+			        urlpatterns = self.feed_patterns(r'^', 'get_all_entries', 'index_page', 'index')
+			        urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})', 'get_entries_by_ymd', 'entry_archive_page', 'entries_by_day')
+			        return urlpatterns
+			    
+			    def get_entries_by_ymd(request, year, month, day, extra_context=None):
+			        entries = Blog.entries.all()
+			        # filter entries based on the year, month, and day.
+			        return entries, extra_context
+		
+		.. seealso:: :meth:`get_feed_type`
 		
 		"""
 		urlpatterns = patterns('')
@@ -143,7 +164,11 @@ class FeedView(MultiView):
 	
 	def get_feed_type(self, request, feed_type=None):
 		"""
-		If ``feed_type`` is not ``None``, returns the corresponding class from the registry or reises :exc:`.HttpNotAcceptable`. Otherwise, intelligently chooses a feed type for a given request. Tries to return :attr:`feed_type`, but if the Accept header does not include that mimetype, tries to return the best match from the feed types that are offered by the :class:`FeedView`. If none of the offered feed types are accepted by the :class:`HttpRequest`, raises :exc:`.HttpNotAcceptable`.
+		If ``feed_type`` is not ``None``, returns the corresponding class from the registry or raises :exc:`.HttpNotAcceptable`.
+		
+		Otherwise, intelligently chooses a feed type for a given request. Tries to return :attr:`feed_type`, but if the Accept header does not include that mimetype, tries to return the best match from the feed types that are offered by the :class:`FeedView`. If none of the offered feed types are accepted by the :class:`HttpRequest`, raises :exc:`.HttpNotAcceptable`.
+		
+		If `mimeparse <http://code.google.com/p/mimeparse/>`_ is installed, it will be used to select the best matching accepted format; otherwise, the first available format that is accepted will be selected.
 		
 		"""
 		if feed_type is not None:

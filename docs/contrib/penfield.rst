@@ -27,18 +27,6 @@ Newsletters
 .. autoclass:: philo.contrib.penfield.models.NewsletterView
 	:members:
 
-Abstract Syndication
-++++++++++++++++++++
-
-.. autoclass:: philo.contrib.penfield.models.FeedView
-	:members:
-
-.. automodule:: philo.contrib.penfield.exceptions
-	:members:
-
-.. automodule:: philo.contrib.penfield.middleware
-	:members:
-
 Template filters
 ++++++++++++++++
 

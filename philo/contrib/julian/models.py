@@ -15,7 +15,8 @@ from django.http import HttpResponse, Http404
 from django.utils.encoding import force_unicode
 
 from philo.contrib.julian.feedgenerator import ICalendarFeed
-from philo.contrib.penfield.models import FeedView, FEEDS
+from philo.contrib.winer.models import FeedView
+from philo.contrib.winer.feeds import registry
 from philo.exceptions import ViewCanNotProvideSubpath
 from philo.models import Tag, Entity, Page
 from philo.models.fields import TemplateField
@@ -25,8 +26,7 @@ from philo.utils import ContentTypeRegistryLimiter
 __all__ = ('register_location_model', 'unregister_location_model', 'Location', 'TimedModel', 'Event', 'Calendar', 'CalendarView',)
 
 
-ICALENDAR = ICalendarFeed.mime_type
-FEEDS[ICALENDAR] = ICalendarFeed
+registry.register(ICalendarFeed, verbose_name="iCalendar")
 try:
 	DEFAULT_SITE = Site.objects.get_current()
 except:
@@ -461,5 +461,4 @@ class CalendarView(FeedView):
 		return u"%s for %s" % (self.__class__.__name__, self.calendar)
 
 field = CalendarView._meta.get_field('feed_type')
-field._choices += ((ICALENDAR, 'iCalendar'),)
-field.default = ICALENDAR
+field.default = registry.get_slug(ICalendarFeed, field.default)

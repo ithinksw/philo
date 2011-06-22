@@ -9,5 +9,6 @@ Contrib apps
 	shipherd
 	sobol
 	waldo
+	winer
 
 .. automodule:: philo.contrib

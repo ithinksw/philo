@@ -163,12 +163,12 @@ class NavigationManager(models.Manager):
 		
 		# A distinct query is not strictly necessary. TODO: benchmark the efficiency
 		# with/without distinct.
-		targets = list(Node.objects.filter(pk__in=target_pks).distinct())
+		targets = dict([(n.pk, n) for n in Node.objects.filter(pk__in=target_pks).distinct()])
 		
 		for cache in caches:
 			for item in cache['items']:
 				if item.target_node_id:
-					item.target_node = targets[targets.index(item.target_node)]
+					item.target_node = targets[item.target_node_id]
 	
 	def clear_cache(self):
 		"""Clears the manager's entire navigation cache."""

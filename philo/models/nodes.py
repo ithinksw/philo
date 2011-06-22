@@ -39,8 +39,8 @@ class Node(SlugTreeEntity):
 	@property
 	def accepts_subpath(self):
 		"""A property shortcut for :attr:`self.view.accepts_subpath <View.accepts_subpath>`"""
-		if self.view:
-			return self.view.accepts_subpath
+		if self.view_object_id and self.view_content_type_id:
+			return ContentType.objects.get_for_id(self.view_content_type_id).model_class().accepts_subpath
 		return False
 	
 	def handles_subpath(self, subpath):
@@ -126,7 +126,7 @@ class View(Entity):
 	#: A generic relation back to nodes.
 	nodes = generic.GenericRelation(Node, content_type_field='view_content_type', object_id_field='view_object_id')
 	
-	#: Property or attribute which defines whether this :class:`View` can handle subpaths. Default: ``False``
+	#: An attribute on the class which defines whether this :class:`View` can handle subpaths. Default: ``False``
 	accepts_subpath = False
 	
 	def handles_subpath(self, subpath):

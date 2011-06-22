@@ -12,7 +12,8 @@ from django.utils.safestring import mark_safe
 from django.utils.text import capfirst
 from django.template import loader, Context, Template, TemplateDoesNotExist
 
-from philo.contrib.sobol.utils import make_tracking_querydict, RegistryIterator
+from philo.contrib.sobol.utils import make_tracking_querydict
+from philo.utils.registry import Registry
 
 
 if getattr(settings, 'SOBOL_USE_EVENTLET', False):
@@ -25,7 +26,7 @@ else:
 
 
 __all__ = (
-	'Result', 'BaseSearch', 'DatabaseSearch', 'URLSearch', 'JSONSearch', 'GoogleSearch', 'SearchRegistry', 'registry', 'get_search_instance'
+	'Result', 'BaseSearch', 'DatabaseSearch', 'URLSearch', 'JSONSearch', 'GoogleSearch', 'registry', 'get_search_instance'
 )
 
 
@@ -33,74 +34,8 @@ SEARCH_CACHE_SEED = 'philo_sobol_search_results'
 USE_CACHE = getattr(settings, 'SOBOL_USE_CACHE', True)
 
 
-class RegistrationError(Exception):
-	"""Raised if there is a problem registering a search with a :class:`SearchRegistry`"""
-	pass
-
-
-class SearchRegistry(object):
-	"""Holds a registry of search types by slug."""
-	
-	def __init__(self):
-		self._registry = {}
-	
-	def register(self, search, slug=None):
-		"""
-		Register a search with the registry.
-		
-		:param search: The search class to register - generally a subclass of :class:`BaseSearch`
-		:param slug: The slug which will be used to register the search class. If ``slug`` is ``None``, the search's default slug will be used.
-		:raises: :class:`RegistrationError` if a different search is already registered with ``slug``.
-		
-		"""
-		slug = slug or search.slug
-		if slug in self._registry:
-			registered = self._registry[slug]
-			if registered.__module__ != search.__module__:
-				raise RegistrationError("A different search is already registered as `%s`" % slug)
-		else:
-			self._registry[slug] = search
-	
-	def unregister(self, search, slug=None):
-		"""
-		Unregister a search from the registry.
-		
-		:param search: The search class to unregister - generally a subclass of :class:`BaseSearch`
-		:param slug: If provided, the search will only be removed if it was registered with ``slug``. If not provided, the search class will be unregistered no matter what slug it was registered with.
-		:raises: :class:`RegistrationError` if a slug is provided but the search registered with that slug is not ``search``.
-		
-		"""
-		if slug is not None:
-			if slug in self._registry and self._registry[slug] == search:
-				del self._registry[slug]
-			raise RegistrationError("`%s` is not registered as `%s`" % (search, slug))
-		else:
-			for slug, search in self._registry.items():
-				if search == search:
-					del self._registry[slug]
-	
-	def items(self):
-		"""Returns a list of (slug, search) items in the registry."""
-		return self._registry.items()
-	
-	def iteritems(self):
-		"""Returns an iterator over the (slug, search) pairs in the registry."""
-		return RegistryIterator(self._registry, 'iteritems')
-	
-	def iterchoices(self):
-		"""Returns an iterator over (slug, search.verbose_name) pairs for the registry."""
-		return RegistryIterator(self._registry, 'iteritems', lambda x: (x[0], x[1].verbose_name))
-	
-	def __getitem__(self, key):
-		"""Returns the search registered with ``key``."""
-		return self._registry[key]
-	
-	def __iter__(self):
-		"""Returns an iterator over the keys in the registry."""
-		return self._registry.__iter__()
-
-
-registry = SearchRegistry()
+#: A registry for :class:`BaseSearch` subclasses that should be available in the admin.
+registry = Registry()
 
 
 def _make_cache_key(search, search_arg):
@@ -119,7 +54,6 @@ def get_search_instance(slug, search_arg):
 	instance = search(search_arg)
 	instance.slug = slug
 	return instance
-	
 
 
 class Result(object):

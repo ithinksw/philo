@@ -44,13 +44,15 @@ class Node(SlugTreeEntity):
 		return False
 	
 	def handles_subpath(self, subpath):
-		if self.view:
-			return self.view.handles_subpath(subpath)
+		if self.view_object_id and self.view_content_type_id:
+			return ContentType.objects.get_for_id(self.view_content_type_id).model_class().handles_subpath(subpath)
 		return False
 	
 	def render_to_response(self, request, extra_context=None):
 		"""This is a shortcut method for :meth:`View.render_to_response`"""
-		if self.view:
+		if self.view_object_id and self.view_content_type_id:
+			view_model = ContentType.objects.get_for_id(self.view_content_type_id).model_class()
+			self.view = view_model._default_manager.select_related(depth=1).get(pk=self.view_object_id)
 			return self.view.render_to_response(request, extra_context)
 		raise Http404
 	
@@ -129,9 +131,10 @@ class View(Entity):
 	#: An attribute on the class which defines whether this :class:`View` can handle subpaths. Default: ``False``
 	accepts_subpath = False
 	
-	def handles_subpath(self, subpath):
+	@classmethod
+	def handles_subpath(cls, subpath):
 		"""Returns True if the :class:`View` handles the given subpath, and False otherwise."""
-		if not self.accepts_subpath and subpath != "/":
+		if not cls.accepts_subpath and subpath != "/":
 			return False
 		return True
 	
@@ -225,15 +228,6 @@ class MultiView(View):
 	def urlpatterns(self):
 		"""Returns urlpatterns that point to views (generally methods on the class). :class:`MultiView`\ s can be thought of as "managing" these subpaths."""
 		raise NotImplementedError("MultiView subclasses must implement urlpatterns.")
-	
-	def handles_subpath(self, subpath):
-		if not super(MultiView, self).handles_subpath(subpath):
-			return False
-		try:
-			resolve(subpath, urlconf=self)
-		except Http404:
-			return False
-		return True
 	
 	def actually_render_to_response(self, request, extra_context=None):
 		"""

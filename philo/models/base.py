@@ -515,7 +515,7 @@ class TreeEntity(Entity, MPTTModel):
 		
 		"""
 		if mapper is None:
-			if self.parent:
+			if getattr(self, "%s_id" % self._mptt_meta.parent_attr):
 				mapper = TreeAttributeMapper
 			else:
 				mapper = AttributeMapper
@@ -542,7 +542,7 @@ class SlugTreeEntity(TreeEntity):
 	path = property(get_path)
 	
 	def clean(self):
-		if self.parent is None:
+		if getattr(self, "%s_id" % self._mptt_meta.parent_attr) is None:
 			try:
 				self._default_manager.exclude(pk=self.pk).get(slug=self.slug, parent__isnull=True)
 			except self.DoesNotExist:

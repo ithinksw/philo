@@ -74,7 +74,8 @@ class NavigationManager(models.Manager):
 				by_pk[root.pk] = root
 				tree_ids.append(getattr(root, item_opts.tree_id_attr))
 				root._cached_children = []
-				root.target_node.get_path(root=site_root_node)
+				if root.target_node:
+					root.target_node.get_path(root=site_root_node)
 				root.navigation = nav
 			
 			kwargs = {
@@ -89,7 +90,8 @@ class NavigationManager(models.Manager):
 				parent_pk = getattr(item, '%s_id' % item_opts.parent_attr)
 				item.parent = by_pk[parent_pk]
 				item.parent._cached_children.append(item)
-				item.target_node.get_path(root=site_root_node)
+				if item.target_node:
+					item.target_node.get_path(root=site_root_node)
 			
 			cached = roots
 			cache.set(cache_key, cached)

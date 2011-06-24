@@ -27,13 +27,12 @@ class NavigationMapper(object, DictMixin):
 		self._cache = {}
 	
 	def __getitem__(self, key):
-		return Navigation.objects.get_for_node(self.node, key)
-		#if key not in self._cache:
-		#	try:
-		#		self._cache[key] = Navigation.objects.get_for_node(self.node, key)
-		#	except Navigation.DoesNotExist:
-		#		self._cache[key] = None
-		#return self._cache[key]
+		if key not in self._cache:
+			try:
+				self._cache[key] = Navigation.objects.get_for_node(self.node, key)
+			except Navigation.DoesNotExist:
+				self._cache[key] = None
+		return self._cache[key]
 
 
 def navigation(self):
@@ -62,7 +61,7 @@ class NavigationManager(models.Manager):
 				"node__%s__gte" % opts.right_attr: right,
 				"node__%s" % opts.tree_id_attr: tree_id
 			}
-			navs = self.filter(key=key, **kwargs).order_by('-node__%s' % opts.level_attr)
+			navs = self.filter(key=key, **kwargs).select_related('node').order_by('-node__%s' % opts.level_attr)
 			nav = navs[0]
 			roots = nav.roots.all().select_related('target_node').order_by('order')
 			item_opts = NavigationItem._mptt_meta

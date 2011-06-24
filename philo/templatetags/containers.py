@@ -7,10 +7,28 @@ from django import template
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.utils.safestring import SafeUnicode, mark_safe
 
 
 register = template.Library()
+
+
+CONTAINER_CONTEXT_KEY = 'philo_container_context'
+
+
+class ContainerContext(object):
+	def __init__(self, page):
+		contentlet_specs, contentreference_specs = page.template.containers
+		
+		contentlets = page.contentlets.filter(name__in=contentlet_specs)
+		self.contentlets = dict(((c.name, c) for c in contentlets))
+		
+		q = Q()
+		for name, ct in contentreference_specs.items():
+			q |= Q(name=name, content_type=ct)
+		references = page.contentreferences.filter(q)
+		self.references = dict(((c.name, c) for c in references))
 
 
 class ContainerNode(template.Node):
@@ -36,30 +54,37 @@ class ContainerNode(template.Node):
 		return container_content
 	
 	def get_container_content(self, context):
-		page = context['page']
+		try:
+			container_context = context.render_context[CONTAINER_CONTEXT_KEY]
+		except KeyError:
+			container_context = ContainerContext(context['page'])
+			context.render_context[CONTAINER_CONTEXT_KEY] = container_context
+		
 		if self.references:
 			# Then it's a content reference.
 			try:
-				contentreference = page.contentreferences.get(name__exact=self.name, content_type=self.references)
-				content = contentreference.content
-			except ObjectDoesNotExist:
+				contentreference = container_context.references[(self.name, self.references)]
+			except KeyError:
 				content = ''
+			else:
+				content = contentreference.content
 		else:
 			# Otherwise it's a contentlet.
 			try:
-				contentlet = page.contentlets.get(name__exact=self.name)
-				if '{%' in contentlet.content or '{{' in contentlet.content:
+				contentlet = container_context.contentlets[self.name]
+			except KeyError:
+				content = ''
+			else:
+				content = contentlet.content
+				
+				if '{%' in content or '{{' in content:
 					try:
 						content = template.Template(contentlet.content, name=contentlet.name).render(context)
-					except template.TemplateSyntaxError, error:
+					except template.TemplateSyntaxError, e:
 						if settings.DEBUG:
-							content = ('[Error parsing contentlet \'%s\': %s]' % (self.name, error))
+							content = ('[Error parsing contentlet \'%s\': %s]' % (self.name, e))
 						else:
 							content = settings.TEMPLATE_STRING_IF_INVALID
-				else:
-					content = contentlet.content
-			except ObjectDoesNotExist:
-				content = settings.TEMPLATE_STRING_IF_INVALID
 			content = mark_safe(content)
 		return content
 

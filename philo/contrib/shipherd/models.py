@@ -2,6 +2,7 @@
 from UserDict import DictMixin
 from hashlib import sha1
 
+from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import NoReverseMatch
@@ -68,10 +69,13 @@ class NavigationManager(models.Manager):
 			by_pk = {}
 			tree_ids = []
 			
+			site_root_node = Site.objects.get_current().root_node
+			
 			for root in roots:
 				by_pk[root.pk] = root
 				tree_ids.append(getattr(root, item_opts.tree_id_attr))
 				root._cached_children = []
+				root.target_node.get_path(root=site_root_node)
 			
 			kwargs = {
 				'%s__in' % item_opts.tree_id_attr: tree_ids,
@@ -85,6 +89,7 @@ class NavigationManager(models.Manager):
 				parent_pk = getattr(item, '%s_id' % item_opts.parent_attr)
 				item.parent = by_pk[parent_pk]
 				item.parent._cached_children.append(item)
+				item.target_node.get_path(root=site_root_node)
 			
 			cached = roots
 			cache.set(cache_key, cached)

@@ -47,7 +47,7 @@ def membersof(parser, token):
 	
 	try:
 		app_label, model = params[3].strip('"').split('.')
-		ct = ContentType.objects.get(app_label=app_label, model=model)
+		ct = ContentType.objects.get_by_natural_key(app_label, model)
 	except ValueError:
 		raise template.TemplateSyntaxError('"%s" template tag option "with" requires an argument of the form app_label.model (see django.contrib.contenttypes)' % tag)
 	except ContentType.DoesNotExist:

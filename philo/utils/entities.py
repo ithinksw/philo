@@ -83,15 +83,15 @@ class AttributeMapper(object, DictMixin):
 		value_lookups = {}
 		
 		for a in attributes:
-			value_lookups.setdefault(a.value_content_type, []).append(a.value_object_id)
+			value_lookups.setdefault(a.value_content_type_id, []).append(a.value_object_id)
 			self._attributes_cache[a.key] = a
 		
 		values_bulk = {}
 		
-		for ct, pks in value_lookups.items():
-			values_bulk[ct] = ct.model_class().objects.in_bulk(pks)
+		for ct_pk, pks in value_lookups.items():
+			values_bulk[ct_pk] = ContentType.objects.get_for_id(ct_pk).model_class().objects.in_bulk(pks)
 		
-		self._cache.update(dict([(a.key, getattr(values_bulk[a.value_content_type].get(a.value_object_id), 'value', None)) for a in attributes]))
+		self._cache.update(dict([(a.key, getattr(values_bulk[a.value_content_type_id].get(a.value_object_id), 'value', None)) for a in attributes]))
 		self._cache_filled = True
 	
 	def clear_cache(self):

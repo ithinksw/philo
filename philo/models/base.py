@@ -458,11 +458,12 @@ class TreeEntity(Entity, MPTTModel):
 	objects = TreeEntityManager()
 	parent = models.ForeignKey('self', related_name='children', null=True, blank=True)
 	
-	def get_path(self, root=None, pathsep='/', field='slug'):
+	def get_path(self, root=None, pathsep='/', field='pk', memoize=True):
 		"""
 		:param root: Only return the path since this object.
 		:param pathsep: The path separator to use when constructing an instance's path
 		:param field: The field to pull path information from for each ancestor.
+		:param memoize: Whether to use memoized results. Since, in most cases, the ancestors of a TreeEntity will not change over the course of an instance's lifetime, this defaults to ``True``.
 		:returns: A string representation of an object's path.
 		
 		"""
@@ -470,18 +471,33 @@ class TreeEntity(Entity, MPTTModel):
 		if root == self:
 			return ''
 		
-		if root is None and self.is_root_node():
+		parent_id = getattr(self, "%s_id" % self._mptt_meta.parent_attr)
+		if getattr(root, 'pk', None) == parent_id:
 			return getattr(self, field, '?')
 		
 		if root is not None and not self.is_descendant_of(root):
 			raise AncestorDoesNotExist(root)
+		
+		if memoize:
+			memo_args = (parent_id, getattr(root, 'pk', None), pathsep, getattr(self, field, '?'))
+			try:
+				return self._path_memo[memo_args]
+			except AttributeError:
+				self._path_memo = {}
+			except KeyError:
+				pass
 		
 		qs = self.get_ancestors(include_self=True)
 		
 		if root is not None:
 			qs = qs.filter(**{'%s__gt' % self._mptt_meta.level_attr: root.get_level()})
 		
-		return pathsep.join([getattr(parent, field, '?') for parent in qs])
+		path = pathsep.join([getattr(parent, field, '?') for parent in qs])
+		
+		if memoize:
+			self._path_memo[memo_args] = path
+		
+		return path
 	path = property(get_path)
 	
 	def get_attribute_mapper(self, mapper=None):
@@ -500,7 +516,7 @@ class TreeEntity(Entity, MPTTModel):
 		
 		"""
 		if mapper is None:
-			if self.parent:
+			if getattr(self, "%s_id" % self._mptt_meta.parent_attr):
 				mapper = TreeAttributeMapper
 			else:
 				mapper = AttributeMapper
@@ -522,12 +538,12 @@ class SlugTreeEntity(TreeEntity):
 	objects = SlugTreeEntityManager()
 	slug = models.SlugField(max_length=255)
 	
-	def get_path(self, root=None, pathsep='/', field='slug'):
-		return super(SlugTreeEntity, self).get_path(root, pathsep, field)
+	def get_path(self, root=None, pathsep='/', field='slug', memoize=True):
+		return super(SlugTreeEntity, self).get_path(root, pathsep, field, memoize)
 	path = property(get_path)
 	
 	def clean(self):
-		if self.parent is None:
+		if getattr(self, "%s_id" % self._mptt_meta.parent_attr) is None:
 			try:
 				self._default_manager.exclude(pk=self.pk).get(slug=self.slug, parent__isnull=True)
 			except self.DoesNotExist:

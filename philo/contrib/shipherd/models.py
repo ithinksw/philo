@@ -62,9 +62,9 @@ class NavigationManager(models.Manager):
 				"node__%s__gte" % opts.right_attr: right,
 				"node__%s" % opts.tree_id_attr: tree_id
 			}
-			navs = self.filter(key=key, **kwargs).select_related('node').order_by('-node__%s' % opts.level_attr)
+			navs = self.filter(key=key, **kwargs).order_by('-node__%s' % opts.level_attr)
 			nav = navs[0]
-			roots = nav.roots.all().select_related('target_node')
+			roots = nav.roots.all().select_related('target_node').order_by('order')
 			item_opts = NavigationItem._mptt_meta
 			by_pk = {}
 			tree_ids = []
@@ -76,6 +76,7 @@ class NavigationManager(models.Manager):
 				tree_ids.append(getattr(root, item_opts.tree_id_attr))
 				root._cached_children = []
 				root.target_node.get_path(root=site_root_node)
+				root.navigation = nav
 			
 			kwargs = {
 				'%s__in' % item_opts.tree_id_attr: tree_ids,
@@ -172,13 +173,15 @@ class NavigationItem(TreeEntity, TargetURLModel):
 			# the same as the request path, check whether the target node is an ancestor
 			# of the requested node. If so, this is active unless the target node
 			# is the same as the ``host node`` for this navigation structure.
-			try:
-				host_node = self.get_root().navigation.node
-			except AttributeError:
-				pass
-			else:
-				if self.target_node != host_node and self.target_node.is_ancestor_of(request.node):
-					return True
+			root = self
+			
+			# The common case will be cached items, whose parents are cached with them.
+			while root.parent is not None:
+				root = root.parent
+			
+			host_node_id = root.navigation.node_id
+			if self.target_node.pk != host_node_id and self.target_node.is_ancestor_of(request.node):
+				return True
 		
 		return False
 	

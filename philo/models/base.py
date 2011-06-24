@@ -471,14 +471,15 @@ class TreeEntity(Entity, MPTTModel):
 		if root == self:
 			return ''
 		
-		if root is None and self.is_root_node():
+		parent_id = getattr(self, "%s_id" % self._mptt_meta.parent_attr)
+		if getattr(root, 'pk', None) == parent_id:
 			return getattr(self, field, '?')
 		
 		if root is not None and not self.is_descendant_of(root):
 			raise AncestorDoesNotExist(root)
 		
 		if memoize:
-			memo_args = (getattr(self, "%s_id" % self._mptt_meta.parent_attr), getattr(root, 'pk', None), pathsep, getattr(self, field, '?'))
+			memo_args = (parent_id, getattr(root, 'pk', None), pathsep, getattr(self, field, '?'))
 			try:
 				return self._path_memo[memo_args]
 			except AttributeError:

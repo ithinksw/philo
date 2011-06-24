@@ -1,6 +1,8 @@
 #encoding: utf-8
 from UserDict import DictMixin
+from hashlib import sha1
 
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import NoReverseMatch
 from django.core.validators import RegexValidator, MinValueValidator
@@ -24,12 +26,13 @@ class NavigationMapper(object, DictMixin):
 		self._cache = {}
 	
 	def __getitem__(self, key):
-		if key not in self._cache:
-			try:
-				self._cache[key] = Navigation.objects.get_for_node(self.node, key)
-			except Navigation.DoesNotExist:
-				self._cache[key] = None
-		return self._cache[key]
+		return Navigation.objects.get_for_node(self.node, key)
+		#if key not in self._cache:
+		#	try:
+		#		self._cache[key] = Navigation.objects.get_for_node(self.node, key)
+		#	except Navigation.DoesNotExist:
+		#		self._cache[key] = None
+		#return self._cache[key]
 
 
 def navigation(self):
@@ -45,41 +48,57 @@ class NavigationManager(models.Manager):
 	use_for_related = True
 	
 	def get_for_node(self, node, key):
+		cache_key = self._get_cache_key(node, key)
+		cached = cache.get(cache_key)
+		
+		if cached is None:
+			opts = Node._mptt_meta
+			left = getattr(node, opts.left_attr)
+			right = getattr(node, opts.right_attr)
+			tree_id = getattr(node, opts.tree_id_attr)
+			kwargs = {
+				"node__%s__lte" % opts.left_attr: left,
+				"node__%s__gte" % opts.right_attr: right,
+				"node__%s" % opts.tree_id_attr: tree_id
+			}
+			navs = self.filter(key=key, **kwargs).select_related('node').order_by('-node__%s' % opts.level_attr)
+			nav = navs[0]
+			roots = nav.roots.all().select_related('target_node')
+			item_opts = NavigationItem._mptt_meta
+			by_pk = {}
+			tree_ids = []
+			
+			for root in roots:
+				by_pk[root.pk] = root
+				tree_ids.append(getattr(root, item_opts.tree_id_attr))
+				root._cached_children = []
+			
+			kwargs = {
+				'%s__in' % item_opts.tree_id_attr: tree_ids,
+				'%s__lt' % item_opts.level_attr: nav.depth,
+				'%s__gt' % item_opts.level_attr: 0
+			}
+			items = NavigationItem.objects.filter(**kwargs).select_related('target_node').order_by('level', 'order')
+			for item in items:
+				by_pk[item.pk] = item
+				item._cached_children = []
+				parent_pk = getattr(item, '%s_id' % item_opts.parent_attr)
+				item.parent = by_pk[parent_pk]
+				item.parent._cached_children.append(item)
+			
+			cached = roots
+			cache.set(cache_key, cached)
+		
+		return cached
+	
+	def _get_cache_key(self, node, key):
 		opts = Node._mptt_meta
 		left = getattr(node, opts.left_attr)
 		right = getattr(node, opts.right_attr)
 		tree_id = getattr(node, opts.tree_id_attr)
-		kwargs = {
-			"node__%s__lte" % opts.left_attr: left,
-			"node__%s__gte" % opts.right_attr: right,
-			"node__%s" % opts.tree_id_attr: tree_id
-		}
-		navs = self.filter(key=key, **kwargs).select_related('node').order_by('-node__%s' % opts.level_attr)
-		nav = navs[0]
-		roots = nav.roots.all().select_related('target_node')
-		item_opts = NavigationItem._mptt_meta
-		by_pk = {}
-		tree_ids = []
+		parent_id = getattr(node, "%s_id" % opts.parent_attr)
 		
-		for root in roots:
-			by_pk[root.pk] = root
-			tree_ids.append(getattr(root, item_opts.tree_id_attr))
-			root._cached_children = []
-		
-		kwargs = {
-			'%s__in' % item_opts.tree_id_attr: tree_ids,
-			'%s__lt' % item_opts.level_attr: nav.depth,
-			'%s__gt' % item_opts.level_attr: 0
-		}
-		items = NavigationItem.objects.filter(**kwargs).select_related('target_node').order_by('level', 'order')
-		for item in items:
-			by_pk[item.pk] = item
-			item._cached_children = []
-			parent_pk = getattr(item, '%s_id' % item_opts.parent_attr)
-			item.parent = by_pk[parent_pk]
-			item.parent._cached_children.append(item)
-		
-		return roots
+		return sha1(unicode(left) + unicode(right) + unicode(tree_id) + unicode(parent_id) + unicode(node.pk) + unicode(key)).hexdigest()
 
 
 class Navigation(Entity):

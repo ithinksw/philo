@@ -87,7 +87,7 @@ def container(parser, token):
 				if option_token == 'references':
 					try:
 						app_label, model = remaining_tokens.pop(0).strip('"').split('.')
-						references = ContentType.objects.get(app_label=app_label, model=model)
+						references = ContentType.objects.get_by_natural_key(app_label, model)
 					except IndexError:
 						raise template.TemplateSyntaxError('"%s" template tag option "references" requires an argument specifying a content type' % tag)
 					except ValueError:

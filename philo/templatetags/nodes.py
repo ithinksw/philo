@@ -39,7 +39,7 @@ class NodeURLNode(template.Node):
 		if self.with_obj is None and self.view_name is None:
 			url = node.get_absolute_url()
 		else:
-			if not node.view.accepts_subpath:
+			if not node.accepts_subpath:
 				return settings.TEMPLATE_STRING_IF_INVALID
 			
 			if self.with_obj is not None:

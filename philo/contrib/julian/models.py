@@ -334,7 +334,7 @@ class CalendarView(FeedView):
 	
 	def get_events_by_location(self, request, app_label, model, pk, extra_context=None):
 		try:
-			ct = ContentType.objects.get(app_label=app_label, model=model)
+			ct = ContentType.objects.get_by_natural_key(app_label, model)
 			location = ct.model_class()._default_manager.get(pk=pk)
 		except ObjectDoesNotExist:
 			raise Http404

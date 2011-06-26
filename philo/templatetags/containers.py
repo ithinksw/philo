@@ -48,19 +48,9 @@ class ContainerNode(template.Node):
 			# Otherwise it's a contentlet.
 			try:
 				contentlet = page.contentlets.get(name__exact=self.name)
-				if '{%' in contentlet.content or '{{' in contentlet.content:
-					try:
-						content = template.Template(contentlet.content, name=contentlet.name).render(context)
-					except template.TemplateSyntaxError, error:
-						if settings.DEBUG:
-							content = ('[Error parsing contentlet \'%s\': %s]' % (self.name, error))
-						else:
-							content = settings.TEMPLATE_STRING_IF_INVALID
-				else:
-					content = contentlet.content
+				content = contentlet.content
 			except ObjectDoesNotExist:
-				content = settings.TEMPLATE_STRING_IF_INVALID
-			content = mark_safe(content)
+				content = ''
 		return content
 
 

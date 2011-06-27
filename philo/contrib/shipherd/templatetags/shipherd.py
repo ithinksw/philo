@@ -131,7 +131,7 @@ def recursenavigation(parser, token):
 		<ul>
 		    {% recursenavigation node "main" %}
 		        <li{% if navloop.active %} class='active'{% endif %}>
-		            {{ item.text }}
+		            <a href="{{ item.get_target_url }}">{{ item.text }}</a>
 		            {% if item.get_children %}
 		                <ul>
 		                    {{ children }}

@@ -41,7 +41,7 @@ All you need to do now is show the navigation in the template! This is quite eas
 	        <ul>
 	            {% recursenavigation node "main" %}
 	                <li{% if navloop.active %} class="active"{% endif %}>
-	                    {{ item.text }}
+	                    <a href="{{ item.get_target_url }}">{{ item.text }}</a>
 	                </li>
 	            {% endrecursenavigation %}
 	        </ul>

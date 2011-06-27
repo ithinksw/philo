@@ -33,7 +33,7 @@ class ContainerContext(object):
 			contents = {}
 			for c in references:
 				ct = ContentType.objects.get_for_id(c.content_type_id)
-				self.references[(c.name, ct)] = c
+				self._references[(c.name, ct)] = c
 				contents.setdefault(ct, {})[c.content_id] = c
 			
 			for ct in contents:

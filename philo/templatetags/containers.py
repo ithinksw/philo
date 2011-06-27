@@ -18,17 +18,9 @@ CONTAINER_CONTEXT_KEY = 'philo_container_context'
 
 
 class ContainerContext(object):
-	def __init__(self, page):
-		contentlet_specs, contentreference_specs = page.template.containers
-		
-		contentlets = page.contentlets.filter(name__in=contentlet_specs)
+	def __init__(self, contentlets, references):
 		self.contentlets = dict(((c.name, c) for c in contentlets))
-		
-		q = Q()
-		for name, ct in contentreference_specs.items():
-			q |= Q(name=name, content_type=ct)
-		references = page.contentreferences.filter(q)
-		self.references = dict(((c.name, c) for c in references))
+		self.references = dict((((c.name, ContentType.objects.get_for_id(c.content_type_id)), c) for c in references))
 
 
 class ContainerNode(template.Node):
@@ -38,17 +30,10 @@ class ContainerNode(template.Node):
 		self.references = references
 	
 	def render(self, context):
-		content = settings.TEMPLATE_STRING_IF_INVALID
-		if 'page' in context:
-			container_content = self.get_container_content(context)
-		else:
-			container_content = None
+		container_content = self.get_container_content(context)
 		
 		if self.as_var:
 			context[self.as_var] = container_content
-			return ''
-		
-		if not container_content:
 			return ''
 		
 		return container_content
@@ -57,7 +42,19 @@ class ContainerNode(template.Node):
 		try:
 			container_context = context.render_context[CONTAINER_CONTEXT_KEY]
 		except KeyError:
-			container_context = ContainerContext(context['page'])
+			try:
+				page = context['page']
+			except KeyError:
+				return settings.TEMPLATE_STRING_IF_INVALID
+			
+			contentlet_specs, contentreference_specs = page.template.containers
+			contentlets = page.contentlets.filter(name__in=contentlet_specs)
+			q = Q()
+			for name, ct in contentreference_specs.items():
+				q |= Q(name=name, content_type=ct)
+			references = page.contentreferences.filter(q)
+			
+			container_context = ContainerContext(contentlets, references)
 			context.render_context[CONTAINER_CONTEXT_KEY] = container_context
 		
 		if self.references:

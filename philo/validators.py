@@ -6,7 +6,7 @@ from django.utils import simplejson as json
 from django.utils.html import escape, mark_safe
 from django.utils.translation import ugettext_lazy as _
 
-from philo.utils import LOADED_TEMPLATE_ATTR
+from philo.utils.templates import LOADED_TEMPLATE_ATTR
 
 
 #: Tags which are considered insecure and are therefore always disallowed by secure :class:`TemplateValidator` instances.

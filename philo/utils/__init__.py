@@ -1,8 +1,6 @@
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import Paginator, EmptyPage
-from django.template import Context
-from django.template.loader_tags import ExtendsNode, ConstantIncludeNode
 
 
 def fattr(*args, **kwargs):
@@ -141,23 +139,3 @@ def paginate(objects, per_page=None, page_number=1):
 		objects = page.object_list
 	
 	return paginator, page, objects
-
-
-### Facilitating template analysis.
-
-
-LOADED_TEMPLATE_ATTR = '_philo_loaded_template'
-BLANK_CONTEXT = Context()
-
-
-def get_extended(self):
-	return self.get_parent(BLANK_CONTEXT)
-
-
-def get_included(self):
-	return self.template
-
-
-# We ignore the IncludeNode because it will never work in a blank context.
-setattr(ExtendsNode, LOADED_TEMPLATE_ATTR, property(get_extended))
-setattr(ConstantIncludeNode, LOADED_TEMPLATE_ATTR, property(get_included))

@@ -4,100 +4,22 @@
 
 """
 
-import itertools
-
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.http import HttpResponse
-from django.template import TemplateDoesNotExist, Context, RequestContext, Template as DjangoTemplate, TextNode, VariableNode
-from django.template.loader_tags import BlockNode, ExtendsNode, BlockContext
-from django.utils.datastructures import SortedDict
+from django.template import Context, RequestContext, Template as DjangoTemplate
 
 from philo.models.base import SlugTreeEntity, register_value_model
 from philo.models.fields import TemplateField
 from philo.models.nodes import View
 from philo.signals import page_about_to_render_to_string, page_finished_rendering_to_string
-from philo.templatetags.containers import ContainerNode
-from philo.utils import fattr
-from philo.validators import LOADED_TEMPLATE_ATTR
+from philo.utils import templates
 
 
 __all__ = ('Template', 'Page', 'Contentlet', 'ContentReference')
-
-
-class LazyContainerFinder(object):
-	def __init__(self, nodes, extends=False):
-		self.nodes = nodes
-		self.initialized = False
-		self.contentlet_specs = []
-		self.contentreference_specs = SortedDict()
-		self.blocks = {}
-		self.block_super = False
-		self.extends = extends
-	
-	def process(self, nodelist):
-		for node in nodelist:
-			if self.extends:
-				if isinstance(node, BlockNode):
-					self.blocks[node.name] = block = LazyContainerFinder(node.nodelist)
-					block.initialize()
-					self.blocks.update(block.blocks)
-				continue
-			
-			if isinstance(node, ContainerNode):
-				if not node.references:
-					self.contentlet_specs.append(node.name)
-				else:
-					if node.name not in self.contentreference_specs.keys():
-						self.contentreference_specs[node.name] = node.references
-				continue
-			
-			if isinstance(node, VariableNode):
-				if node.filter_expression.var.lookups == (u'block', u'super'):
-					self.block_super = True
-			
-			if hasattr(node, 'child_nodelists'):
-				for nodelist_name in node.child_nodelists:
-					if hasattr(node, nodelist_name):
-						nodelist = getattr(node, nodelist_name)
-						self.process(nodelist)
-			
-			# LOADED_TEMPLATE_ATTR contains the name of an attribute philo uses to declare a
-			# node as rendering an additional template. Philo monkeypatches the attribute onto
-			# the relevant default nodes and declares it on any native nodes.
-			if hasattr(node, LOADED_TEMPLATE_ATTR):
-				loaded_template = getattr(node, LOADED_TEMPLATE_ATTR)
-				if loaded_template:
-					nodelist = loaded_template.nodelist
-					self.process(nodelist)
-	
-	def initialize(self):
-		if not self.initialized:
-			self.process(self.nodes)
-			self.initialized = True
-
-
-def build_extension_tree(nodelist):
-	nodelists = []
-	extends = None
-	for node in nodelist:
-		if not isinstance(node, TextNode):
-			if isinstance(node, ExtendsNode):
-				extends = node
-			break
-	
-	if extends:
-		if extends.nodelist:
-			nodelists.append(LazyContainerFinder(extends.nodelist, extends=True))
-		loaded_template = getattr(extends, LOADED_TEMPLATE_ATTR)
-		nodelists.extend(build_extension_tree(loaded_template.nodelist))
-	else:
-		# Base case: root.
-		nodelists.append(LazyContainerFinder(nodelist))
-	return nodelists
 
 
 class Template(SlugTreeEntity):
@@ -111,38 +33,14 @@ class Template(SlugTreeEntity):
 	#: An insecure :class:`~philo.models.fields.TemplateField` containing the django template code for this template.
 	code = TemplateField(secure=False, verbose_name='django template code')
 	
-	@property
-	def containers(self):
+	def get_containers(self):
 		"""
 		Returns a tuple where the first item is a list of names of contentlets referenced by containers, and the second item is a list of tuples of names and contenttypes of contentreferences referenced by containers. This will break if there is a recursive extends or includes in the template code. Due to the use of an empty Context, any extends or include tags with dynamic arguments probably won't work.
 		
 		"""
 		template = DjangoTemplate(self.code)
-		
-		# Build a tree of the templates we're using, placing the root template first.
-		levels = build_extension_tree(template.nodelist)
-		
-		contentlet_specs = []
-		contentreference_specs = SortedDict()
-		blocks = {}
-		
-		for level in reversed(levels):
-			level.initialize()
-			contentlet_specs.extend(itertools.ifilter(lambda x: x not in contentlet_specs, level.contentlet_specs))
-			contentreference_specs.update(level.contentreference_specs)
-			for name, block in level.blocks.items():
-				if block.block_super:
-					blocks.setdefault(name, []).append(block)
-				else:
-					blocks[name] = [block]
-		
-		for block_list in blocks.values():
-			for block in block_list:
-				block.initialize()
-				contentlet_specs.extend(itertools.ifilter(lambda x: x not in contentlet_specs, block.contentlet_specs))
-				contentreference_specs.update(block.contentreference_specs)
-		
-		return contentlet_specs, contentreference_specs
+		return templates.get_containers(template)
+	containers = property(get_containers)
 	
 	def __unicode__(self):
 		"""Returns the value of the :attr:`name` field."""

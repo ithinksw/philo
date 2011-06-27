@@ -7,10 +7,40 @@ from django import template
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.utils.safestring import SafeUnicode, mark_safe
 
 
 register = template.Library()
+
+
+CONTAINER_CONTEXT_KEY = 'philo_container_context'
+
+
+class ContainerContext(object):
+	def __init__(self, page):
+		self.page = page
+	
+	def get_contentlets(self):
+		if not hasattr(self, '_contentlets'):
+			self._contentlets = dict(((c.name, c) for c in self.page.contentlets.all()))
+		return self._contentlets
+	
+	def get_references(self):
+		if not hasattr(self, '_references'):
+			references = self.page.contentreferences.all()
+			self._references = {}
+			contents = {}
+			for c in references:
+				ct = ContentType.objects.get_for_id(c.content_type_id)
+				self.references[(c.name, ct)] = c
+				contents.setdefault(ct, {})[c.content_id] = c
+			
+			for ct in contents:
+				objs = ct.model_class().objects.filter(pk__in=contents[ct])
+				for obj in objs:
+					contents[ct][obj.pk].content = obj
+		return self._references
 
 
 class ContainerNode(template.Node):
@@ -20,37 +50,42 @@ class ContainerNode(template.Node):
 		self.references = references
 	
 	def render(self, context):
-		content = settings.TEMPLATE_STRING_IF_INVALID
-		if 'page' in context:
-			container_content = self.get_container_content(context)
-		else:
-			container_content = None
+		container_content = self.get_container_content(context)
 		
 		if self.as_var:
 			context[self.as_var] = container_content
 			return ''
 		
-		if not container_content:
-			return ''
-		
 		return container_content
 	
 	def get_container_content(self, context):
-		page = context['page']
+		try:
+			container_context = context.render_context[CONTAINER_CONTEXT_KEY]
+		except KeyError:
+			try:
+				page = context['page']
+			except KeyError:
+				return settings.TEMPLATE_STRING_IF_INVALID
+			
+			container_context = ContainerContext(page)
+			context.render_context[CONTAINER_CONTEXT_KEY] = container_context
+		
 		if self.references:
 			# Then it's a content reference.
 			try:
-				contentreference = page.contentreferences.get(name__exact=self.name, content_type=self.references)
-				content = contentreference.content
-			except ObjectDoesNotExist:
+				contentreference = container_context.get_references()[(self.name, self.references)]
+			except KeyError:
 				content = ''
+			else:
+				content = contentreference.content
 		else:
 			# Otherwise it's a contentlet.
 			try:
-				contentlet = page.contentlets.get(name__exact=self.name)
-				content = contentlet.content
-			except ObjectDoesNotExist:
+				contentlet = container_context.get_contentlets()[self.name]
+			except KeyError:
 				content = ''
+			else:
+				content = contentlet.content
 		return content
 
 

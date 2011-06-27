@@ -74,7 +74,8 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'File'},
             'file': ('django.db.models.fields.files.FileField', [], {'max_length': '100'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'mimetype': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+            'mimetype': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'philo.foreignkeyvalue': {
             'Meta': {'object_name': 'ForeignKeyValue'},
@@ -94,7 +95,7 @@ class Migration(SchemaMigration):
             'values': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'to': "orm['philo.ForeignKeyValue']", 'null': 'True', 'blank': 'True'})
         },
         'philo.node': {
-            'Meta': {'object_name': 'Node'},
+            'Meta': {'unique_together': "(('parent', 'slug'),)", 'object_name': 'Node'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'level': ('django.db.models.fields.PositiveIntegerField', [], {'db_index': 'True'}),
             'lft': ('django.db.models.fields.PositiveIntegerField', [], {'db_index': 'True'}),
@@ -126,7 +127,7 @@ class Migration(SchemaMigration):
             'slug': ('django.db.models.fields.SlugField', [], {'unique': 'True', 'max_length': '255', 'db_index': 'True'})
         },
         'philo.template': {
-            'Meta': {'object_name': 'Template'},
+            'Meta': {'unique_together': "(('parent', 'slug'),)", 'object_name': 'Template'},
             'code': ('philo.models.fields.TemplateField', [], {}),
             'documentation': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),

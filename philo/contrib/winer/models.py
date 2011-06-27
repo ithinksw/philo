@@ -105,7 +105,7 @@ class FeedView(MultiView):
 		"""
 		Returns a view function that renders a list of items as a feed.
 		
-		:param get_items_attr: A callable or the name of a callable on the :class:`FeedView` that will return a (items, extra_context) tuple when called with view arguments.
+		:param get_items_attr: A callable or the name of a callable on the :class:`FeedView` that will return a (items, extra_context) tuple when called with the object for the feed and view arguments.
 		:param reverse_name: The name which can be used reverse the page for this feed using the :class:`FeedView` as the urlconf.
 		:param feed_type: The slug used to render the feed class which will be used by the returned view function.
 		
@@ -117,7 +117,7 @@ class FeedView(MultiView):
 		def inner(request, extra_context=None, *args, **kwargs):
 			obj = self.get_object(request, *args, **kwargs)
 			feed = self.get_feed(obj, request, reverse_name, feed_type, *args, **kwargs)
-			items, xxx = get_items(request, extra_context=extra_context, *args, **kwargs)
+			items, xxx = get_items(obj, request, extra_context=extra_context, *args, **kwargs)
 			self.populate_feed(feed, items, request)
 			
 			response = HttpResponse(mimetype=feed.mime_type)
@@ -138,7 +138,8 @@ class FeedView(MultiView):
 		page = page_attr if isinstance(page_attr, Page) else getattr(self, page_attr)
 		
 		def inner(request, extra_context=None, *args, **kwargs):
-			items, extra_context = get_items(request, extra_context=extra_context, *args, **kwargs)
+			obj = self.get_object(request, *args, **kwargs)
+			items, extra_context = get_items(obj, request, extra_context=extra_context, *args, **kwargs)
 			items, item_context = self.process_page_items(request, items)
 			
 			context = self.get_context()

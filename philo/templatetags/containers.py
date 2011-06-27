@@ -76,16 +76,6 @@ class ContainerNode(template.Node):
 				content = ''
 			else:
 				content = contentlet.content
-				
-				if '{%' in content or '{{' in content:
-					try:
-						content = template.Template(contentlet.content, name=contentlet.name).render(context)
-					except template.TemplateSyntaxError, e:
-						if settings.DEBUG:
-							content = ('[Error parsing contentlet \'%s\': %s]' % (self.name, e))
-						else:
-							content = settings.TEMPLATE_STRING_IF_INVALID
-			content = mark_safe(content)
 		return content
 
 

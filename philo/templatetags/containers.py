@@ -29,17 +29,7 @@ class ContainerContext(object):
 	def get_references(self):
 		if not hasattr(self, '_references'):
 			references = self.page.contentreferences.all()
-			self._references = {}
-			contents = {}
-			for c in references:
-				ct = ContentType.objects.get_for_id(c.content_type_id)
-				self._references[(c.name, ct)] = c
-				contents.setdefault(ct, {})[c.content_id] = c
-			
-			for ct in contents:
-				objs = ct.model_class().objects.filter(pk__in=contents[ct])
-				for obj in objs:
-					contents[ct][obj.pk].content = obj
+			self._references = dict((((c.name, ContentType.objects.get_for_id(c.content_type_id)), c) for c in references))
 		return self._references
 
 

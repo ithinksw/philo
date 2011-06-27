@@ -47,12 +47,8 @@ class ContainerNode(template.Node):
 			except KeyError:
 				return settings.TEMPLATE_STRING_IF_INVALID
 			
-			contentlet_specs, contentreference_specs = page.template.containers
-			contentlets = page.contentlets.filter(name__in=contentlet_specs)
-			q = Q()
-			for name, ct in contentreference_specs.items():
-				q |= Q(name=name, content_type=ct)
-			references = page.contentreferences.filter(q)
+			contentlets = page.contentlets.all()
+			references = page.contentreferences.all()
 			
 			container_context = ContainerContext(contentlets, references)
 			context.render_context[CONTAINER_CONTEXT_KEY] = container_context

@@ -18,9 +18,29 @@ CONTAINER_CONTEXT_KEY = 'philo_container_context'
 
 
 class ContainerContext(object):
-	def __init__(self, contentlets, references):
-		self.contentlets = dict(((c.name, c) for c in contentlets))
-		self.references = dict((((c.name, ContentType.objects.get_for_id(c.content_type_id)), c) for c in references))
+	def __init__(self, page):
+		self.page = page
+	
+	def get_contentlets(self):
+		if not hasattr(self, '_contentlets'):
+			self._contentlets = dict(((c.name, c) for c in self.page.contentlets.all()))
+		return self._contentlets
+	
+	def get_references(self):
+		if not hasattr(self, '_references'):
+			references = self.page.contentreferences.all()
+			self._references = {}
+			contents = {}
+			for c in references:
+				ct = ContentType.objects.get_for_id(c.content_type_id)
+				self.references[(c.name, ct)] = c
+				contents.setdefault(ct, {})[c.content_id] = c
+			
+			for ct in contents:
+				objs = ct.model_class().objects.filter(pk__in=contents[ct])
+				for obj in objs:
+					contents[ct][obj.pk].content = obj
+		return self._references
 
 
 class ContainerNode(template.Node):
@@ -47,16 +67,13 @@ class ContainerNode(template.Node):
 			except KeyError:
 				return settings.TEMPLATE_STRING_IF_INVALID
 			
-			contentlets = page.contentlets.all()
-			references = page.contentreferences.all()
-			
-			container_context = ContainerContext(contentlets, references)
+			container_context = ContainerContext(page)
 			context.render_context[CONTAINER_CONTEXT_KEY] = container_context
 		
 		if self.references:
 			# Then it's a content reference.
 			try:
-				contentreference = container_context.references[(self.name, self.references)]
+				contentreference = container_context.get_references()[(self.name, self.references)]
 			except KeyError:
 				content = ''
 			else:
@@ -64,7 +81,7 @@ class ContainerNode(template.Node):
 		else:
 			# Otherwise it's a contentlet.
 			try:
-				contentlet = container_context.contentlets[self.name]
+				contentlet = container_context.get_contentlets()[self.name]
 			except KeyError:
 				content = ''
 			else:

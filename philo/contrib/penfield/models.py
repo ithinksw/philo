@@ -132,7 +132,7 @@ class BlogView(FeedView):
 	
 	def get_reverse_params(self, obj):
 		if isinstance(obj, BlogEntry):
-			if obj.blog == self.blog:
+			if obj.blog_id == self.blog_id:
 				kwargs = {'slug': obj.slug}
 				if self.entry_permalink_style in 'DMY':
 					kwargs.update({'year': str(obj.date.year).zfill(4)})
@@ -161,12 +161,12 @@ class BlogView(FeedView):
 		urlpatterns = self.feed_patterns(r'^', 'get_all_entries', 'index_page', 'index') +\
 			self.feed_patterns(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)' % self.tag_permalink_base, 'get_entries_by_tag', 'tag_page', 'entries_by_tag')
 		
-		if self.tag_archive_page:
+		if self.tag_archive_page_id:
 			urlpatterns += patterns('',
 				url((r'^%s$' % self.tag_permalink_base), self.tag_archive_view, name='tag_archive')
 			)
 		
-		if self.entry_archive_page:
+		if self.entry_archive_page_id:
 			if self.entry_permalink_style in 'DMY':
 				urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})', 'get_entries_by_ymd', 'entry_archive_page', 'entries_by_year')
 				if self.entry_permalink_style in 'DM':
@@ -455,7 +455,7 @@ class NewsletterView(FeedView):
 	
 	def get_reverse_params(self, obj):
 		if isinstance(obj, NewsletterArticle):
-			if obj.newsletter == self.newsletter:
+			if obj.newsletter_id == self.newsletter_id:
 				kwargs = {'slug': obj.slug}
 				if self.article_permalink_style in 'DMY':
 					kwargs.update({'year': str(obj.date.year).zfill(4)})
@@ -465,7 +465,7 @@ class NewsletterView(FeedView):
 							kwargs.update({'day': str(obj.date.day).zfill(2)})
 				return self.article_view, [], kwargs
 		elif isinstance(obj, NewsletterIssue):
-			if obj.newsletter == self.newsletter:
+			if obj.newsletter_id == self.newsletter_id:
 				return 'issue', [], {'numbering': obj.numbering}
 		elif isinstance(obj, (date, datetime)):
 			kwargs = {
@@ -481,11 +481,11 @@ class NewsletterView(FeedView):
 		urlpatterns = self.feed_patterns(r'^', 'get_all_articles', 'index_page', 'index') + patterns('',
 			url(r'^%s/(?P<numbering>.+)$' % self.issue_permalink_base, self.page_view('get_articles_by_issue', 'issue_page'), name='issue')
 		)
-		if self.issue_archive_page:
+		if self.issue_archive_page_id:
 			urlpatterns += patterns('',
 				url(r'^%s$' % self.issue_permalink_base, self.issue_archive_view, 'issue_archive')
 			)
-		if self.article_archive_page:
+		if self.article_archive_page_id:
 			urlpatterns += self.feed_patterns(r'^%s' % self.article_permalink_base, 'get_all_articles', 'article_archive_page', 'articles')
 			if self.article_permalink_style in 'DMY':
 				urlpatterns += self.feed_patterns(r'^%s/(?P<year>\d{4})' % self.article_permalink_base, 'get_articles_by_ymd', 'article_archive_page', 'articles_by_year')

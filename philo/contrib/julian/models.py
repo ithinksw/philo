@@ -223,17 +223,17 @@ class CalendarView(FeedView):
 			# or per-calendar-view basis.
 			#url(r'^%s/(?P<slug>[\w-]+)' % self.location_permalink_base, ...)
 		
-		if self.tag_archive_page:
+		if self.tag_archive_page_id:
 			urlpatterns += patterns('',
 				url(r'^%s$' % self.tag_permalink_base, self.tag_archive_view, name='tag_archive')
 			)
 		
-		if self.owner_archive_page:
+		if self.owner_archive_page_id:
 			urlpatterns += patterns('',
 				url(r'^%s$' % self.owner_permalink_base, self.owner_archive_view, name='owner_archive')
 			)
 		
-		if self.location_archive_page:
+		if self.location_archive_page_id:
 			urlpatterns += patterns('',
 				url(r'^%s$' % self.location_permalink_base, self.location_archive_view, name='location_archive')
 			)

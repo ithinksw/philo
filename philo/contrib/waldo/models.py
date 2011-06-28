@@ -164,13 +164,13 @@ class PasswordMultiView(LoginMultiView):
 	def urlpatterns(self):
 		urlpatterns = super(PasswordMultiView, self).urlpatterns
 		
-		if self.password_reset_page and self.password_reset_confirmation_email and self.password_set_page:
+		if self.password_reset_page_id and self.password_reset_confirmation_email_id and self.password_set_page_id:
 			urlpatterns += patterns('',
 				url(r'^password/reset$', csrf_protect(self.password_reset), name='password_reset'),
 				url(r'^password/reset/(?P<uidb36>\w+)/(?P<token>[^/]+)$', self.password_reset_confirm, name='password_reset_confirm'),
 			)
 		
-		if self.password_change_page:
+		if self.password_change_page_id:
 			urlpatterns += patterns('',
 				url(r'^password/change$', csrf_protect(self.login_required(self.password_change)), name='password_change'),
 			)
@@ -329,7 +329,7 @@ class RegistrationMultiView(PasswordMultiView):
 	@property
 	def urlpatterns(self):
 		urlpatterns = super(RegistrationMultiView, self).urlpatterns
-		if self.register_page and self.register_confirmation_email:
+		if self.register_page_id and self.register_confirmation_email_id:
 			urlpatterns += patterns('',
 				url(r'^register$', csrf_protect(self.register), name='register'),
 				url(r'^register/(?P<uidb36>\w+)/(?P<token>[^/]+)$', self.register_confirm, name='register_confirm')
@@ -421,11 +421,11 @@ class AccountMultiView(RegistrationMultiView):
 	@property
 	def urlpatterns(self):
 		urlpatterns = super(AccountMultiView, self).urlpatterns
-		if self.manage_account_page:
+		if self.manage_account_page_id:
 			urlpatterns += patterns('',
 				url(r'^account$', self.login_required(self.account_view), name='account'),
 			)
-		if self.email_change_confirmation_email:
+		if self.email_change_confirmation_email_id:
 			urlpatterns += patterns('',
 				url(r'^account/email/(?P<uidb36>\w+)/(?P<email>[\w.]+[+][\w.]+)/(?P<token>[^/]+)$', self.email_change_confirm, name='email_change_confirm')
 			)

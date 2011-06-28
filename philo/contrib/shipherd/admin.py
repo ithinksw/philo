@@ -11,8 +11,9 @@ NAVIGATION_RAW_ID_FIELDS = ('navigation', 'parent', 'target_node')
 class NavigationItemInline(admin.StackedInline):
 	raw_id_fields = NAVIGATION_RAW_ID_FIELDS
 	model = NavigationItem
-	extra = 1
+	extra = 0
 	sortable_field_name = 'order'
+	ordering = ('order',)
 	related_lookup_fields = {'fk': raw_id_fields}
 
 
@@ -69,7 +70,7 @@ class NodeNavigationItemInline(NavigationItemInline):
 
 class NodeNavigationInline(admin.TabularInline):
 	model = Navigation
-	extra = 1
+	extra = 0
 
 
 NodeAdmin.inlines = [NodeNavigationInline, NodeNavigationItemInline] + NodeAdmin.inlines

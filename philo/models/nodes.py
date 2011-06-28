@@ -335,8 +335,17 @@ class TargetURLModel(models.Model):
 			kwargs = dict([(smart_str(k, 'ascii'), v) for k, v in params.items()])
 		return self.url_or_subpath, args, kwargs
 	
-	def get_target_url(self):
-		"""Calculates and returns the target url based on the :attr:`target_node`, :attr:`url_or_subpath`, and :attr:`reversing_parameters`."""
+	def get_target_url(self, memoize=True):
+		"""Calculates and returns the target url based on the :attr:`target_node`, :attr:`url_or_subpath`, and :attr:`reversing_parameters`. The results will be memoized by default; this can be prevented by passing in ``memoize=False``."""
+		if memoize:
+			memo_args = (self.target_node_id, self.url_or_subpath, self.reversing_parameters_json)
+			try:
+				return self._target_url_memo[memo_args]
+			except AttributeError:
+				self._target_url_memo = {}
+			except KeyError:
+				pass
+		
 		node = self.target_node
 		if node is not None and node.accepts_subpath and self.url_or_subpath:
 			if self.reversing_parameters is not None:
@@ -346,14 +355,19 @@ class TargetURLModel(models.Model):
 				subpath = self.url_or_subpath
 				if subpath[0] != '/':
 					subpath = '/' + subpath
-			return node.construct_url(subpath)
+			target_url = node.construct_url(subpath)
 		elif node is not None:
-			return node.get_absolute_url()
+			target_url = node.get_absolute_url()
 		else:
 			if self.reversing_parameters is not None:
 				view_name, args, kwargs = self.get_reverse_params()
-				return reverse(view_name, args=args, kwargs=kwargs)
-			return self.url_or_subpath
+				target_url = reverse(view_name, args=args, kwargs=kwargs)
+			else:
+				target_url = self.url_or_subpath
+		
+		if memoize:
+			self._target_url_memo[memo_args] = target_url
+		return target_url
 	target_url = property(get_target_url)
 	
 	class Meta:

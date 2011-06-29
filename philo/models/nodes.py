@@ -2,9 +2,11 @@ from inspect import getargspec
 import mimetypes
 from os.path import basename
 
+from django.conf import settings
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site, RequestSite
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.servers.basehttp import FileWrapper
 from django.core.urlresolvers import resolve, clear_url_caches, reverse, NoReverseMatch
@@ -24,6 +26,7 @@ __all__ = ('Node', 'View', 'MultiView', 'Redirect', 'File')
 
 
 _view_content_type_limiter = ContentTypeSubclassLimiter(None)
+CACHE_PHILO_ROOT = getattr(settings, "PHILO_CACHE_PHILO_ROOT", True)
 
 
 class Node(SlugTreeEntity):
@@ -71,6 +74,8 @@ class Node(SlugTreeEntity):
 		
 		Node urls will not contain a trailing slash unless a subpath is provided which ends with a trailing slash. Subpaths are expected to begin with a slash, as if returned by :func:`django.core.urlresolvers.reverse`.
 		
+		Because this method will be called frequently and will always try to reverse ``philo-root``, the results of that reversal will be cached by default. This can be disabled by setting :setting:`PHILO_CACHE_PHILO_ROOT` to ``False``.
+		
 		:meth:`construct_url` may raise the following exceptions:
 		
 		- :class:`NoReverseMatch` if "philo-root" is not reversable -- for example, if :mod:`philo.urls` is not included anywhere in your urlpatterns.
@@ -85,7 +90,14 @@ class Node(SlugTreeEntity):
 		
 		"""
 		# Try reversing philo-root first, since we can't do anything if that fails.
-		root_url = reverse('philo-root')
+		if CACHE_PHILO_ROOT:
+			key = "CACHE_PHILO_ROOT__" + settings.ROOT_URLCONF
+			root_url = cache.get(key)
+			if root_url is None:
+				root_url = reverse('philo-root')
+				cache.set(key, root_url)
+		else:
+			root_url = reverse('philo-root')
 		
 		try:
 			current_site = Site.objects.get_current()
@@ -323,8 +335,17 @@ class TargetURLModel(models.Model):
 			kwargs = dict([(smart_str(k, 'ascii'), v) for k, v in params.items()])
 		return self.url_or_subpath, args, kwargs
 	
-	def get_target_url(self):
-		"""Calculates and returns the target url based on the :attr:`target_node`, :attr:`url_or_subpath`, and :attr:`reversing_parameters`."""
+	def get_target_url(self, memoize=True):
+		"""Calculates and returns the target url based on the :attr:`target_node`, :attr:`url_or_subpath`, and :attr:`reversing_parameters`. The results will be memoized by default; this can be prevented by passing in ``memoize=False``."""
+		if memoize:
+			memo_args = (self.target_node_id, self.url_or_subpath, self.reversing_parameters_json)
+			try:
+				return self._target_url_memo[memo_args]
+			except AttributeError:
+				self._target_url_memo = {}
+			except KeyError:
+				pass
+		
 		node = self.target_node
 		if node is not None and node.accepts_subpath and self.url_or_subpath:
 			if self.reversing_parameters is not None:
@@ -334,14 +355,19 @@ class TargetURLModel(models.Model):
 				subpath = self.url_or_subpath
 				if subpath[0] != '/':
 					subpath = '/' + subpath
-			return node.construct_url(subpath)
+			target_url = node.construct_url(subpath)
 		elif node is not None:
-			return node.get_absolute_url()
+			target_url = node.get_absolute_url()
 		else:
 			if self.reversing_parameters is not None:
 				view_name, args, kwargs = self.get_reverse_params()
-				return reverse(view_name, args=args, kwargs=kwargs)
-			return self.url_or_subpath
+				target_url = reverse(view_name, args=args, kwargs=kwargs)
+			else:
+				target_url = self.url_or_subpath
+		
+		if memoize:
+			self._target_url_memo[memo_args] = target_url
+		return target_url
 	target_url = property(get_target_url)
 	
 	class Meta:

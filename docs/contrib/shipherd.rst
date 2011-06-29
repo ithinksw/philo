@@ -31,16 +31,7 @@ Models
 	:members: Navigation, NavigationItem, NavigationMapper
 	:show-inheritance:
 
-Navigation caching
-------------------
-
 .. autoclass:: NavigationManager
-	:members:
-
-.. autoclass:: NavigationItemManager
-	:members:
-
-.. autoclass:: NavigationCacheQuerySet
 	:members:
 
 Template tags

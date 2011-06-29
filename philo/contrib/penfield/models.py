@@ -132,7 +132,7 @@ class BlogView(FeedView):
 	
 	def get_reverse_params(self, obj):
 		if isinstance(obj, BlogEntry):
-			if obj.blog == self.blog:
+			if obj.blog_id == self.blog_id:
 				kwargs = {'slug': obj.slug}
 				if self.entry_permalink_style in 'DMY':
 					kwargs.update({'year': str(obj.date.year).zfill(4)})
@@ -144,7 +144,7 @@ class BlogView(FeedView):
 		elif isinstance(obj, Tag) or (isinstance(obj, models.query.QuerySet) and obj.model == Tag and obj):
 			if isinstance(obj, Tag):
 				obj = [obj]
-			slugs = [tag.slug for tag in obj if tag in self.get_tag_queryset()]
+			slugs = [tag.slug for tag in obj if tag in self.get_tag_queryset(self.blog)]
 			if slugs:
 				return 'entries_by_tag', [], {'tag_slugs': "/".join(slugs)}
 		elif isinstance(obj, (date, datetime)):
@@ -161,12 +161,12 @@ class BlogView(FeedView):
 		urlpatterns = self.feed_patterns(r'^', 'get_all_entries', 'index_page', 'index') +\
 			self.feed_patterns(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)' % self.tag_permalink_base, 'get_entries_by_tag', 'tag_page', 'entries_by_tag')
 		
-		if self.tag_archive_page:
+		if self.tag_archive_page_id:
 			urlpatterns += patterns('',
 				url((r'^%s$' % self.tag_permalink_base), self.tag_archive_view, name='tag_archive')
 			)
 		
-		if self.entry_archive_page:
+		if self.entry_archive_page_id:
 			if self.entry_permalink_style in 'DMY':
 				urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})', 'get_entries_by_ymd', 'entry_archive_page', 'entries_by_year')
 				if self.entry_permalink_style in 'DM':
@@ -199,23 +199,23 @@ class BlogView(FeedView):
 	def get_context(self):
 		return {'blog': self.blog}
 	
-	def get_entry_queryset(self):
+	def get_entry_queryset(self, obj):
 		"""Returns the default :class:`QuerySet` of :class:`BlogEntry` instances for the :class:`BlogView` - all entries that are considered posted in the past. This allows for scheduled posting of entries."""
-		return self.blog.entries.filter(date__lte=datetime.now())
+		return obj.entries.filter(date__lte=datetime.now())
 	
-	def get_tag_queryset(self):
+	def get_tag_queryset(self, obj):
 		"""Returns the default :class:`QuerySet` of :class:`.Tag`\ s for the :class:`BlogView`'s :meth:`get_entries_by_tag` and :meth:`tag_archive_view`."""
-		return self.blog.entry_tags
+		return obj.entry_tags
 	
-	def get_all_entries(self, request, extra_context=None):
+	def get_all_entries(self, obj, request, extra_context=None):
 		"""Used to generate :meth:`~.FeedView.feed_patterns` for all entries."""
-		return self.get_entry_queryset(), extra_context
+		return self.get_entry_queryset(obj), extra_context
 	
-	def get_entries_by_ymd(self, request, year=None, month=None, day=None, extra_context=None):
+	def get_entries_by_ymd(self, obj, request, year=None, month=None, day=None, extra_context=None):
 		"""Used to generate :meth:`~.FeedView.feed_patterns` for entries with a specific year, month, and day."""
 		if not self.entry_archive_page:
 			raise Http404
-		entries = self.get_entry_queryset()
+		entries = self.get_entry_queryset(obj)
 		if year:
 			entries = entries.filter(date__year=year)
 		if month:
@@ -227,10 +227,10 @@ class BlogView(FeedView):
 		context.update({'year': year, 'month': month, 'day': day})
 		return entries, context
 	
-	def get_entries_by_tag(self, request, tag_slugs, extra_context=None):
+	def get_entries_by_tag(self, obj, request, tag_slugs, extra_context=None):
 		"""Used to generate :meth:`~.FeedView.feed_patterns` for entries with all of the given tags."""
 		tag_slugs = tag_slugs.replace('+', '/').split('/')
-		tags = self.get_tag_queryset().filter(slug__in=tag_slugs)
+		tags = self.get_tag_queryset(obj).filter(slug__in=tag_slugs)
 		
 		if not tags:
 			raise Http404
@@ -241,7 +241,7 @@ class BlogView(FeedView):
 			if slug and slug not in found_slugs:
 				raise Http404
 
-		entries = self.get_entry_queryset()
+		entries = self.get_entry_queryset(obj)
 		for tag in tags:
 			entries = entries.filter(tags=tag)
 		
@@ -252,7 +252,7 @@ class BlogView(FeedView):
 	
 	def entry_view(self, request, slug, year=None, month=None, day=None, extra_context=None):
 		"""Renders :attr:`entry_page` with the entry specified by the given parameters."""
-		entries = self.get_entry_queryset()
+		entries = self.get_entry_queryset(self.blog)
 		if year:
 			entries = entries.filter(date__year=year)
 		if month:
@@ -275,7 +275,7 @@ class BlogView(FeedView):
 		context = self.get_context()
 		context.update(extra_context or {})
 		context.update({
-			'tags': self.get_tag_queryset()
+			'tags': self.get_tag_queryset(self.blog)
 		})
 		return self.tag_archive_page.render_to_response(request, extra_context=context)
 	
@@ -455,7 +455,7 @@ class NewsletterView(FeedView):
 	
 	def get_reverse_params(self, obj):
 		if isinstance(obj, NewsletterArticle):
-			if obj.newsletter == self.newsletter:
+			if obj.newsletter_id == self.newsletter_id:
 				kwargs = {'slug': obj.slug}
 				if self.article_permalink_style in 'DMY':
 					kwargs.update({'year': str(obj.date.year).zfill(4)})
@@ -465,7 +465,7 @@ class NewsletterView(FeedView):
 							kwargs.update({'day': str(obj.date.day).zfill(2)})
 				return self.article_view, [], kwargs
 		elif isinstance(obj, NewsletterIssue):
-			if obj.newsletter == self.newsletter:
+			if obj.newsletter_id == self.newsletter_id:
 				return 'issue', [], {'numbering': obj.numbering}
 		elif isinstance(obj, (date, datetime)):
 			kwargs = {
@@ -481,11 +481,11 @@ class NewsletterView(FeedView):
 		urlpatterns = self.feed_patterns(r'^', 'get_all_articles', 'index_page', 'index') + patterns('',
 			url(r'^%s/(?P<numbering>.+)$' % self.issue_permalink_base, self.page_view('get_articles_by_issue', 'issue_page'), name='issue')
 		)
-		if self.issue_archive_page:
+		if self.issue_archive_page_id:
 			urlpatterns += patterns('',
 				url(r'^%s$' % self.issue_permalink_base, self.issue_archive_view, 'issue_archive')
 			)
-		if self.article_archive_page:
+		if self.article_archive_page_id:
 			urlpatterns += self.feed_patterns(r'^%s' % self.article_permalink_base, 'get_all_articles', 'article_archive_page', 'articles')
 			if self.article_permalink_style in 'DMY':
 				urlpatterns += self.feed_patterns(r'^%s/(?P<year>\d{4})' % self.article_permalink_base, 'get_articles_by_ymd', 'article_archive_page', 'articles_by_year')
@@ -516,40 +516,40 @@ class NewsletterView(FeedView):
 	def get_context(self):
 		return {'newsletter': self.newsletter}
 	
-	def get_article_queryset(self):
+	def get_article_queryset(self, obj):
 		"""Returns the default :class:`QuerySet` of :class:`NewsletterArticle` instances for the :class:`NewsletterView` - all articles that are considered posted in the past. This allows for scheduled posting of articles."""
-		return self.newsletter.articles.filter(date__lte=datetime.now())
+		return obj.articles.filter(date__lte=datetime.now())
 	
-	def get_issue_queryset(self):
+	def get_issue_queryset(self, obj):
 		"""Returns the default :class:`QuerySet` of :class:`NewsletterIssue` instances for the :class:`NewsletterView`."""
-		return self.newsletter.issues.all()
+		return obj.issues.all()
 	
-	def get_all_articles(self, request, extra_context=None):
+	def get_all_articles(self, obj, request, extra_context=None):
 		"""Used to generate :meth:`~.FeedView.feed_patterns` for all entries."""
-		return self.get_article_queryset(), extra_context
+		return self.get_article_queryset(obj), extra_context
 	
-	def get_articles_by_ymd(self, request, year, month=None, day=None, extra_context=None):
+	def get_articles_by_ymd(self, obj, request, year, month=None, day=None, extra_context=None):
 		"""Used to generate :meth:`~.FeedView.feed_patterns` for a specific year, month, and day."""
-		articles = self.get_article_queryset().filter(date__year=year)
+		articles = self.get_article_queryset(obj).filter(date__year=year)
 		if month:
 			articles = articles.filter(date__month=month)
 		if day:
 			articles = articles.filter(date__day=day)
 		return articles, extra_context
 	
-	def get_articles_by_issue(self, request, numbering, extra_context=None):
+	def get_articles_by_issue(self, obj, request, numbering, extra_context=None):
 		"""Used to generate :meth:`~.FeedView.feed_patterns` for articles from a certain issue."""
 		try:
-			issue = self.get_issue_queryset().get(numbering=numbering)
+			issue = self.get_issue_queryset(obj).get(numbering=numbering)
 		except NewsletterIssue.DoesNotExist:
 			raise Http404
 		context = extra_context or {}
 		context.update({'issue': issue})
-		return self.get_article_queryset().filter(issues=issue), context
+		return self.get_article_queryset(obj).filter(issues=issue), context
 	
 	def article_view(self, request, slug, year=None, month=None, day=None, extra_context=None):
 		"""Renders :attr:`article_page` with the article specified by the given parameters."""
-		articles = self.get_article_queryset()
+		articles = self.get_article_queryset(self.newsletter)
 		if year:
 			articles = articles.filter(date__year=year)
 		if month:
@@ -572,7 +572,7 @@ class NewsletterView(FeedView):
 		context = self.get_context()
 		context.update(extra_context or {})
 		context.update({
-			'issues': self.get_issue_queryset()
+			'issues': self.get_issue_queryset(self.newsletter)
 		})
 		return self.issue_archive_page.render_to_response(request, extra_context=context)
 	

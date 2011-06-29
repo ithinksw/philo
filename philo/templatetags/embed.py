@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.template.loader_tags import ExtendsNode, BlockContext, BLOCK_CONTEXT_KEY, TextNode, BlockNode
 
-from philo.utils import LOADED_TEMPLATE_ATTR
+from philo.utils.templates import LOADED_TEMPLATE_ATTR
 
 
 register = template.Library()

@@ -501,7 +501,7 @@ class AccountMultiView(RegistrationMultiView):
 					self.set_requirement_redirect(request, redirect=request.path)
 					redirect = self.reverse('account', node=request.node)
 				else:
-					redirect = node.get_absolute_url()
+					redirect = request.node.get_absolute_url()
 				return HttpResponseRedirect(redirect)
 			return view(request, *args, **kwargs)
 		

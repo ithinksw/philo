@@ -44,5 +44,8 @@
 	margin:0 -3px;
 }
 .grappelli .embed-toolbar{
+	padding:0;
 	padding-bottom:3px;
+	background:none;
+	border:none;
 }

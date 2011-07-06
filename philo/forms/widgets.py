@@ -16,7 +16,7 @@ class EmbedWidget(Textarea):
 		
 		json_ = json.dumps(data)
 		
-		default_attrs = {'class': 'embedding', 'data-content-types': json_ }
+		default_attrs = {'class': 'embedding vLargeTextField', 'data-content-types': json_ }
 		
 		if attrs:
 			default_attrs.update(attrs)

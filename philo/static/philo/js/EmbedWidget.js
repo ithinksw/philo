@@ -40,6 +40,23 @@
 				// otherwise, do what you usually do
 				oldDismissRelatedLookupPopup.apply(this, arguments);
 			}
+			
+			// overload the dismissAddAnotherPopup function
+			oldDismissAddAnotherPopup = window.dismissAddAnotherPopup;
+			window.dismissAddAnotherPopup = function (win, newId, newRepr) {
+				var name = windowname_to_id(win.name),
+					elem = $('#'+win.name), val;
+				if (elem.parent().hasClass('embed-widget')) {
+					dismissRelatedLookupPopup(win, newId);
+				}
+				// otherwise, do what you usually do
+				oldDismissAddAnotherPopup.apply(this, arguments);
+			}
+			
+			// Add grappelli to the body class if the admin is grappelli. This will allow us to customize styles accordingly.
+			if (window.grappelli) {
+				$(document.body).addClass('grappelli');
+			}
 		},
 		parseContentTypes: function () {
 			var string = widget.EmbedFields.eq(0).attr('data-content-types'),

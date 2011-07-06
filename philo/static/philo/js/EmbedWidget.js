@@ -23,6 +23,23 @@
 			EmbedSelects.each(widget.populateSelect);
 			
 			EmbedButtons.click(widget.buttonHandler);
+			
+			// overload the dismissRelatedLookupPopup function
+			oldDismissRelatedLookupPopup = window.dismissRelatedLookupPopup;
+			window.dismissRelatedLookupPopup = function (win, chosenId) {
+				var name = windowname_to_id(win.name),
+					elem = $('#'+win.name), val;
+				// if the original element was an embed widget, run our script
+				if (elem.parent().hasClass('embed-widget')) {
+					contenttype = $('select',elem.parent()).val();
+					widget.appendEmbed(elem, contenttype, chosenId);
+					elem.focus();
+					win.close();
+					return;
+				}
+				// otherwise, do what you usually do
+				oldDismissRelatedLookupPopup.apply(this, arguments);
+			}
 		},
 		parseContentTypes: function () {
 			var string = widget.EmbedFields.eq(0).attr('data-content-types'),
@@ -81,6 +98,7 @@
 			
 			// prevent the button from submitting the form
 			e.preventDefault();
+			
 			// handle the case that they haven't chosen a type to embed
 			if (select.val()==='') {
 				alert('Please select a media type to embed.');
@@ -93,31 +111,12 @@
 			app_label = val.split('.')[0];
 			object_name = val.split('.')[1];
 			
-			// generate the url
-			// TODO: Find a better way to get ADMIN_URL. Currently this only works with grappelli, which provides the javascript global ADMIN_URL
-			href=[ADMIN_URL, app_label,  '/', object_name, '/?pop=1'].join('');
-			
-			// this is a bit hackish. let's walk through it.
-			// TODO: best to write our own template for this in the future
+			// generate the url for the popup
+			// TODO: Find a better way to get the admin URL if possible. This will break if the URL patterns for the admin ever change.
+			href=['../../../', app_label,  '/', object_name, '/?pop=1'].join('');
 			
 			// open a new window
 			win = window.open(href, id_to_windowname(textarea.attr('id')), 'height=500,width=980,resizable=yes,scrollbars=yes');
-			
-			// when the window finishes loading
-			win.addEventListener('load', function(){
-				// collect all the links to objects in that window
-				var links = win.django.jQuery('#changelist th:first-child a');
-					// for each link
-					links.each(function(){
-						// capture the pk
-						var pk = $(this).attr('href').split('/')[0];
-						// bind our own function to onclick instead of the function that's currently there
-						this.onclick = function () { widget.appendEmbed(textarea, val, pk); win.close(); return false; };
-					});
-			}, false)
-			
-			// return focus to the textarea
-			textarea.focus();
 		},
 		appendEmbed: function (textarea, embed_type, embed_id) {
 			var $textarea = $(textarea),
@@ -125,9 +124,10 @@
 				current_selection = [textarea.selectionStart, textarea.selectionEnd],
 				current_text = $textarea.val(),
 				embed_string = ['{% embed', embed_type, embed_id, '%}'].join(' '),
-				new_text = current_text.substring(0, current_selection[0]) + embed_string + current_text.substring(current_selection[1]);
-				
+				new_text = current_text.substring(0, current_selection[0]) + embed_string + current_text.substring(current_selection[1]),
+				new_cursor_pos = current_selection[0]+embed_string.length;
 			$textarea.val(new_text);
+			textarea.setSelectionRange(new_cursor_pos, new_cursor_pos);
 		}
 	}
 	

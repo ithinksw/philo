@@ -4,10 +4,11 @@ from django.conf import settings
 from django.conf.urls.defaults import url, patterns, include
 from django.db import models
 from django.http import Http404, HttpResponse
+from taggit.managers import TaggableManager
 
 from philo.contrib.winer.models import FeedView
 from philo.exceptions import ViewCanNotProvideSubpath
-from philo.models import Tag, Entity, Page, register_value_model
+from philo.models import Entity, Page, register_value_model
 from philo.models.fields import TemplateField
 from philo.utils import paginate
 
@@ -61,8 +62,8 @@ class BlogEntry(Entity):
 	#: An optional brief excerpt from the :class:`BlogEntry`.
 	excerpt = models.TextField(blank=True, null=True)
 	
-	#: :class:`.Tag`\ s for this :class:`BlogEntry`.
-	tags = models.ManyToManyField(Tag, related_name='blogentries', blank=True, null=True)
+	#: A ``django-taggit`` :class:`TaggableManager`.
+	tags = TaggableManager()
 	
 	def save(self, *args, **kwargs):
 		if self.date is None:
@@ -368,8 +369,8 @@ class NewsletterArticle(Entity):
 	lede = TemplateField(null=True, blank=True, verbose_name='Summary')
 	#: A :class:`.TemplateField` containing the full text of the article.
 	full_text = TemplateField(db_index=True)
-	#: A :class:`ManyToManyField` to :class:`.Tag`\ s for the :class:`NewsletterArticle`.
-	tags = models.ManyToManyField(Tag, related_name='newsletterarticles', blank=True, null=True)
+	#: A ``django-taggit`` :class:`TaggableManager`.
+	tags = TaggableManager()
 	
 	def save(self, *args, **kwargs):
 		if self.date is None:

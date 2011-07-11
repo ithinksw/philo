@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, QueryDict
 
-from philo.admin import EntityAdmin, AddTagAdmin, COLLAPSE_CLASSES
+from philo.admin import EntityAdmin, COLLAPSE_CLASSES
 from philo.contrib.penfield.models import BlogEntry, Blog, BlogView, Newsletter, NewsletterArticle, NewsletterIssue, NewsletterView
 
 
@@ -20,9 +20,8 @@ class BlogAdmin(EntityAdmin):
 	list_display = ('title', 'slug')
 
 
-class BlogEntryAdmin(AddTagAdmin):
+class BlogEntryAdmin(EntityAdmin):
 	form = DelayedDateForm
-	filter_horizontal = ['tags']
 	list_filter = ['author', 'blog']
 	date_hierarchy = 'date'
 	search_fields = ('content',)
@@ -73,9 +72,9 @@ class NewsletterAdmin(EntityAdmin):
 	list_display = ('title', 'slug')
 
 
-class NewsletterArticleAdmin(AddTagAdmin):
+class NewsletterArticleAdmin(EntityAdmin):
 	form = DelayedDateForm
-	filter_horizontal = ('tags', 'authors')
+	filter_horizontal = ('authors',)
 	list_filter = ('newsletter',)
 	date_hierarchy = 'date'
 	search_fields = ('title', 'authors__name',)

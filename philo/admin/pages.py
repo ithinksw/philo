@@ -15,9 +15,6 @@ class ContainerInline(admin.StackedInline):
 	max_num = 0
 	can_delete = False
 	classes = ('collapse-open', 'collapse','open')
-	formfield_overrides = {
-		TemplateField: {'widget': EmbedWidget}
-	}
 	if 'grappelli' in settings.INSTALLED_APPS:
 		template = 'admin/philo/edit_inline/grappelli_tabular_container.html'
 	else:

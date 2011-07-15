@@ -4,7 +4,9 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, QueryDict
 
 from philo.admin import EntityAdmin, AddTagAdmin, COLLAPSE_CLASSES
+from philo.admin.widgets import EmbedWidget
 from philo.contrib.penfield.models import BlogEntry, Blog, BlogView, Newsletter, NewsletterArticle, NewsletterIssue, NewsletterView
+from philo.models.fields import TemplateField
 
 
 class DelayedDateForm(forms.ModelForm):
@@ -42,6 +44,9 @@ class BlogEntryAdmin(AddTagAdmin):
 	)
 	related_lookup_fields = {'fk': raw_id_fields}
 	prepopulated_fields = {'slug': ('title',)}
+	formfield_overrides = {
+		TemplateField: {'widget': EmbedWidget}
+	}
 
 
 class BlogViewAdmin(EntityAdmin):
@@ -94,6 +99,9 @@ class NewsletterArticleAdmin(AddTagAdmin):
 	)
 	actions = ['make_issue']
 	prepopulated_fields = {'slug': ('title',)}
+	formfield_overrides = {
+		TemplateField: {'widget': EmbedWidget}
+	}
 	
 	def author_names(self, obj):
 		return ', '.join([author.get_full_name() for author in obj.authors.all()])

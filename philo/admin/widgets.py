@@ -1,6 +1,7 @@
 from django import forms
 from django.conf import settings
 from django.contrib.admin.widgets import FilteredSelectMultiple, url_params_from_lookup_dict
+from django.utils import simplejson as json
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.text import truncate_words
@@ -66,3 +67,30 @@ class TagFilteredSelectMultiple(FilteredSelectMultiple):
 		output.append(u'SelectFilter.init("id_%s", "%s", %s, "%s"); tagCreation.init("id_%s"); });</script>\n' % \
 			(name, self.verbose_name.replace('"', '\\"'), int(self.is_stacked), settings.ADMIN_MEDIA_PREFIX, name))
 		return mark_safe(u''.join(output))
+
+
+class EmbedWidget(forms.Textarea):
+	"""A form widget with the HTML class embedding and an embedded list of content-types."""
+	def __init__(self, attrs=None):
+		from philo.models import value_content_type_limiter
+		
+		content_types = value_content_type_limiter.classes
+		data = []
+		
+		for content_type in content_types:
+			data.append({'app_label': content_type._meta.app_label, 'object_name': content_type._meta.object_name.lower(), 'verbose_name': unicode(content_type._meta.verbose_name)})
+		
+		json_ = json.dumps(data)
+		
+		default_attrs = {'class': 'embedding vLargeTextField', 'data-content-types': json_ }
+		
+		if attrs:
+			default_attrs.update(attrs)
+			
+		super(EmbedWidget, self).__init__(default_attrs)
+		
+	class Media:
+		css = {
+			'all': ('philo/css/EmbedWidget.css',),
+		}
+		js = ('philo/js/EmbedWidget.js',)

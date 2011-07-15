@@ -57,10 +57,10 @@ class BlogEntry(Entity):
 	date = models.DateTimeField(default=None)
 	
 	#: The content of the :class:`BlogEntry`.
-	content = models.TextField()
+	content = TemplateField()
 	
 	#: An optional brief excerpt from the :class:`BlogEntry`.
-	excerpt = models.TextField(blank=True, null=True)
+	excerpt = TemplateField(blank=True, null=True)
 	
 	#: :class:`.Tag`\ s for this :class:`BlogEntry`.
 	tags = models.ManyToManyField(Tag, related_name='blogentries', blank=True, null=True)

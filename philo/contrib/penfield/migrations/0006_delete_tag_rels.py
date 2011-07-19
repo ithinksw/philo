@@ -215,4 +215,4 @@ class Migration(SchemaMigration):
 		}
 	}
 
-	complete_apps = ['penfield']
+	complete_apps = ['penfield', 'taggit']

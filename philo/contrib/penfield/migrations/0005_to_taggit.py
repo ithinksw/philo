@@ -39,21 +39,23 @@ class Migration(DataMigration):
 
 	def backwards(self, orm):
 		"Write your backwards methods here."
-		import pdb
-		pdb.set_trace()
 		BlogEntry = orm['penfield.BlogEntry']
 		NewsletterArticle = orm['penfield.NewsletterArticle']
 		Tag = orm['philo.Tag']
 		TaggitTag = orm['taggit.Tag']
 		TaggedItem = orm['taggit.TaggedItem']
+		ContentType = orm['contenttypes.contenttype']
+		
+		entry_ct = ContentType.objects.get(app_label="penfield", model="blogentry")
+		article_ct = ContentType.objects.get(app_label="penfield", model="newsletterarticle")
 		
 		for entry in BlogEntry.objects.all():
-			tag_slugs = list(TaggitTag.objects.filter(taggit_taggeditem_items__content_object=entry).values_list('slug', flat=True)).distinct()
+			tag_slugs = list(TaggitTag.objects.filter(taggit_taggeditem_items__content_type=entry_ct, taggit_taggeditem_items__object_id=entry.pk).values_list('slug', flat=True).distinct())
 			entry.tags = Tag.objects.filter(slug__in=tag_slugs)
 			entry.save()
 		
 		for article in NewsletterArticle.objects.all():
-			tag_slugs = list(TaggitTag.objects.filter(taggit_taggeditem_items__content_object=article).values_list('slug', flat=True)).distinct()
+			tag_slugs = list(TaggitTag.objects.filter(taggit_taggeditem_items__content_type=article_ct, taggit_taggeditem_items__object_id=article.pk).values_list('slug', flat=True).distinct())
 			article.tags = Tag.objects.filter(slug__in=tag_slugs)
 			article.save()
 
@@ -242,4 +244,5 @@ class Migration(DataMigration):
 		}
 	}
 
-	complete_apps = ['penfield']
+	complete_apps = ['penfield', 'taggit']
+	symmetrical = True

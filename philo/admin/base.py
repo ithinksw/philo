@@ -9,7 +9,6 @@ from mptt.admin import MPTTModelAdmin
 from philo.models import Attribute
 from philo.models.fields.entities import ForeignKeyAttribute, ManyToManyAttribute
 from philo.admin.forms.attributes import AttributeForm, AttributeInlineFormSet
-from philo.admin.widgets import TagFilteredSelectMultiple
 from philo.forms.entities import EntityForm, proxy_fields_for_entity_model
 
 

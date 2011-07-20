@@ -8,10 +8,6 @@ Prerequisites:
 	* (Optional) south 0.7.2+ <http://south.aeracode.org/>
 	* (Optional) recaptcha-django r6 <http://code.google.com/p/recaptcha-django/>
 
-To contribute, please visit the project website <http://project.philocms.org/> and/or make a fork of the git repository on GitHub <http://github.com/ithinksw/philo> or Gitorious <http://gitorious
-.org/ithinksw/philo>. Feel free to join us on IRC at irc://irc.oftc.net/#philo.
-
-
 ====
 Using philo
 ====
@@ -22,4 +18,4 @@ After installing philo and mptt on your python path, make sure to complete the f
 3. include 'philo.urls' somewhere in your urls.py file.
 4. Optionally add a root node to your current Site.
 
-Philo should be ready to go!
+Philo should be ready to go! All that's left is to learn more <http://philo.readthedocs.org> and contribute <http://philo.readthedocs.org/en/latest/contribute.html>.

@@ -22,4 +22,4 @@ After installing philo and mptt on your python path, make sure to complete the f
 3. include 'philo.urls' somewhere in your urls.py file.
 4. Optionally add a root node to your current Site.
 
-Philo should be ready to go!
+Philo should be ready to go! All that's left is to [learn more](http://philo.readthedocs.org) and [contribute](http://philo.readthedocs.org/en/latest/contribute.html).

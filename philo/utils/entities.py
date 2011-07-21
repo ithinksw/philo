@@ -1,7 +1,10 @@
+from functools import partial
 from UserDict import DictMixin
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
+
+from philo.utils.lazycompat import SimpleLazyObject
 
 
 ### AttributeMappers
@@ -91,7 +94,11 @@ class AttributeMapper(object, DictMixin):
 		for ct_pk, pks in value_lookups.items():
 			values_bulk[ct_pk] = ContentType.objects.get_for_id(ct_pk).model_class().objects.in_bulk(pks)
 		
-		self._cache.update(dict([(a.key, getattr(values_bulk[a.value_content_type_id].get(a.value_object_id), 'value', None)) for a in attributes]))
+		self._cache.update(dict([
+			(
+				a.key,
+				SimpleLazyObject(partial(getattr, values_bulk[a.value_content_type_id].get(a.value_object_id), 'value', None))
+			) for a in attributes]))
 		self._cache_filled = True
 	
 	def clear_cache(self):

@@ -135,7 +135,6 @@ class FeedView(MultiView):
 		
 		"""
 		get_items = get_items_attr if callable(get_items_attr) else getattr(self, get_items_attr)
-		page = page_attr if isinstance(page_attr, Page) else getattr(self, page_attr)
 		
 		def inner(request, extra_context=None, *args, **kwargs):
 			obj = self.get_object(request, *args, **kwargs)
@@ -146,6 +145,7 @@ class FeedView(MultiView):
 			context.update(extra_context or {})
 			context.update(item_context or {})
 			
+			page = page_attr if isinstance(page_attr, Page) else getattr(self, page_attr)
 			return page.render_to_response(request, extra_context=context)
 		return inner
 	

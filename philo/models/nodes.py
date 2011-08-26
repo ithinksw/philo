@@ -55,7 +55,7 @@ class Node(SlugTreeEntity):
 		"""This is a shortcut method for :meth:`View.render_to_response`"""
 		if self.view_object_id and self.view_content_type_id:
 			view_model = ContentType.objects.get_for_id(self.view_content_type_id).model_class()
-			self.view = view_model._default_manager.select_related(depth=1).get(pk=self.view_object_id)
+			self.view = view_model._default_manager.get(pk=self.view_object_id)
 			return self.view.render_to_response(request, extra_context)
 		raise Http404
 	

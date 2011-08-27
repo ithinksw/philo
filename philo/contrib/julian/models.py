@@ -13,6 +13,7 @@ from django.db import models
 from django.db.models.query import QuerySet
 from django.http import HttpResponse, Http404
 from django.utils.encoding import force_unicode
+from taggit.managers import TaggableManager
 
 from philo.contrib.julian.feedgenerator import ICalendarFeed
 from philo.contrib.winer.models import FeedView

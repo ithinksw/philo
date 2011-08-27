@@ -5,10 +5,12 @@ from django.conf import settings
 from django.conf.urls.defaults import url, patterns, include
 from django.db import models
 from django.http import Http404, HttpResponse
+from taggit.managers import TaggableManager
+from taggit.models import Tag, TaggedItem
 
 from philo.contrib.winer.models import FeedView
 from philo.exceptions import ViewCanNotProvideSubpath
-from philo.models import Tag, Entity, Page, register_value_model
+from philo.models import Entity, Page, register_value_model
 from philo.models.fields import TemplateField
 from philo.utils import paginate
 
@@ -27,7 +29,11 @@ class Blog(Entity):
 	@property
 	def entry_tags(self):
 		"""Returns a :class:`QuerySet` of :class:`.Tag`\ s that are used on any entries in this blog."""
-		return Tag.objects.filter(blogentries__blog=self).distinct()
+		entry_pks = list(self.entries.values_list('pk', flat=True))
+		kwargs = {
+			'%s__object_id__in' % TaggedItem.tag_relname(): entry_pks
+		}
+		return TaggedItem.tags_for(BlogEntry).filter(**kwargs)
 	
 	@property
 	def entry_dates(self):
@@ -62,8 +68,8 @@ class BlogEntry(Entity):
 	#: An optional brief excerpt from the :class:`BlogEntry`.
 	excerpt = TemplateField(blank=True, null=True)
 	
-	#: :class:`.Tag`\ s for this :class:`BlogEntry`.
-	tags = models.ManyToManyField(Tag, related_name='blogentries', blank=True, null=True)
+	#: A ``django-taggit`` :class:`TaggableManager`.
+	tags = TaggableManager()
 	
 	def save(self, *args, **kwargs):
 		if self.date is None:
@@ -375,8 +381,8 @@ class NewsletterArticle(Entity):
 	lede = TemplateField(null=True, blank=True, verbose_name='Summary')
 	#: A :class:`.TemplateField` containing the full text of the article.
 	full_text = TemplateField(db_index=True)
-	#: A :class:`ManyToManyField` to :class:`.Tag`\ s for the :class:`NewsletterArticle`.
-	tags = models.ManyToManyField(Tag, related_name='newsletterarticles', blank=True, null=True)
+	#: A ``django-taggit`` :class:`TaggableManager`.
+	tags = TaggableManager()
 	
 	def save(self, *args, **kwargs):
 		if self.date is None:

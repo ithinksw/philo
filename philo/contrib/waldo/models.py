@@ -107,7 +107,7 @@ class LoginMultiView(MultiView):
 				
 				return HttpResponseRedirect(redirect)
 		else:
-			form = self.login_form()
+			form = self.login_form(request)
 		
 		request.session.set_test_cookie()
 		

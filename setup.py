@@ -65,7 +65,6 @@ setup(
 	
 	install_requires = [
 		'django>=1.3',
-		'python>=2.5.4',
 		'django-mptt>0.4.2,==dev',
 	],
 	extras_require = {

@@ -75,6 +75,7 @@ setup(
 		'waldo-recaptcha': ['recaptcha-django'],
 		'sobol-eventlet': ['eventlet'],
 		'sobol-scrape': ['BeautifulSoup'],
+		'penfield': ['django-taggit>=0.9'],
 	},
 	dependency_links = [
 		'https://github.com/django-mptt/django-mptt/tarball/master#egg=django-mptt-dev'

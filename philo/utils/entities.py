@@ -1,7 +1,10 @@
+from functools import partial
 from UserDict import DictMixin
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
+
+from philo.utils.lazycompat import SimpleLazyObject
 
 
 ### AttributeMappers
@@ -86,13 +89,20 @@ class AttributeMapper(object, DictMixin):
 			value_lookups.setdefault(a.value_content_type_id, []).append(a.value_object_id)
 			self._attributes_cache[a.key] = a
 		
-		values_bulk = {}
+		values_bulk = dict(((ct_pk, SimpleLazyObject(partial(ContentType.objects.get_for_id(ct_pk).model_class().objects.in_bulk, pks))) for ct_pk, pks in value_lookups.items()))
 		
-		for ct_pk, pks in value_lookups.items():
-			values_bulk[ct_pk] = ContentType.objects.get_for_id(ct_pk).model_class().objects.in_bulk(pks)
+		cache = {}
 		
-		self._cache.update(dict([(a.key, getattr(values_bulk[a.value_content_type_id].get(a.value_object_id), 'value', None)) for a in attributes]))
+		for a in attributes:
+			cache[a.key] = SimpleLazyObject(partial(self._lazy_value_from_bulk, values_bulk, a))
+			a._value_cache = cache[a.key]
+		
+		self._cache.update(cache)
 		self._cache_filled = True
+	
+	def _lazy_value_from_bulk(self, bulk, attribute):
+		v = bulk[attribute.value_content_type_id].get(attribute.value_object_id)
+		return getattr(v, 'value', None)
 	
 	def clear_cache(self):
 		"""Clears the cache."""

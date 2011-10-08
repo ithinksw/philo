@@ -9,20 +9,14 @@ from django.utils.translation import ugettext_lazy as _
 from philo.forms.fields import JSONFormField
 from philo.utils.registry import RegistryIterator
 from philo.validators import TemplateValidator, json_validator
-from philo.forms.widgets import EmbedWidget
 #from philo.models.fields.entities import *
 
 
-class TemplateField(models.Field):
+class TemplateField(models.TextField):
 	"""A :class:`TextField` which is validated with a :class:`.TemplateValidator`. ``allow``, ``disallow``, and ``secure`` will be passed into the validator's construction."""
 	def __init__(self, allow=None, disallow=None, secure=True, *args, **kwargs):
 		super(TemplateField, self).__init__(*args, **kwargs)
 		self.validators.append(TemplateValidator(allow, disallow, secure))
-	
-	def formfield(self, **kwargs):
-		defaults = {'widget': EmbedWidget}
-		defaults.update(kwargs)
-		return super(TemplateField, self).formfield(**defaults)
 
 
 class JSONDescriptor(object):

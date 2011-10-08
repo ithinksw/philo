@@ -1,13 +1,16 @@
+# encoding: utf-8
 from datetime import date, datetime
 
 from django.conf import settings
 from django.conf.urls.defaults import url, patterns, include
 from django.db import models
 from django.http import Http404, HttpResponse
+from taggit.managers import TaggableManager
+from taggit.models import Tag, TaggedItem
 
 from philo.contrib.winer.models import FeedView
 from philo.exceptions import ViewCanNotProvideSubpath
-from philo.models import Tag, Entity, Page, register_value_model
+from philo.models import Entity, Page, register_value_model
 from philo.models.fields import TemplateField
 from philo.utils import paginate
 
@@ -26,7 +29,11 @@ class Blog(Entity):
 	@property
 	def entry_tags(self):
 		"""Returns a :class:`QuerySet` of :class:`.Tag`\ s that are used on any entries in this blog."""
-		return Tag.objects.filter(blogentries__blog=self).distinct()
+		entry_pks = list(self.entries.values_list('pk', flat=True))
+		kwargs = {
+			'%s__object_id__in' % TaggedItem.tag_relname(): entry_pks
+		}
+		return TaggedItem.tags_for(BlogEntry).filter(**kwargs)
 	
 	@property
 	def entry_dates(self):
@@ -56,13 +63,13 @@ class BlogEntry(Entity):
 	date = models.DateTimeField(default=None)
 	
 	#: The content of the :class:`BlogEntry`.
-	content = models.TextField()
+	content = TemplateField()
 	
 	#: An optional brief excerpt from the :class:`BlogEntry`.
-	excerpt = models.TextField(blank=True, null=True)
+	excerpt = TemplateField(blank=True, null=True)
 	
-	#: :class:`.Tag`\ s for this :class:`BlogEntry`.
-	tags = models.ManyToManyField(Tag, related_name='blogentries', blank=True, null=True)
+	#: A ``django-taggit`` :class:`TaggableManager`.
+	tags = TaggableManager()
 	
 	def save(self, *args, **kwargs):
 		if self.date is None:
@@ -125,7 +132,6 @@ class BlogView(FeedView):
 	tag_permalink_base = models.CharField(max_length=255, blank=False, default='tags')
 	
 	item_context_var = 'entries'
-	object_attr = 'blog'
 	
 	def __unicode__(self):
 		return u'BlogView for %s' % self.blog.title
@@ -158,8 +164,8 @@ class BlogView(FeedView):
 	
 	@property
 	def urlpatterns(self):
-		urlpatterns = self.feed_patterns(r'^', 'get_all_entries', 'index_page', 'index') +\
-			self.feed_patterns(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)' % self.tag_permalink_base, 'get_entries_by_tag', 'tag_page', 'entries_by_tag')
+		urlpatterns = self.feed_patterns(r'^', 'get_entries', 'index_page', 'index') +\
+			self.feed_patterns(r'^%s/(?P<tag_slugs>[-\w]+[-+/\w]*)' % self.tag_permalink_base, 'get_entries', 'tag_page', 'entries_by_tag')
 		
 		if self.tag_archive_page_id:
 			urlpatterns += patterns('',
@@ -168,11 +174,11 @@ class BlogView(FeedView):
 		
 		if self.entry_archive_page_id:
 			if self.entry_permalink_style in 'DMY':
-				urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})', 'get_entries_by_ymd', 'entry_archive_page', 'entries_by_year')
+				urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})', 'get_entries', 'entry_archive_page', 'entries_by_year')
 				if self.entry_permalink_style in 'DM':
-					urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})/(?P<month>\d{2})', 'get_entries_by_ymd', 'entry_archive_page', 'entries_by_month')
+					urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})/(?P<month>\d{2})', 'get_entries', 'entry_archive_page', 'entries_by_month')
 					if self.entry_permalink_style == 'D':
-						urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})', 'get_entries_by_ymd', 'entry_archive_page', 'entries_by_day')
+						urlpatterns += self.feed_patterns(r'^(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})', 'get_entries', 'entry_archive_page', 'entries_by_day')
 		
 		if self.entry_permalink_style == 'D':
 			urlpatterns += patterns('',
@@ -196,9 +202,6 @@ class BlogView(FeedView):
 			)
 		return urlpatterns
 	
-	def get_context(self):
-		return {'blog': self.blog}
-	
 	def get_entry_queryset(self, obj):
 		"""Returns the default :class:`QuerySet` of :class:`BlogEntry` instances for the :class:`BlogView` - all entries that are considered posted in the past. This allows for scheduled posting of entries."""
 		return obj.entries.filter(date__lte=datetime.now())
@@ -207,46 +210,62 @@ class BlogView(FeedView):
 		"""Returns the default :class:`QuerySet` of :class:`.Tag`\ s for the :class:`BlogView`'s :meth:`get_entries_by_tag` and :meth:`tag_archive_view`."""
 		return obj.entry_tags
 	
-	def get_all_entries(self, obj, request, extra_context=None):
-		"""Used to generate :meth:`~.FeedView.feed_patterns` for all entries."""
-		return self.get_entry_queryset(obj), extra_context
-	
-	def get_entries_by_ymd(self, obj, request, year=None, month=None, day=None, extra_context=None):
-		"""Used to generate :meth:`~.FeedView.feed_patterns` for entries with a specific year, month, and day."""
-		if not self.entry_archive_page:
-			raise Http404
-		entries = self.get_entry_queryset(obj)
-		if year:
-			entries = entries.filter(date__year=year)
-		if month:
-			entries = entries.filter(date__month=month)
-		if day:
-			entries = entries.filter(date__day=day)
-		
-		context = extra_context or {}
-		context.update({'year': year, 'month': month, 'day': day})
-		return entries, context
-	
-	def get_entries_by_tag(self, obj, request, tag_slugs, extra_context=None):
-		"""Used to generate :meth:`~.FeedView.feed_patterns` for entries with all of the given tags."""
-		tag_slugs = tag_slugs.replace('+', '/').split('/')
-		tags = self.get_tag_queryset(obj).filter(slug__in=tag_slugs)
-		
-		if not tags:
-			raise Http404
-		
-		# Raise a 404 on an incorrect slug.
-		found_slugs = [tag.slug for tag in tags]
-		for slug in tag_slugs:
-			if slug and slug not in found_slugs:
+	def get_object(self, request, year=None, month=None, day=None, tag_slugs=None):
+		"""Returns a dictionary representing the parameters for a feed which will be exposed."""
+		if tag_slugs is None:
+			tags = None
+		else:
+			tag_slugs = tag_slugs.replace('+', '/').split('/')
+			tags = self.get_tag_queryset(self.blog).filter(slug__in=tag_slugs)
+			if not tags:
 				raise Http404
-
-		entries = self.get_entry_queryset(obj)
-		for tag in tags:
-			entries = entries.filter(tags=tag)
+			
+			# Raise a 404 on an incorrect slug.
+			found_slugs = set([tag.slug for tag in tags])
+			for slug in tag_slugs:
+				if slug and slug not in found_slugs:
+					raise Http404
+		
+		try:
+			if year and month and day:
+				context_date = date(int(year), int(month), int(day))
+			elif year and month:
+				context_date = date(int(year), int(month), 1)
+			elif year:
+				context_date = date(int(year), 1, 1)
+			else:
+				context_date = None
+		except TypeError, ValueError:
+			context_date = None
+		
+		return {
+			'blog': self.blog,
+			'tags': tags,
+			'year': year,
+			'month': month,
+			'day': day,
+			'date': context_date
+		}
+	
+	def get_entries(self, obj, request, year=None, month=None, day=None, tag_slugs=None, extra_context=None):
+		"""Returns the :class:`BlogEntry` objects which will be exposed for the given object, as returned from :meth:`get_object`."""
+		entries = self.get_entry_queryset(obj['blog'])
+		
+		if obj['tags'] is not None:
+			tags = obj['tags']
+			for tag in tags:
+				entries = entries.filter(tags=tag)
+		
+		if obj['date'] is not None:
+			if year:
+				entries = entries.filter(date__year=year)
+			if month:
+				entries = entries.filter(date__month=month)
+			if day:
+				entries = entries.filter(date__day=day)
 		
 		context = extra_context or {}
-		context.update({'tags': tags})
+		context.update(obj)
 		
 		return entries, context
 	
@@ -279,30 +298,6 @@ class BlogView(FeedView):
 		})
 		return self.tag_archive_page.render_to_response(request, extra_context=context)
 	
-	def feed_view(self, get_items_attr, reverse_name, feed_type=None):
-		"""Overrides :meth:`.FeedView.feed_view` to add :class:`.Tag`\ s to the feed as categories."""
-		get_items = callable(get_items_attr) and get_items_attr or getattr(self, get_items_attr)
-		
-		def inner(request, extra_context=None, *args, **kwargs):
-			obj = self.get_object(request, *args, **kwargs)
-			feed = self.get_feed(obj, request, reverse_name, feed_type, *args, **kwargs)
-			items, extra_context = get_items(request, extra_context=extra_context, *args, **kwargs)
-			self.populate_feed(feed, items, request)
-			
-			if 'tags' in extra_context:
-				tags = extra_context['tags']
-				feed.feed['link'] = request.node.construct_url(self.reverse(obj=tags), with_domain=True, request=request, secure=request.is_secure())
-			else:
-				tags = obj.entry_tags
-			
-			feed.feed['categories'] = [tag.name for tag in tags]
-			
-			response = HttpResponse(mimetype=feed.mime_type)
-			feed.write(response, 'utf-8')
-			return response
-		
-		return inner
-	
 	def process_page_items(self, request, items):
 		"""Overrides :meth:`.FeedView.process_page_items` to add pagination."""
 		if self.entries_per_page:
@@ -320,7 +315,25 @@ class BlogView(FeedView):
 		return items, item_context
 	
 	def title(self, obj):
-		return obj.title
+		title = obj['blog'].title
+		if obj['tags']:
+			title += u" – %s" % u", ".join((tag.name for tag in obj['tags']))
+		date = obj['date']
+		if date:
+			if obj['day']:
+				datestr = date.strftime("%F %j, %Y")
+			elif obj['month']:
+				datestr = date.strftime("%F, %Y")
+			elif obj['year']:
+				datestr = date.strftime("%Y")
+			title += u" – %s" % datestr
+		return title
+	
+	def categories(self, obj):
+		tags = obj['tags']
+		if tags:
+			return (tag.name for tag in tags)
+		return None
 	
 	def item_title(self, item):
 		return item.title
@@ -368,8 +381,8 @@ class NewsletterArticle(Entity):
 	lede = TemplateField(null=True, blank=True, verbose_name='Summary')
 	#: A :class:`.TemplateField` containing the full text of the article.
 	full_text = TemplateField(db_index=True)
-	#: A :class:`ManyToManyField` to :class:`.Tag`\ s for the :class:`NewsletterArticle`.
-	tags = models.ManyToManyField(Tag, related_name='newsletterarticles', blank=True, null=True)
+	#: A ``django-taggit`` :class:`TaggableManager`.
+	tags = TaggableManager()
 	
 	def save(self, *args, **kwargs):
 		if self.date is None:

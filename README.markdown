@@ -5,6 +5,7 @@ Prerequisites:
  * [Python 2.5.4+ &lt;http://www.python.org&gt;](http://www.python.org/)
  * [Django 1.3+ &lt;http://www.djangoproject.com/&gt;](http://www.djangoproject.com/)
  * [django-mptt e734079+ &lt;https://github.com/django-mptt/django-mptt/&gt;](https://github.com/django-mptt/django-mptt/)
+ * (philo.contrib.penfield) [django-taggit 0.9.3+ &lt;https://github.com/alex/django-taggit&gt;](https://github.com/alex/django-taggit)
  * (Optional) [django-grappelli 2.0+ &lt;http://code.google.com/p/django-grappelli/&gt;](http://code.google.com/p/django-grappelli/)
  * (Optional) [south 0.7.2+ &lt;http://south.aeracode.org/)](http://south.aeracode.org/)
  * (Optional) [recaptcha-django r6 &lt;http://code.google.com/p/recaptcha-django/&gt;](http://code.google.com/p/recaptcha-django/)
@@ -22,4 +23,4 @@ After installing philo and mptt on your python path, make sure to complete the f
 3. include 'philo.urls' somewhere in your urls.py file.
 4. Optionally add a root node to your current Site.
 
-Philo should be ready to go!
+Philo should be ready to go! All that's left is to [learn more](http://philo.readthedocs.org) and [contribute](http://philo.readthedocs.org/en/latest/contribute.html).

@@ -16,23 +16,7 @@ from philo.utils.entities import AttributeMapper, TreeAttributeMapper
 from philo.validators import json_validator
 
 
-__all__ = ('Tag', 'value_content_type_limiter', 'register_value_model', 'unregister_value_model', 'JSONValue', 'ForeignKeyValue', 'ManyToManyValue', 'Attribute', 'Entity', 'TreeEntity', 'SlugTreeEntity')
-
-
-class Tag(models.Model):
-	"""A simple, generic model for tagging."""
-	#: A CharField (max length 255) which contains the name of the tag.
-	name = models.CharField(max_length=255)
-	#: A CharField (max length 255) which contains the tag's unique slug.
-	slug = models.SlugField(max_length=255, unique=True)
-	
-	def __unicode__(self):
-		"""Returns the value of the :attr:`name` field"""
-		return self.name
-	
-	class Meta:
-		app_label = 'philo'
-		ordering = ('name',)
+__all__ = ('value_content_type_limiter', 'register_value_model', 'unregister_value_model', 'JSONValue', 'ForeignKeyValue', 'ManyToManyValue', 'Attribute', 'Entity', 'TreeEntity', 'SlugTreeEntity')
 
 
 #: An instance of :class:`.ContentTypeRegistryLimiter` which is used to track the content types which can be related to by :class:`ForeignKeyValue`\ s and :class:`ManyToManyValue`\ s.
@@ -42,9 +26,6 @@ value_content_type_limiter = ContentTypeRegistryLimiter()
 def register_value_model(model):
 	"""Registers a model as a valid content type for a :class:`ForeignKeyValue` or :class:`ManyToManyValue` through the :data:`value_content_type_limiter`."""
 	value_content_type_limiter.register_class(model)
-
-
-register_value_model(Tag)
 
 
 def unregister_value_model(model):

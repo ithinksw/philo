@@ -28,7 +28,7 @@
 			oldDismissRelatedLookupPopup = window.dismissRelatedLookupPopup;
 			window.dismissRelatedLookupPopup = function (win, chosenId) {
 				var name = windowname_to_id(win.name),
-					elem = $('#'+win.name), val;
+					elem = $('#'+name), val;
 				// if the original element was an embed widget, run our script
 				if (elem.parent().hasClass('embed-widget')) {
 					contenttype = $('select',elem.parent()).val();

@@ -107,7 +107,7 @@ class LoginMultiView(MultiView):
 				
 				return HttpResponseRedirect(redirect)
 		else:
-			form = self.login_form()
+			form = self.login_form(request)
 		
 		request.session.set_test_cookie()
 		
@@ -444,15 +444,8 @@ class AccountMultiView(RegistrationMultiView):
 			if form.is_valid():
 				message = "Account information saved."
 				redirect = self.get_requirement_redirect(request, default='')
-				if 'email' in form.changed_data and self.email_change_confirmation_email:
-					# ModelForms modify their instances in-place during
-					# validation, so reset the instance's email to its
-					# previous value here, then remove the new value
-					# from cleaned_data. We only do this if an email
-					# change confirmation email is available.
-					request.user.email = form.initial['email']
-					
-					email = form.cleaned_data.pop('email')
+				if form.email_changed() and self.email_change_confirmation_email:
+					email = form.reset_email()
 					
 					current_site = Site.objects.get_current()
 					
@@ -464,7 +457,7 @@ class AccountMultiView(RegistrationMultiView):
 					}
 					self.send_confirmation_email('Confirm account email change at %s' % current_site.domain, email, self.email_change_confirmation_email, context)
 					
-					message = "An email has be sent to %s to confirm the email%s." % (email, bool(request.user.email) and " change" or "")
+					message = "An email has be sent to %s to confirm the email%s." % (email, " change" if bool(request.user.email) else "")
 					if not request.user.email:
 						message += " You will need to confirm the email before accessing pages that require a valid account."
 						redirect = ''
@@ -538,8 +531,7 @@ class AccountMultiView(RegistrationMultiView):
 			raise Http404
 		
 		if token_generator.check_token(user, email, token):
-			user.email = email
-			user.save()
+			self.account_form.set_email(user, email)
 			messages.add_message(request, messages.SUCCESS, 'Email changed successfully.')
 			if self.manage_account_page:
 				redirect = self.reverse('account', node=request.node)

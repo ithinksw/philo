@@ -62,7 +62,7 @@ copyright = u'2009-2011, iThink Software'
 #
 # The short X.Y version.
 from philo import VERSION
-version = '%s.%s' % (VERSION[0], VERSION[1])
+version = '.'.join([str(v) for v in VERSION])
 # The full version, including alpha/beta/rc tags.
 release = version
 

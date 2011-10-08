@@ -74,6 +74,30 @@ class UserAccountForm(forms.ModelForm):
 		kwargs['instance'] = user
 		super(UserAccountForm, self).__init__(*args, **kwargs)
 	
+	def email_changed(self):
+		"""Returns ``True`` if the email field changed value and ``False`` if it did not, or if there is no email field on the form. This method must be supplied by account forms used with :mod:`~philo.contrib.waldo`."""
+		return 'email' in self.changed_data
+	
+	def reset_email(self):
+		"""
+		ModelForms modify their instances in-place during :meth:`_post_clean`; this method resets the email value to its initial state and returns the altered value. This is a method on the form to allow unusual behavior such as storing email on a :class:`UserProfile`.
+		
+		"""
+		email = self.instance.email
+		self.instance.email = self.initial['email']
+		self.cleaned_data.pop('email')
+		return email
+	
+	@classmethod
+	def set_email(cls, user, email):
+		"""
+		Given a valid instance and an email address, correctly set the email address for that instance and save the changes. This is a class method in order to allow unusual behavior such as storing email on a :class:`UserProfile`.
+		
+		"""
+		user.email = email
+		user.save()
+		
+	
 	class Meta:
 		model = User
 		fields = ('first_name', 'last_name', 'email')

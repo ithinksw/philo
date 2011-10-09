@@ -12,13 +12,13 @@ Philo is a foundation for developing web content management systems. Please, rea
 
 Prerequisites:
 
-* `Python 2.5.4+ <http://www.python.org>`_
+* `Python 2.5.4+ <http://www.python.org/>`_
 * `Django 1.3+ <http://www.djangoproject.com/>`_
 * `django-mptt e734079+ <https://github.com/django-mptt/django-mptt/>`_
-* (Optional) `django-grappelli 2.0+ <http://code.google.com/p/django-grappelli/>`_
-* (Optional) `south 0.7.2+ <http://south.aeracode.org/>`_
-* (:mod:`philo.contrib.penfield`) `django-taggit 0.9.3+ <https://github.com/alex/django-taggit>`_
-* (:mod:`philo.contrib.waldo`, optional) `recaptcha-django r6 <http://code.google.com/p/recaptcha-django/>`_
+* (optional) `django-grappelli 2.0+ <http://code.google.com/p/django-grappelli/>`_
+* (optional) `south 0.7.2+ <http://south.aeracode.org/>`_
+* (:mod:`philo.contrib.penfield`) `django-taggit 0.9.3+ <https://github.com/alex/django-taggit/>`_
+* (:mod:`philo.contrib.waldo`, optional) `recaptcha-django r6+ <http://code.google.com/p/recaptcha-django/>`_
 
 Contents
 ++++++++

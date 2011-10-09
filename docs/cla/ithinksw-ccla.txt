@@ -11,8 +11,8 @@ protection of iThink Software and its users; it does not change
 your rights to use your own Contributions for any other purpose.
 
 This version of the Agreement allows an entity (the "Corporation")
-to submit Contributions to iThink Software, to authorize Contributions 
-submitted by its designated employees to iThink Software, and to grant 
+to submit Contributions to iThink Software, to authorize Contributions
+submitted by its designated employees to iThink Software, and to grant
 copyright and patent licenses thereto.
 
 If you have not already done so, please complete and sign, then scan

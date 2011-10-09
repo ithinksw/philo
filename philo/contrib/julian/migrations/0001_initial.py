@@ -219,14 +219,6 @@ class Migration(SchemaMigration):
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'slug': ('django.db.models.fields.SlugField', [], {'unique': 'True', 'max_length': '255', 'db_index': 'True'})
         },
-        'oberlin.locationcoordinates': {
-            'Meta': {'unique_together': "(('location_ct', 'location_pk'),)", 'object_name': 'LocationCoordinates'},
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'latitude': ('django.db.models.fields.FloatField', [], {}),
-            'location_ct': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']"}),
-            'location_pk': ('django.db.models.fields.TextField', [], {}),
-            'longitude': ('django.db.models.fields.FloatField', [], {})
-        },
         'philo.attribute': {
             'Meta': {'unique_together': "(('key', 'entity_content_type', 'entity_object_id'), ('value_content_type', 'value_object_id'))", 'object_name': 'Attribute'},
             'entity_content_type': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'attribute_entity_set'", 'to': "orm['contenttypes.ContentType']"}),

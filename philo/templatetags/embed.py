@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.template.loader_tags import ExtendsNode, BlockContext, BLOCK_CONTEXT_KEY, TextNode, BlockNode
 
-from philo.utils import LOADED_TEMPLATE_ATTR
+from philo.utils.templates import LOADED_TEMPLATE_ATTR
 
 
 register = template.Library()
@@ -285,7 +285,7 @@ def parse_content_type(bit, tagname):
 	except ValueError:
 		raise template.TemplateSyntaxError('"%s" template tag expects the first argument to be of the form app_label.model' % tagname)
 	try:
-		ct = ContentType.objects.get(app_label=app_label, model=model)
+		ct = ContentType.objects.get_by_natural_key(app_label, model)
 	except ContentType.DoesNotExist:
 		raise template.TemplateSyntaxError('"%s" template tag requires an argument of the form app_label.model which refers to an installed content type (see django.contrib.contenttypes)' % tagname)
 	return ct

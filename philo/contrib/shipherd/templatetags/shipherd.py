@@ -131,7 +131,7 @@ def recursenavigation(parser, token):
 		<ul>
 		    {% recursenavigation node "main" %}
 		        <li{% if navloop.active %} class='active'{% endif %}>
-		            {{ item.text }}
+		            <a href="{{ item.get_target_url }}">{{ item.text }}</a>
 		            {% if item.get_children %}
 		                <ul>
 		                    {{ children }}
@@ -140,6 +140,11 @@ def recursenavigation(parser, token):
 		        </li>
 		    {% endrecursenavigation %}
 		</ul>
+	
+	.. note:: {% recursenavigation %} requires that the current :class:`HttpRequest` be present in the context as ``request``. The simplest way to do this is with the `request context processor`_. Simply make sure that ``django.core.context_processors.request`` is included in your :setting:`TEMPLATE_CONTEXT_PROCESSORS` setting.
+	
+	.. _request context processor: https://docs.djangoproject.com/en/dev/ref/templates/api/#django-core-context-processors-request
+	
 	"""
 	bits = token.contents.split()
 	if len(bits) != 3:
@@ -157,13 +162,7 @@ def recursenavigation(parser, token):
 def has_navigation(node, key=None):
 	"""Returns ``True`` if the node has a :class:`.Navigation` with the given key and ``False`` otherwise. If ``key`` is ``None``, returns whether the node has any :class:`.Navigation`\ s at all."""
 	try:
-		nav = node.navigation
-		if key is not None:
-			if key in nav and bool(node.navigation[key]):
-				return True
-			elif key not in node.navigation:
-				return False
-		return bool(node.navigation)
+		return bool(node.navigation[key])
 	except:
 		return False
 
@@ -172,6 +171,6 @@ def has_navigation(node, key=None):
 def navigation_host(node, key):
 	"""Returns the :class:`.Node` which hosts the :class:`.Navigation` which ``node`` has inherited for ``key``. Returns ``node`` if any exceptions are encountered."""
 	try:
-		return Navigation.objects.filter(node__in=node.get_ancestors(include_self=True), key=key).order_by('-node__level')[0].node
+		return node.navigation[key].node
 	except:
 		return node

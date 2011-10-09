@@ -3,7 +3,21 @@ Using Shipherd in the Admin
 
 The navigation mechanism is fairly complex; unfortunately, there's no real way around that - without a lot of equally complex code that you are quite welcome to write and contribute! ;-)
 
-For this guide, we'll assume that you have the setup described in :doc:`getting-started`. We'll be adding a main :class:`.Navigation` to the root :class:`.Node` and making it display as part of the :class:`.Template`. Before getting started, make sure that you've added :mod:`philo.contrib.shipherd` to your :setting:`INSTALLED_APPS`.
+For this guide, we'll assume that you have the setup described in :doc:`getting-started`. We'll be adding a main :class:`.Navigation` to the root :class:`.Node` and making it display as part of the :class:`.Template`.
+
+Before getting started, make sure that you've added :mod:`philo.contrib.shipherd` to your :setting:`INSTALLED_APPS`. :mod:`~philo.contrib.shipherd` template tags also require the request context processor, so make sure to set :setting:`TEMPLATE_CONTEXT_PROCESSORS` appropriately::
+
+	TEMPLATE_CONTEXT_PROCESSORS = (
+		# Defaults
+		"django.contrib.auth.context_processors.auth",
+		"django.core.context_processors.debug",
+		"django.core.context_processors.i18n",
+		"django.core.context_processors.media",
+		"django.core.context_processors.static",
+		"django.contrib.messages.context_processors.messages"
+		...
+		"django.core.context_processors.request"
+	)
 
 Creating the Navigation
 +++++++++++++++++++++++
@@ -19,7 +33,7 @@ Displaying the Navigation
 
 All you need to do now is show the navigation in the template! This is quite easy, using the :ttag:`~philo.contrib.shipherd.templatetags.shipherd.recursenavigation` templatetag. For now we'll keep it simple. Adjust the "Hello World Template" to look like this::
 	
-	<html>
+	<html>{% load shipherd %}
 	    <head>
 	        <title>{% container page_title %}</title>
 	    </head>
@@ -27,9 +41,9 @@ All you need to do now is show the navigation in the template! This is quite eas
 	        <ul>
 	            {% recursenavigation node "main" %}
 	                <li{% if navloop.active %} class="active"{% endif %}>
-	                    {{ item.text }}
+	                    <a href="{{ item.get_target_url }}">{{ item.text }}</a>
 	                </li>
-	            {% endnavigation %}
+	            {% endrecursenavigation %}
 	        </ul>
 	        {% container page_body as content %}
 	        {% if content %}

@@ -21,7 +21,7 @@ class AttributeForm(ModelForm):
 		# This is necessary because model forms store changes to self.instance in their clean method.
 		# Mutter mutter.
 		value = self.instance.value
-		self._cached_value_ct = self.instance.value_content_type
+		self._cached_value_ct_id = self.instance.value_content_type_id
 		self._cached_value = value
 		
 		# If there is a value, pull in its fields.
@@ -32,7 +32,7 @@ class AttributeForm(ModelForm):
 	def save(self, *args, **kwargs):
 		# At this point, the cleaned_data has already been stored on self.instance.
 		
-		if self.instance.value_content_type != self._cached_value_ct:
+		if self.instance.value_content_type_id != self._cached_value_ct_id:
 			# The value content type has changed. Clear the old value, if there was one.
 			if self._cached_value:
 				self._cached_value.delete()
@@ -42,8 +42,8 @@ class AttributeForm(ModelForm):
 			
 			# Now create a new value instance so that on next instantiation, the form will
 			# know what fields to add.
-			if self.instance.value_content_type is not None:
-				self.instance.value = self.instance.value_content_type.model_class().objects.create()
+			if self.instance.value_content_type_id is not None:
+				self.instance.value = ContentType.objects.get_for_id(self.instance.value_content_type_id).model_class().objects.create()
 		elif self.instance.value is not None:
 			# The value content type is the same, but one of the value fields has changed.
 			

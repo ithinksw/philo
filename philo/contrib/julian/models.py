@@ -13,9 +13,11 @@ from django.db import models
 from django.db.models.query import QuerySet
 from django.http import HttpResponse, Http404
 from django.utils.encoding import force_unicode
+from taggit.managers import TaggableManager
 
 from philo.contrib.julian.feedgenerator import ICalendarFeed
-from philo.contrib.penfield.models import FeedView, FEEDS
+from philo.contrib.winer.models import FeedView
+from philo.contrib.winer.feeds import registry
 from philo.exceptions import ViewCanNotProvideSubpath
 from philo.models import Tag, Entity, Page
 from philo.models.fields import TemplateField
@@ -25,8 +27,7 @@ from philo.utils import ContentTypeRegistryLimiter
 __all__ = ('register_location_model', 'unregister_location_model', 'Location', 'TimedModel', 'Event', 'Calendar', 'CalendarView',)
 
 
-ICALENDAR = ICalendarFeed.mime_type
-FEEDS[ICALENDAR] = ICalendarFeed
+registry.register(ICalendarFeed, verbose_name="iCalendar")
 try:
 	DEFAULT_SITE = Site.objects.get_current()
 except:
@@ -223,17 +224,17 @@ class CalendarView(FeedView):
 			# or per-calendar-view basis.
 			#url(r'^%s/(?P<slug>[\w-]+)' % self.location_permalink_base, ...)
 		
-		if self.tag_archive_page:
+		if self.tag_archive_page_id:
 			urlpatterns += patterns('',
 				url(r'^%s$' % self.tag_permalink_base, self.tag_archive_view, name='tag_archive')
 			)
 		
-		if self.owner_archive_page:
+		if self.owner_archive_page_id:
 			urlpatterns += patterns('',
 				url(r'^%s$' % self.owner_permalink_base, self.owner_archive_view, name='owner_archive')
 			)
 		
-		if self.location_archive_page:
+		if self.location_archive_page_id:
 			urlpatterns += patterns('',
 				url(r'^%s$' % self.location_permalink_base, self.location_archive_view, name='location_archive')
 			)
@@ -334,7 +335,7 @@ class CalendarView(FeedView):
 	
 	def get_events_by_location(self, request, app_label, model, pk, extra_context=None):
 		try:
-			ct = ContentType.objects.get(app_label=app_label, model=model)
+			ct = ContentType.objects.get_by_natural_key(app_label, model)
 			location = ct.model_class()._default_manager.get(pk=pk)
 		except ObjectDoesNotExist:
 			raise Http404
@@ -461,5 +462,4 @@ class CalendarView(FeedView):
 		return u"%s for %s" % (self.__class__.__name__, self.calendar)
 
 field = CalendarView._meta.get_field('feed_type')
-field._choices += ((ICALENDAR, 'iCalendar'),)
-field.default = ICALENDAR
+field.default = registry.get_slug(ICalendarFeed, field.default)

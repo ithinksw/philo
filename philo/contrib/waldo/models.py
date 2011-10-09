@@ -107,7 +107,7 @@ class LoginMultiView(MultiView):
 				
 				return HttpResponseRedirect(redirect)
 		else:
-			form = self.login_form()
+			form = self.login_form(request)
 		
 		request.session.set_test_cookie()
 		
@@ -164,13 +164,13 @@ class PasswordMultiView(LoginMultiView):
 	def urlpatterns(self):
 		urlpatterns = super(PasswordMultiView, self).urlpatterns
 		
-		if self.password_reset_page and self.password_reset_confirmation_email and self.password_set_page:
+		if self.password_reset_page_id and self.password_reset_confirmation_email_id and self.password_set_page_id:
 			urlpatterns += patterns('',
 				url(r'^password/reset$', csrf_protect(self.password_reset), name='password_reset'),
 				url(r'^password/reset/(?P<uidb36>\w+)/(?P<token>[^/]+)$', self.password_reset_confirm, name='password_reset_confirm'),
 			)
 		
-		if self.password_change_page:
+		if self.password_change_page_id:
 			urlpatterns += patterns('',
 				url(r'^password/change$', csrf_protect(self.login_required(self.password_change)), name='password_change'),
 			)
@@ -329,7 +329,7 @@ class RegistrationMultiView(PasswordMultiView):
 	@property
 	def urlpatterns(self):
 		urlpatterns = super(RegistrationMultiView, self).urlpatterns
-		if self.register_page and self.register_confirmation_email:
+		if self.register_page_id and self.register_confirmation_email_id:
 			urlpatterns += patterns('',
 				url(r'^register$', csrf_protect(self.register), name='register'),
 				url(r'^register/(?P<uidb36>\w+)/(?P<token>[^/]+)$', self.register_confirm, name='register_confirm')
@@ -421,11 +421,11 @@ class AccountMultiView(RegistrationMultiView):
 	@property
 	def urlpatterns(self):
 		urlpatterns = super(AccountMultiView, self).urlpatterns
-		if self.manage_account_page:
+		if self.manage_account_page_id:
 			urlpatterns += patterns('',
 				url(r'^account$', self.login_required(self.account_view), name='account'),
 			)
-		if self.email_change_confirmation_email:
+		if self.email_change_confirmation_email_id:
 			urlpatterns += patterns('',
 				url(r'^account/email/(?P<uidb36>\w+)/(?P<email>[\w.]+[+][\w.]+)/(?P<token>[^/]+)$', self.email_change_confirm, name='email_change_confirm')
 			)
@@ -444,15 +444,8 @@ class AccountMultiView(RegistrationMultiView):
 			if form.is_valid():
 				message = "Account information saved."
 				redirect = self.get_requirement_redirect(request, default='')
-				if 'email' in form.changed_data and self.email_change_confirmation_email:
-					# ModelForms modify their instances in-place during
-					# validation, so reset the instance's email to its
-					# previous value here, then remove the new value
-					# from cleaned_data. We only do this if an email
-					# change confirmation email is available.
-					request.user.email = form.initial['email']
-					
-					email = form.cleaned_data.pop('email')
+				if form.email_changed() and self.email_change_confirmation_email:
+					email = form.reset_email()
 					
 					current_site = Site.objects.get_current()
 					
@@ -464,7 +457,7 @@ class AccountMultiView(RegistrationMultiView):
 					}
 					self.send_confirmation_email('Confirm account email change at %s' % current_site.domain, email, self.email_change_confirmation_email, context)
 					
-					message = "An email has be sent to %s to confirm the email%s." % (email, bool(request.user.email) and " change" or "")
+					message = "An email has be sent to %s to confirm the email%s." % (email, " change" if bool(request.user.email) else "")
 					if not request.user.email:
 						message += " You will need to confirm the email before accessing pages that require a valid account."
 						redirect = ''
@@ -501,7 +494,7 @@ class AccountMultiView(RegistrationMultiView):
 					self.set_requirement_redirect(request, redirect=request.path)
 					redirect = self.reverse('account', node=request.node)
 				else:
-					redirect = node.get_absolute_url()
+					redirect = request.node.get_absolute_url()
 				return HttpResponseRedirect(redirect)
 			return view(request, *args, **kwargs)
 		
@@ -538,8 +531,7 @@ class AccountMultiView(RegistrationMultiView):
 			raise Http404
 		
 		if token_generator.check_token(user, email, token):
-			user.email = email
-			user.save()
+			self.account_form.set_email(user, email)
 			messages.add_message(request, messages.SUCCESS, 'Email changed successfully.')
 			if self.manage_account_page:
 				redirect = self.reverse('account', node=request.node)

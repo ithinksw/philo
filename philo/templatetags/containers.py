@@ -7,10 +7,30 @@ from django import template
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.utils.safestring import SafeUnicode, mark_safe
 
 
 register = template.Library()
+
+
+CONTAINER_CONTEXT_KEY = 'philo_container_context'
+
+
+class ContainerContext(object):
+	def __init__(self, page):
+		self.page = page
+	
+	def get_contentlets(self):
+		if not hasattr(self, '_contentlets'):
+			self._contentlets = dict(((c.name, c) for c in self.page.contentlets.all()))
+		return self._contentlets
+	
+	def get_references(self):
+		if not hasattr(self, '_references'):
+			references = self.page.contentreferences.all()
+			self._references = dict((((c.name, ContentType.objects.get_for_id(c.content_type_id)), c) for c in references))
+		return self._references
 
 
 class ContainerNode(template.Node):
@@ -20,47 +40,42 @@ class ContainerNode(template.Node):
 		self.references = references
 	
 	def render(self, context):
-		content = settings.TEMPLATE_STRING_IF_INVALID
-		if 'page' in context:
-			container_content = self.get_container_content(context)
-		else:
-			container_content = None
+		container_content = self.get_container_content(context)
 		
 		if self.as_var:
 			context[self.as_var] = container_content
 			return ''
 		
-		if not container_content:
-			return ''
-		
 		return container_content
 	
 	def get_container_content(self, context):
-		page = context['page']
+		try:
+			container_context = context.render_context[CONTAINER_CONTEXT_KEY]
+		except KeyError:
+			try:
+				page = context['page']
+			except KeyError:
+				return settings.TEMPLATE_STRING_IF_INVALID
+			
+			container_context = ContainerContext(page)
+			context.render_context[CONTAINER_CONTEXT_KEY] = container_context
+		
 		if self.references:
 			# Then it's a content reference.
 			try:
-				contentreference = page.contentreferences.get(name__exact=self.name, content_type=self.references)
-				content = contentreference.content
-			except ObjectDoesNotExist:
+				contentreference = container_context.get_references()[(self.name, self.references)]
+			except KeyError:
 				content = ''
+			else:
+				content = contentreference.content
 		else:
 			# Otherwise it's a contentlet.
 			try:
-				contentlet = page.contentlets.get(name__exact=self.name)
-				if '{%' in contentlet.content or '{{' in contentlet.content:
-					try:
-						content = template.Template(contentlet.content, name=contentlet.name).render(context)
-					except template.TemplateSyntaxError, error:
-						if settings.DEBUG:
-							content = ('[Error parsing contentlet \'%s\': %s]' % (self.name, error))
-						else:
-							content = settings.TEMPLATE_STRING_IF_INVALID
-				else:
-					content = contentlet.content
-			except ObjectDoesNotExist:
-				content = settings.TEMPLATE_STRING_IF_INVALID
-			content = mark_safe(content)
+				contentlet = container_context.get_contentlets()[self.name]
+			except KeyError:
+				content = ''
+			else:
+				content = contentlet.content
 		return content
 
 
@@ -87,7 +102,7 @@ def container(parser, token):
 				if option_token == 'references':
 					try:
 						app_label, model = remaining_tokens.pop(0).strip('"').split('.')
-						references = ContentType.objects.get(app_label=app_label, model=model)
+						references = ContentType.objects.get_by_natural_key(app_label, model)
 					except IndexError:
 						raise template.TemplateSyntaxError('"%s" template tag option "references" requires an argument specifying a content type' % tag)
 					except ValueError:

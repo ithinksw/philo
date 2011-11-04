@@ -1,0 +1,12 @@
+include README
+include README.markdown
+include LICENSE
+include MANIFEST.in
+recursive-include philo/templates *.html
+recursive-include philo/contrib/sobol/templates *.html
+recursive-include philo/fixtures *.json
+recursive-include philo/static *.css *.js
+recursive-include philo/contrib/sobol/static *.css *.js
+recursive-include docs *.py *.rst *.bat *.txt Makefile
+global-exclude *~
+prune docs/_build

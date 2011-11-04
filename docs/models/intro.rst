@@ -8,6 +8,9 @@ Contents:
    
    entities
    nodes-and-views
+   collections
+   miscellaneous
+   fields
 
 
-.. :module: philo.models
+.. automodule:: philo.models

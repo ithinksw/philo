@@ -1,0 +1,43 @@
+{% extends 'admin/change_form.html' %}
+{% load i18n %}
+
+{% block javascripts %}{% endblock %}
+{% block object-tools %}{% endblock %}
+{% block title %}Results for "{{ original.string }}" | {% trans 'Django site admin' %}{% endblock %}
+{% block content_title %}<h1>Results for "{{ original.string }}"</h1>{% endblock %}
+{% block extrastyle %}
+	<style type="text/css">
+		.favored td{
+			font-weight:bold;
+		}
+		#changelist table{
+			width:100%;
+		}
+	</style>
+{% endblock %}
+
+{% block content %}
+	<div class="module" id="changelist">
+		<table>
+			<thead>
+				<tr>
+					<th>Weight</th>
+					<th>URL</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for result in original.get_weighted_results %}
+				<tr class="{% cycle 'row1' 'row2' %}{% if result in original.get_favored_results %} favored{% endif %}">
+					<td>{{ result.weight }}</td>
+					<td>{{ result.url }}</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+	{% block submit_row %}
+	<div class="submit-row">
+		{% if not is_popup and has_delete_permission %}{% if change or show_delete %}<p class="deletelink-box"><a href="delete/" class="deletelink">{% trans "Delete" %}</a></p>{% endif %}{% endif %}
+	</div>
+	{% endblock %}
+{% endblock %}

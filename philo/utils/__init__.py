@@ -1,8 +1,31 @@
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import Paginator, EmptyPage
-from django.template import Context
-from django.template.loader_tags import ExtendsNode, ConstantIncludeNode
+
+
+def fattr(*args, **kwargs):
+	"""
+	Returns a wrapper which takes a function as its only argument and sets the key/value pairs passed in with kwargs as attributes on that function. This can be used as a decorator.
+	
+	Example::
+	
+		>>> from philo.utils import fattr
+		>>> @fattr(short_description="Hello World!")
+		... def x():
+		...     pass
+		... 
+		>>> x.short_description
+		'Hello World!'
+	
+	"""
+	def wrapper(function):
+		for key in kwargs:
+			setattr(function, key, kwargs[key])
+		return function
+	return wrapper
+
+
+### ContentTypeLimiters
 
 
 class ContentTypeLimiter(object):
@@ -14,13 +37,16 @@ class ContentTypeLimiter(object):
 
 
 class ContentTypeRegistryLimiter(ContentTypeLimiter):
+	"""Can be used to limit the choices for a :class:`ForeignKey` or :class:`ManyToManyField` to the :class:`ContentType`\ s which have been registered with this limiter."""
 	def __init__(self):
 		self.classes = []
 	
 	def register_class(self, cls):
+		"""Registers a model class with this limiter."""
 		self.classes.append(cls)
 	
 	def unregister_class(self, cls):
+		"""Unregisters a model class from this limiter."""
 		self.classes.remove(cls)
 	
 	def q_object(self):
@@ -37,6 +63,13 @@ class ContentTypeRegistryLimiter(ContentTypeLimiter):
 
 
 class ContentTypeSubclassLimiter(ContentTypeLimiter):
+	"""
+	Can be used to limit the choices for a :class:`ForeignKey` or :class:`ManyToManyField` to the :class:`ContentType`\ s for all non-abstract models which subclass the class passed in on instantiation.
+	
+	:param cls: The class whose non-abstract subclasses will be valid choices.
+	:param inclusive: Whether ``cls`` should also be considered a valid choice (if it is a non-abstract subclass of :class:`models.Model`)
+	
+	"""
 	def __init__(self, cls, inclusive=False):
 		self.cls = cls
 		self.inclusive = inclusive
@@ -59,17 +92,18 @@ class ContentTypeSubclassLimiter(ContentTypeLimiter):
 		return models.Q(pk__in=contenttype_pks)
 
 
-def fattr(*args, **kwargs):
-	def wrapper(function):
-		for key in kwargs:
-			setattr(function, key, kwargs[key])
-		return function
-	return wrapper
+### Pagination
 
 
 def paginate(objects, per_page=None, page_number=1):
 	"""
-	Given a list of objects, return a (paginator, page, objects) tuple.
+	Given a list of objects, return a (``paginator``, ``page``, ``objects``) tuple.
+	
+	:param objects: The list of objects to be paginated.
+	:param per_page: The number of objects per page.
+	:param page_number: The number of the current page.
+	:returns tuple: (``paginator``, ``page``, ``objects``) where ``paginator`` is a :class:`django.core.paginator.Paginator` instance, ``page`` is the result of calling :meth:`Paginator.page` with ``page_number``, and objects is ``page.objects``. Any of the return values which can't be calculated will be returned as ``None``.
+	
 	"""
 	try:
 		per_page = int(per_page)
@@ -105,20 +139,3 @@ def paginate(objects, per_page=None, page_number=1):
 		objects = page.object_list
 	
 	return paginator, page, objects
-
-
-LOADED_TEMPLATE_ATTR = '_philo_loaded_template'
-BLANK_CONTEXT = Context()
-
-
-def get_extended(self):
-	return self.get_parent(BLANK_CONTEXT)
-
-
-def get_included(self):
-	return self.template
-
-
-# We ignore the IncludeNode because it will never work in a blank context.
-setattr(ExtendsNode, LOADED_TEMPLATE_ATTR, property(get_extended))
-setattr(ConstantIncludeNode, LOADED_TEMPLATE_ATTR, property(get_included))

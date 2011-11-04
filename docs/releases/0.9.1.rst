@@ -1,0 +1,13 @@
+Philo version 0.9.1 release notes
+=================================
+
+The primary focus of the 0.9.1 release has been streamlining and optimization. Requests in 0.9.1 are served two to three times faster than in 0.9. A number of bugs in code, documentation, and migrations have also been corrected.
+
+New Features and backwards-incompatible changes
++++++++++++++++++++++++++++++++++++++++++++++++
+
+* :class:`.FeedView` and related syndication code has been migrated to :mod:`philo.contrib.winer` so it can be used independently of :mod:`philo.contrib.penfield`.
+* :class:`.FeedView` has been refactored; the result of :meth:`.FeedView.get_object` is now passed into :meth:`.FeedView.get_items` to allow for more flexibility and for :class:`.FeedView`\ s which do not have a :class:`ForeignKey` relationship to the items that the feed is for.
+* :class:`.BlogView` has been refactored to take advantage of the more flexible :meth:`~.BlogView.get_object` method. Many of its former entry-fetching methods have been removed.
+* :class:`.EmbedWidget` is now used for text fields on, for example, :class:`BlogEntry`. The widget allows javascript-based generation of embed tags for model instances, using the same popup interface as raw id fields.
+* :class:`philo.models.Tag` has been removed in favor of an optional requirement for ``django-taggit``. This will allow :mod:`philo` to remain more focused. Migrations are provided for :mod:`philo.contrib.penfield` which losslessly convert :mod:`philo` :class:`~philo.models.Tag`\ s to ``django-taggit`` :class:`Tags`.

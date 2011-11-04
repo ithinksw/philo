@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from philo.admin import EntityAdmin, COLLAPSE_CLASSES
 from philo.contrib.julian.models import Location, Event, Calendar, CalendarView
 

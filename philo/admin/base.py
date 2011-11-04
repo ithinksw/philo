@@ -4,12 +4,12 @@ from django.contrib.contenttypes import generic
 from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.utils.html import escape
-from philo.models import Tag, Attribute
+from mptt.admin import MPTTModelAdmin
+
+from philo.models import Attribute
 from philo.models.fields.entities import ForeignKeyAttribute, ManyToManyAttribute
 from philo.admin.forms.attributes import AttributeForm, AttributeInlineFormSet
-from philo.admin.widgets import TagFilteredSelectMultiple
 from philo.forms.entities import EntityForm, proxy_fields_for_entity_model
-from mptt.admin import MPTTModelAdmin
 
 
 COLLAPSE_CLASSES = ('collapse', 'collapse-closed', 'closed',)
@@ -135,43 +135,5 @@ class EntityAdmin(admin.ModelAdmin):
 		return db_field.formfield(**kwargs)
 
 
-class TreeAdmin(MPTTModelAdmin):
+class TreeEntityAdmin(EntityAdmin, MPTTModelAdmin):
 	pass
-
-
-class TreeEntityAdmin(EntityAdmin, TreeAdmin):
-	pass
-
-
-class TagAdmin(admin.ModelAdmin):
-	list_display = ('name', 'slug')
-	prepopulated_fields = {"slug": ("name",)}
-	search_fields = ["name"]
-	
-	def response_add(self, request, obj, post_url_continue='../%s/'):
-		# If it's an ajax request, return a json response containing the necessary information.
-		if request.is_ajax():
-			return HttpResponse(json.dumps({'pk': escape(obj._get_pk_val()), 'unicode': escape(obj)}))
-		return super(TagAdmin, self).response_add(request, obj, post_url_continue)
-
-
-class AddTagAdmin(admin.ModelAdmin):
-	def formfield_for_manytomany(self, db_field, request=None, **kwargs):
-		"""
-		Get a form Field for a ManyToManyField.
-		"""
-		# If it uses an intermediary model that isn't auto created, don't show
-		# a field in admin.
-		if not db_field.rel.through._meta.auto_created:
-			return None
-		
-		if db_field.rel.to == Tag and db_field.name in (list(self.filter_vertical) + list(self.filter_horizontal)):
-			opts = Tag._meta
-			if request.user.has_perm(opts.app_label + '.' + opts.get_add_permission()):
-				kwargs['widget'] = TagFilteredSelectMultiple(db_field.verbose_name, (db_field.name in self.filter_vertical))
-				return db_field.formfield(**kwargs)
-		
-		return super(AddTagAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
-
-
-admin.site.register(Tag, TagAdmin)

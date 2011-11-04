@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from philo.admin import TreeEntityAdmin, COLLAPSE_CLASSES, NodeAdmin, EntityAdmin
 from philo.models import Node
 from philo.contrib.shipherd.models import NavigationItem, Navigation
@@ -10,8 +11,9 @@ NAVIGATION_RAW_ID_FIELDS = ('navigation', 'parent', 'target_node')
 class NavigationItemInline(admin.StackedInline):
 	raw_id_fields = NAVIGATION_RAW_ID_FIELDS
 	model = NavigationItem
-	extra = 1
+	extra = 0
 	sortable_field_name = 'order'
+	ordering = ('order',)
 	related_lookup_fields = {'fk': raw_id_fields}
 
 
@@ -68,7 +70,7 @@ class NodeNavigationItemInline(NavigationItemInline):
 
 class NodeNavigationInline(admin.TabularInline):
 	model = Navigation
-	extra = 1
+	extra = 0
 
 
 NodeAdmin.inlines = [NodeNavigationInline, NodeNavigationItemInline] + NodeAdmin.inlines

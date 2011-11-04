@@ -1,38 +1,36 @@
+from django import forms
 from django.conf import settings
 from django.contrib import admin
-from django import forms
-from philo.admin.base import COLLAPSE_CLASSES, TreeAdmin
-from philo.admin.nodes import ViewAdmin
-from philo.models.pages import Page, Template, Contentlet, ContentReference
+
+from philo.admin.base import COLLAPSE_CLASSES, TreeEntityAdmin
 from philo.admin.forms.containers import *
+from philo.admin.nodes import ViewAdmin
+from philo.admin.widgets import EmbedWidget
+from philo.models.fields import TemplateField
+from philo.models.pages import Page, Template, Contentlet, ContentReference
 
 
-class ContentletInline(admin.StackedInline):
-	model = Contentlet
+class ContainerInline(admin.StackedInline):
 	extra = 0
 	max_num = 0
+	can_delete = False
+	classes = ('collapse-open', 'collapse','open')
+	if 'grappelli' in settings.INSTALLED_APPS:
+		template = 'admin/philo/edit_inline/grappelli_tabular_container.html'
+	else:
+		template = 'admin/philo/edit_inline/tabular_container.html'
+
+
+class ContentletInline(ContainerInline):
+	model = Contentlet
 	formset = ContentletInlineFormSet
 	form = ContentletForm
-	can_delete = False
-	classes = ('collapse-open', 'collapse','open')
-	if 'grappelli' in settings.INSTALLED_APPS:
-		template = 'admin/philo/edit_inline/grappelli_tabular_container.html'
-	else:
-		template = 'admin/philo/edit_inline/tabular_container.html'
 
 
-class ContentReferenceInline(admin.StackedInline):
+class ContentReferenceInline(ContainerInline):
 	model = ContentReference
-	extra = 0
-	max_num = 0
 	formset = ContentReferenceInlineFormSet
 	form = ContentReferenceForm
-	can_delete = False
-	classes = ('collapse-open', 'collapse','open')
-	if 'grappelli' in settings.INSTALLED_APPS:
-		template = 'admin/philo/edit_inline/grappelli_tabular_container.html'
-	else:
-		template = 'admin/philo/edit_inline/tabular_container.html'
 
 
 class PageAdmin(ViewAdmin):
@@ -54,7 +52,7 @@ class PageAdmin(ViewAdmin):
 		return super(PageAdmin, self).response_add(request, obj, post_url_continue)
 
 
-class TemplateAdmin(TreeAdmin):
+class TemplateAdmin(TreeEntityAdmin):
 	prepopulated_fields = {'slug': ('name',)}
 	fieldsets = (
 		(None, {
@@ -72,6 +70,9 @@ class TemplateAdmin(TreeAdmin):
 			'fields': ('mimetype',)
 		}),
 	)
+	formfield_overrides = {
+		TemplateField: {'widget': EmbedWidget}
+	}
 	save_on_top = True
 	save_as = True
 	list_display = ('__unicode__', 'slug', 'get_path',)

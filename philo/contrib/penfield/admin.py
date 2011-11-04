@@ -2,8 +2,11 @@ from django import forms
 from django.contrib import admin
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, QueryDict
-from philo.admin import EntityAdmin, AddTagAdmin, COLLAPSE_CLASSES
+
+from philo.admin import EntityAdmin, COLLAPSE_CLASSES
+from philo.admin.widgets import EmbedWidget
 from philo.contrib.penfield.models import BlogEntry, Blog, BlogView, Newsletter, NewsletterArticle, NewsletterIssue, NewsletterView
+from philo.models.fields import TemplateField
 
 
 class DelayedDateForm(forms.ModelForm):
@@ -14,18 +17,13 @@ class DelayedDateForm(forms.ModelForm):
 		self.fields[self.date_field].required = False
 
 
-class TitledAdmin(EntityAdmin):
+class BlogAdmin(EntityAdmin):
 	prepopulated_fields = {'slug': ('title',)}
 	list_display = ('title', 'slug')
 
 
-class BlogAdmin(TitledAdmin):
-	pass
-
-
-class BlogEntryAdmin(TitledAdmin, AddTagAdmin):
+class BlogEntryAdmin(EntityAdmin):
 	form = DelayedDateForm
-	filter_horizontal = ['tags']
 	list_filter = ['author', 'blog']
 	date_hierarchy = 'date'
 	search_fields = ('content',)
@@ -44,6 +42,10 @@ class BlogEntryAdmin(TitledAdmin, AddTagAdmin):
 		})
 	)
 	related_lookup_fields = {'fk': raw_id_fields}
+	prepopulated_fields = {'slug': ('title',)}
+	formfield_overrides = {
+		TemplateField: {'widget': EmbedWidget}
+	}
 
 
 class BlogViewAdmin(EntityAdmin):
@@ -70,13 +72,14 @@ class BlogViewAdmin(EntityAdmin):
 	related_lookup_fields = {'fk': raw_id_fields}
 
 
-class NewsletterAdmin(TitledAdmin):
-	pass
+class NewsletterAdmin(EntityAdmin):
+	prepopulated_fields = {'slug': ('title',)}
+	list_display = ('title', 'slug')
 
 
-class NewsletterArticleAdmin(TitledAdmin, AddTagAdmin):
+class NewsletterArticleAdmin(EntityAdmin):
 	form = DelayedDateForm
-	filter_horizontal = ('tags', 'authors')
+	filter_horizontal = ('authors',)
 	list_filter = ('newsletter',)
 	date_hierarchy = 'date'
 	search_fields = ('title', 'authors__name',)
@@ -94,6 +97,10 @@ class NewsletterArticleAdmin(TitledAdmin, AddTagAdmin):
 		})
 	)
 	actions = ['make_issue']
+	prepopulated_fields = {'slug': ('title',)}
+	formfield_overrides = {
+		TemplateField: {'widget': EmbedWidget}
+	}
 	
 	def author_names(self, obj):
 		return ', '.join([author.get_full_name() for author in obj.authors.all()])
@@ -107,8 +114,10 @@ class NewsletterArticleAdmin(TitledAdmin, AddTagAdmin):
 	make_issue.short_description = u"Create issue from selected %(verbose_name_plural)s"
 
 
-class NewsletterIssueAdmin(TitledAdmin):
-	filter_horizontal = TitledAdmin.filter_horizontal + ('articles',)
+class NewsletterIssueAdmin(EntityAdmin):
+	filter_horizontal = ('articles',)
+	prepopulated_fields = {'slug': ('title',)}
+	list_display = ('title', 'slug')
 
 
 class NewsletterViewAdmin(EntityAdmin):

@@ -1,5 +1,6 @@
 from django.forms.models import ModelFormMetaclass, ModelForm, ModelFormOptions
 from django.utils.datastructures import SortedDict
+
 from philo.utils import fattr
 
 
@@ -93,6 +94,10 @@ class EntityFormMetaclass(ModelFormMetaclass):
 
 
 class EntityForm(ModelForm):
+	"""
+	:class:`EntityForm` knows how to handle :class:`.Entity` instances - specifically, how to set initial values for :class:`.AttributeProxyField`\ s and save cleaned values to an instance on save.
+	
+	"""
 	__metaclass__ = EntityFormMetaclass
 	
 	def __init__(self, *args, **kwargs):

@@ -1,9 +1,15 @@
+"""
+The node template tags are automatically included as builtins if :mod:`philo` is an installed app.
+
+"""
+
 from django import template
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.template.defaulttags import kwarg_re
 from django.utils.encoding import smart_str
+
 from philo.exceptions import ViewCanNotProvideSubpath
 
 
@@ -33,7 +39,7 @@ class NodeURLNode(template.Node):
 		if self.with_obj is None and self.view_name is None:
 			url = node.get_absolute_url()
 		else:
-			if not node.view.accepts_subpath:
+			if not node.accepts_subpath:
 				return settings.TEMPLATE_STRING_IF_INVALID
 			
 			if self.with_obj is not None:
@@ -64,13 +70,18 @@ class NodeURLNode(template.Node):
 			return url
 
 
-@register.tag(name='node_url')
-def do_node_url(parser, token):
+@register.tag
+def node_url(parser, token):
 	"""
-	{% node_url [for <node>] [as <var>] %}
-	{% node_url with <obj> [for <node>] [as <var>] %}
-	{% node_url <view_name> [<arg1> [<arg2> ...] ] [for <node>] [as <var>] %}
-	{% node_url <view_name> [<key1>=<value1> [<key2>=<value2> ...] ] [for <node>] [as <var>]%}
+	The :ttag:`node_url` tag allows access to :meth:`.View.reverse` from a template for a :class:`.Node`. By default, the :class:`.Node` that is used for the call is pulled from the context variable ``node``; however, this can be overridden with the ``[for <node>]`` option.
+	
+	Usage::
+	
+		{% node_url [for <node>] [as <var>] %}
+		{% node_url with <obj> [for <node>] [as <var>] %}
+		{% node_url <view_name> [<arg1> [<arg2> ...] ] [for <node>] [as <var>] %}
+		{% node_url <view_name> [<key1>=<value1> [<key2>=<value2> ...] ] [for <node>] [as <var>] %}
+	
 	"""
 	params = token.split_contents()
 	tag = params[0]

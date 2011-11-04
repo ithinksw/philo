@@ -1,7 +1,8 @@
 from django.contrib import admin
+from mptt.admin import MPTTModelAdmin
+
 from philo.admin.base import EntityAdmin, TreeEntityAdmin, COLLAPSE_CLASSES
 from philo.models import Node, Redirect, File
-from mptt.admin import MPTTModelAdmin
 
 
 class NodeAdmin(TreeEntityAdmin):
@@ -46,10 +47,12 @@ class RedirectAdmin(ViewAdmin):
 class FileAdmin(ViewAdmin):
 	fieldsets = (
 		(None, {
-			'fields': ('file', 'mimetype')
+			'fields': ('name', 'file', 'mimetype')
 		}),
 	)
-	list_display = ('mimetype', 'file')
+	list_display = ('name', 'mimetype', 'file')
+	search_fields = ('name',)
+	list_filter = ('mimetype',)
 
 
 admin.site.register(Node, NodeAdmin)

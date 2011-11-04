@@ -1,53 +1,31 @@
 from django import forms
-from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
+from django.db import models
 from django.utils import simplejson as json
 from django.utils.encoding import force_unicode
-from philo.exceptions import AncestorDoesNotExist
-from philo.models.fields import JSONField
-from philo.utils import ContentTypeRegistryLimiter, ContentTypeSubclassLimiter
-from philo.signals import entity_class_prepared
-from philo.validators import json_validator
-from UserDict import DictMixin
 from mptt.models import MPTTModel, MPTTModelBase, MPTTOptions
 
-
-class Tag(models.Model):
-	name = models.CharField(max_length=255)
-	slug = models.SlugField(max_length=255, unique=True)
-	
-	def __unicode__(self):
-		return self.name
-	
-	class Meta:
-		app_label = 'philo'
-		ordering = ('name',)
+from philo.exceptions import AncestorDoesNotExist
+from philo.models.fields import JSONField
+from philo.signals import entity_class_prepared
+from philo.utils import ContentTypeRegistryLimiter, ContentTypeSubclassLimiter
+from philo.utils.entities import AttributeMapper, TreeAttributeMapper
+from philo.validators import json_validator
 
 
-class Titled(models.Model):
-	title = models.CharField(max_length=255)
-	slug = models.SlugField(max_length=255)
-	
-	def __unicode__(self):
-		return self.title
-	
-	class Meta:
-		abstract = True
+__all__ = ('value_content_type_limiter', 'register_value_model', 'unregister_value_model', 'JSONValue', 'ForeignKeyValue', 'ManyToManyValue', 'Attribute', 'Entity', 'TreeEntity', 'SlugTreeEntity')
 
 
-#: An instance of :class:`ContentTypeRegistryLimiter` which is used to track the content types which can be related to by ForeignKeyValues and ManyToManyValues.
+#: An instance of :class:`.ContentTypeRegistryLimiter` which is used to track the content types which can be related to by :class:`ForeignKeyValue`\ s and :class:`ManyToManyValue`\ s.
 value_content_type_limiter = ContentTypeRegistryLimiter()
 
 
 def register_value_model(model):
 	"""Registers a model as a valid content type for a :class:`ForeignKeyValue` or :class:`ManyToManyValue` through the :data:`value_content_type_limiter`."""
 	value_content_type_limiter.register_class(model)
-
-
-register_value_model(Tag)
 
 
 def unregister_value_model(model):
@@ -91,7 +69,7 @@ class AttributeValue(models.Model):
 		abstract = True
 
 
-#: An instance of :class:`ContentTypeSubclassLimiter` which is used to track the content types which are considered valid value models for an :class:`Attribute`.
+#: An instance of :class:`.ContentTypeSubclassLimiter` which is used to track the content types which are considered valid value models for an :class:`Attribute`.
 attribute_value_limiter = ContentTypeSubclassLimiter(AttributeValue)
 
 
@@ -237,7 +215,12 @@ class ManyToManyValue(AttributeValue):
 
 
 class Attribute(models.Model):
-	"""Represents an arbitrary key/value pair on an arbitrary :class:`Model` where the key consists of word characters and the value is a subclass of :class:`AttributeValue`."""
+	"""
+	:class:`Attribute`\ s exist primarily to let arbitrary data be attached to arbitrary model instances without altering the database schema and without guaranteeing that the data will be available on every instance of that model.
+	
+	Generally, :class:`Attribute`\ s will not be accessed as models; instead, they will be accessed through the :attr:`Entity.attributes` property, which allows direct dictionary getting and setting of the value of an :class:`Attribute` with its key.
+	
+	"""
 	entity_content_type = models.ForeignKey(ContentType, related_name='attribute_entity_set', verbose_name='Entity type')
 	entity_object_id = models.PositiveIntegerField(verbose_name='Entity ID', db_index=True)
 	
@@ -256,33 +239,24 @@ class Attribute(models.Model):
 	def __unicode__(self):
 		return u'"%s": %s' % (self.key, self.value)
 	
+	def set_value(self, value, value_class=JSONValue):
+		"""Given a value and a value class, sets up self.value appropriately."""
+		if isinstance(self.value, value_class):
+			val = self.value
+		else:
+			if isinstance(self.value, models.Model):
+				self.value.delete()
+			val = value_class()
+		
+		val.set_value(value)
+		val.save()
+		
+		self.value = val
+		self.save()
+	
 	class Meta:
 		app_label = 'philo'
 		unique_together = (('key', 'entity_content_type', 'entity_object_id'), ('value_content_type', 'value_object_id'))
-
-
-class QuerySetMapper(object, DictMixin):
-	def __init__(self, queryset, passthrough=None):
-		self.queryset = queryset
-		self.passthrough = passthrough
-	
-	def __getitem__(self, key):
-		try:
-			value = self.queryset.get(key__exact=key).value
-		except ObjectDoesNotExist:
-			if self.passthrough is not None:
-				return self.passthrough.__getitem__(key)
-			raise KeyError
-		else:
-			if value is not None:
-				return value.value
-			return value
-	
-	def keys(self):
-		keys = set(self.queryset.values_list('key', flat=True).distinct())
-		if self.passthrough is not None:
-			keys |= set(self.passthrough.keys())
-		return list(keys)
 
 
 class EntityOptions(object):
@@ -312,10 +286,9 @@ class Entity(models.Model):
 	
 	attribute_set = generic.GenericRelation(Attribute, content_type_field='entity_content_type', object_id_field='entity_object_id')
 	
-	@property
-	def attributes(self):
+	def get_attribute_mapper(self, mapper=AttributeMapper):
 		"""
-		Property that returns a dictionary-like object which can be used to retrieve related :class:`Attribute`\ s' values directly.
+		Returns an :class:`.AttributeMapper` which can be used to retrieve related :class:`Attribute`\ s' values directly.
 
 		Example::
 
@@ -326,19 +299,32 @@ class Entity(models.Model):
 			u'eggs'
 		
 		"""
-		
-		return QuerySetMapper(self.attribute_set.all())
+		return mapper(self)
+	
+	@property
+	def attributes(self):
+		if not hasattr(self, '_attributes'):
+			self._attributes = self.get_attribute_mapper()
+		return self._attributes
 	
 	class Meta:
 		abstract = True
 
 
-class TreeManager(models.Manager):
+class TreeEntityBase(MPTTModelBase, EntityBase):
+	def __new__(meta, name, bases, attrs):
+		attrs['_mptt_meta'] = MPTTOptions(attrs.pop('MPTTMeta', None))
+		cls = EntityBase.__new__(meta, name, bases, attrs)
+		
+		return meta.register(cls)
+
+
+class TreeEntityManager(models.Manager):
 	use_for_related_fields = True
 	
-	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/', field='slug'):
+	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/', field='pk'):
 		"""
-		If ``absolute_result`` is ``True``, returns the object at ``path`` (starting at ``root``) or raises a :exception:`DoesNotExist` exception. Otherwise, returns a tuple containing the deepest object found along ``path`` (or ``root`` if no deeper object is found) and the remainder of the path after that object as a string (or None if there is no remaining path).
+		If ``absolute_result`` is ``True``, returns the object at ``path`` (starting at ``root``) or raises an :class:`~django.core.exceptions.ObjectDoesNotExist` exception. Otherwise, returns a tuple containing the deepest object found along ``path`` (or ``root`` if no deeper object is found) and the remainder of the path after that object as a string (or None if there is no remaining path).
 		
 		.. note:: If you are looking for something with an exact path, it is faster to use absolute_result=True, unless the path depth is over ~40, in which case the high cost of the absolute query may make a binary search (i.e. non-absolute) faster.
 		
@@ -349,7 +335,8 @@ class TreeManager(models.Manager):
 		:param absolute_result: Whether to return an absolute result or do a binary search
 		:param pathsep: The path separator used in ``path``
 		:param field: The field on the model which should be queried for ``path`` segment matching.
-		:returns: An instance if absolute_result is True or (instance, remaining_path) otherwise.
+		:returns: An instance if ``absolute_result`` is ``True`` or an (instance, remaining_path) tuple otherwise.
+		:raises django.core.exceptions.ObjectDoesNotExist: if no object can be found matching the input parameters.
 		
 		"""
 		
@@ -445,16 +432,19 @@ class TreeManager(models.Manager):
 		return find_obj(segments, len(segments)/2 or len(segments))
 
 
-class TreeModel(MPTTModel):
-	objects = TreeManager()
-	parent = models.ForeignKey('self', related_name='children', null=True, blank=True)
-	slug = models.SlugField(max_length=255)
+class TreeEntity(Entity, MPTTModel):
+	"""An abstract subclass of Entity which represents a tree relationship."""
 	
-	def get_path(self, root=None, pathsep='/', field='slug'):
+	__metaclass__ = TreeEntityBase
+	objects = TreeEntityManager()
+	parent = models.ForeignKey('self', related_name='children', null=True, blank=True)
+	
+	def get_path(self, root=None, pathsep='/', field='pk', memoize=True):
 		"""
 		:param root: Only return the path since this object.
 		:param pathsep: The path separator to use when constructing an instance's path
 		:param field: The field to pull path information from for each ancestor.
+		:param memoize: Whether to use memoized results. Since, in most cases, the ancestors of a TreeEntity will not change over the course of an instance's lifetime, this defaults to ``True``.
 		:returns: A string representation of an object's path.
 		
 		"""
@@ -462,42 +452,38 @@ class TreeModel(MPTTModel):
 		if root == self:
 			return ''
 		
+		parent_id = getattr(self, "%s_id" % self._mptt_meta.parent_attr)
+		if getattr(root, 'pk', None) == parent_id:
+			return getattr(self, field, '?')
+		
 		if root is not None and not self.is_descendant_of(root):
 			raise AncestorDoesNotExist(root)
+		
+		if memoize:
+			memo_args = (parent_id, getattr(root, 'pk', None), pathsep, getattr(self, field, '?'))
+			try:
+				return self._path_memo[memo_args]
+			except AttributeError:
+				self._path_memo = {}
+			except KeyError:
+				pass
 		
 		qs = self.get_ancestors(include_self=True)
 		
 		if root is not None:
 			qs = qs.filter(**{'%s__gt' % self._mptt_meta.level_attr: root.get_level()})
 		
-		return pathsep.join([getattr(parent, field, '?') for parent in qs])
+		path = pathsep.join([getattr(parent, field, '?') for parent in qs])
+		
+		if memoize:
+			self._path_memo[memo_args] = path
+		
+		return path
 	path = property(get_path)
 	
-	def __unicode__(self):
-		return self.path
-	
-	class Meta:
-		unique_together = (('parent', 'slug'),)
-		abstract = True
-
-
-class TreeEntityBase(MPTTModelBase, EntityBase):
-	def __new__(meta, name, bases, attrs):
-		attrs['_mptt_meta'] = MPTTOptions(attrs.pop('MPTTMeta', None))
-		cls = EntityBase.__new__(meta, name, bases, attrs)
-		
-		return meta.register(cls)
-
-
-class TreeEntity(Entity, TreeModel):
-	"""An abstract subclass of Entity which represents a tree relationship."""
-	
-	__metaclass__ = TreeEntityBase
-	
-	@property
-	def attributes(self):
+	def get_attribute_mapper(self, mapper=None):
 		"""
-		Property that returns a dictionary-like object which can be used to retrieve related :class:`Attribute`\ s' values directly. If an attribute with a given key is not related to the :class:`Entity`, then the object will check the parent's attributes.
+		Returns a :class:`.TreeAttributeMapper` or :class:`.AttributeMapper` which can be used to retrieve related :class:`Attribute`\ s' values directly. If an :class:`Attribute` with a given key is not related to the :class:`Entity`, then the mapper will check the parent's attributes.
 
 		Example::
 
@@ -510,10 +496,42 @@ class TreeEntity(Entity, TreeModel):
 			u'eggs'
 		
 		"""
-		
-		if self.parent:
-			return QuerySetMapper(self.attribute_set.all(), passthrough=self.parent.attributes)
-		return super(TreeEntity, self).attributes
+		if mapper is None:
+			if getattr(self, "%s_id" % self._mptt_meta.parent_attr):
+				mapper = TreeAttributeMapper
+			else:
+				mapper = AttributeMapper
+		return super(TreeEntity, self).get_attribute_mapper(mapper)
+	
+	def __unicode__(self):
+		return self.path
 	
 	class Meta:
+		abstract = True
+
+
+class SlugTreeEntityManager(TreeEntityManager):
+	def get_with_path(self, path, root=None, absolute_result=True, pathsep='/', field='slug'):
+		return super(SlugTreeEntityManager, self).get_with_path(path, root, absolute_result, pathsep, field)
+
+
+class SlugTreeEntity(TreeEntity):
+	objects = SlugTreeEntityManager()
+	slug = models.SlugField(max_length=255)
+	
+	def get_path(self, root=None, pathsep='/', field='slug', memoize=True):
+		return super(SlugTreeEntity, self).get_path(root, pathsep, field, memoize)
+	path = property(get_path)
+	
+	def clean(self):
+		if getattr(self, "%s_id" % self._mptt_meta.parent_attr) is None:
+			try:
+				self._default_manager.exclude(pk=self.pk).get(slug=self.slug, parent__isnull=True)
+			except self.DoesNotExist:
+				pass
+			else:
+				raise ValidationError(self.unique_error_message(self.__class__, ('parent', 'slug')))
+	
+	class Meta:
+		unique_together = ('parent', 'slug')
 		abstract = True

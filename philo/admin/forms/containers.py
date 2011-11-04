@@ -1,11 +1,11 @@
 from django import forms
-from django.contrib.admin.widgets import AdminTextareaWidget
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.forms.models import ModelForm, BaseInlineFormSet, BaseModelFormSet
 from django.forms.formsets import TOTAL_FORM_COUNT
 from django.utils.datastructures import SortedDict
-from philo.admin.widgets import ModelLookupWidget
+
+from philo.admin.widgets import ModelLookupWidget, EmbedWidget
 from philo.models import Contentlet, ContentReference
 
 
@@ -25,7 +25,7 @@ class ContainerForm(ModelForm):
 
 
 class ContentletForm(ContainerForm):
-	content = forms.CharField(required=False, widget=AdminTextareaWidget, label='Content')
+	content = forms.CharField(required=False, widget=EmbedWidget, label='Content')
 	
 	def should_delete(self):
 		# Delete iff: the data has changed and is now empty.
@@ -152,7 +152,7 @@ class ContainerInlineFormSet(BaseInlineFormSet):
 class ContentletInlineFormSet(ContainerInlineFormSet):
 	def get_containers(self):
 		try:
-			containers = list(self.instance.containers[0])
+			containers = self.instance.containers[0]
 		except ObjectDoesNotExist:
 			containers = []
 		

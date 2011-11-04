@@ -21,6 +21,16 @@ sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'dummy-settings'
 
+# Import loader so that loader_tags will be correctly added to builtins. Weird import situations... this is necessary for doc build to work.
+from django.template import loader
+
+# HACK to override descriptors that would cause AttributeErrors to be raised otherwise (which would keep them from being documented.)
+from philo.contrib.sobol.models import SearchView
+SearchView.searches = 5
+from philo.models.nodes import TargetURLModel, File
+TargetURLModel.reversing_parameters = 5
+File.file = 5
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -28,7 +38,7 @@ needs_sphinx = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['djangodocs', 'sphinx.ext.autodoc']
+extensions = ['djangodocs', 'sphinx.ext.autodoc', 'philodocs']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -44,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Philo'
-copyright = u'2011, Joseph Spiros'
+copyright = u'2009-2011, iThink Software'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -52,7 +62,7 @@ copyright = u'2011, Joseph Spiros'
 #
 # The short X.Y version.
 from philo import VERSION
-version = '%s.%s' % (VERSION[0], VERSION[1])
+version = '.'.join([str(v) for v in VERSION])
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -89,6 +99,10 @@ pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
+
+
+# Autodoc config
+autodoc_member_order = "bysource"
 
 
 # -- Options for HTML output ---------------------------------------------------
@@ -183,7 +197,7 @@ htmlhelp_basename = 'Philodoc'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'Philo.tex', u'Philo Documentation',
-   u'Stephen Burrows', 'manual'),
+   u'iThink Software', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -216,5 +230,14 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'philo', u'Philo Documentation',
-     [u'Stephen Burrows'], 1)
+     [u'iThink Software'], 1)
 ]
+
+def skip_attribute_attrs(app, what, name, obj, skip, options):
+	if name in ("attribute_set", "get_attribute_mapper", "nodes"):
+		return True
+	return skip
+
+def setup(app):
+	app.connect('autodoc-skip-member', skip_attribute_attrs)
+	#app.connect('autodoc-process-signature', )

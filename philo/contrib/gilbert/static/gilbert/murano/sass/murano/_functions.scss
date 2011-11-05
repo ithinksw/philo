@@ -7,9 +7,9 @@
 }
 
 @function murano-image($file){
-	@return url("../img/"+$file)
+	@return url("img/"+$file)
 }
 
 @function fugue-image($file){
-	@return url("../../fugue-icons/icons-shadowless/"+$file)
+	@return url("../fugue-icons/icons-shadowless/"+$file)
 }

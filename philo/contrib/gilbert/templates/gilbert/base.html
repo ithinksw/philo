@@ -5,21 +5,13 @@
 	<title>{% block title %}{{ gilbert.title }}{% endblock %}</title>
 	
 	{% block css %}
-	<link rel="stylesheet" type="text/css" class="gilbert.theme" id="gilbert.theme.murano" title="murano" href="{{ STATIC_URL }}gilbert/murano/css/murano.css"{% if request.GET.theme and request.GET.theme != 'murano' %} disabled="disabled"{% endif %} />
+	<link rel="stylesheet" type="text/css" class="gilbert.theme" id="gilbert.theme.murano" title="murano" href="{{ STATIC_URL }}gilbert/murano/murano.css"{% if request.GET.theme and request.GET.theme != 'murano' %} disabled="disabled"{% endif %} />
 	<link rel="stylesheet" type="text/css" class="gilbert.theme" id="gilbert.theme.access" title="access" href="{{ STATIC_URL }}gilbert/extjs/resources/css/ext-all-access.css"{% if request.GET.theme != 'access' %} disabled="disabled"{% endif %} />
 	<link rel="stylesheet" type="text/css" class="gilbert.theme" id="gilbert.theme.blue" title="blue" href="{{ STATIC_URL }}gilbert/extjs/resources/css/ext-all.css"{% if request.GET.theme != 'blue' %} disabled="disabled"{% endif %} />
 	{% endblock %}
 	
 	{% block js %}
-	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/extjs/adapter/ext/ext-base.js"></script>
-	{% if request.GET.debug %}
-	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/extjs/ext-all-debug.js"></script>
-	{% else %}
-	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/extjs/ext-all.js"></script>
-	{% endif %}
-	<script type="text/javascript">
-		Ext.BLANK_IMAGE_URL = '{{ STATIC_URL }}gilbert/extjs/resources/images/default/s.gif';
-	</script>
+	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/extjs/bootstrap.js"></script>
 	{% endblock %}
 	
 	{% block extrahead %}

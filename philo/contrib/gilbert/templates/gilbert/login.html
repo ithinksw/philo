@@ -1,7 +1,7 @@
 {% extends 'gilbert/base.html' %}
 
 {% block css %}{{ block.super }}
-	<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}gilbert/extjs/examples/ux/statusbar/css/statusbar.css" />
+	<!-- <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}gilbert/extjs/examples/ux/statusbar/css/statusbar.css" /> -->
 	<style type="text/css">
 		.icon-door-open-in {
 			background: url({{ STATIC_URL }}gilbert/fugue-icons/icons-shadowless/door-open-in.png) no-repeat !important;
@@ -14,10 +14,16 @@
 {% endblock %}
 
 {% block js %}{{ block.super }}
-	<script type="text/javascript" src="{{ STATIC_URL }}gilbert/extjs/examples/ux/statusbar/StatusBar.js"></script>
 	<script type="text/javascript" charset="utf-8">
-		Ext.onReady(function () {
-			
+		Ext.Loader.setConfig({ enabled: true });
+		Ext.Loader.setPath('Ext.ux', '{{ STATIC_URL }}gilbert/extjs/examples/ux');
+		Ext.require([
+			'Ext.FormPanel',
+			'Ext.ux.statusbar.StatusBar',
+			'Ext.Window',
+			'Ext.ToolTip',
+		]);
+		Ext.onReady(function(){
 			var login_form = new Ext.FormPanel({
 				border: false,{% if request.GET.theme %}
 				bodyStyle: 'padding: 10px',{% else %}

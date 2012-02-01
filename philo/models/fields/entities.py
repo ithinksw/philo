@@ -2,7 +2,7 @@ import datetime
 from itertools import tee
 
 from django import forms
-from django.core.exceptions import FieldError
+from django.core.exceptions import FieldError, ValidationError
 from django.db import models
 from django.db.models.fields import NOT_PROVIDED
 from django.utils.text import capfirst
@@ -193,7 +193,10 @@ class JSONAttribute(AttributeProxyField):
 		"""If the field template is a :class:`DateField` or a :class:`DateTimeField`, this will convert the default return value to a datetime instance."""
 		value = super(JSONAttribute, self).value_from_object(obj)
 		if isinstance(self.field_template, (models.DateField, models.DateTimeField)):
-			value = self.field_template.to_python(value)
+			try:
+				value = self.field_template.to_python(value)
+			except ValidationError:
+				value = None
 		return value
 	
 	def get_storage_value(self, value):

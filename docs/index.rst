@@ -8,7 +8,7 @@
 Welcome to Philo's documentation!
 =================================
 
-Philo is a foundation for developing web content management systems. Please, read the :doc:`notes for our latest release <releases/0.9.1>`.
+Philo is a foundation for developing web content management systems. Please, read the :doc:`notes for our latest release <releases/0.9.2>`.
 
 Prerequisites:
 

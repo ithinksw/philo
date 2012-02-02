@@ -4,7 +4,7 @@ Contributing to Philo
 So you want to contribute to Philo? That's great! Here's some ways you can get started:
 
 * **Report bugs and request features** using the issue tracker at the `project site <http://project.philocms.org/>`_.
-* **Contribute code** using `git <http://git-scm.com/>`_. You can fork philo's repository either on `GitHub <http://github.com/ithinksw/philo/>`_ or `Gitorious <http://gitorious.org/ithinksw/philo/>`_. If you are contributing to Philo, you will need to submit a :ref:`Contributor License Agreement <cla>`.
+* **Contribute code** using `git <http://git-scm.com/>`_. You can fork philo's repository on `GitHub <http://github.com/ithinksw/philo/>`_, `Gitorious <http://gitorious.org/ithinksw/philo/>`_, or `Bitbucket <http://bitbucket.org/ithinksw/philo/>`_. If you are contributing to Philo, you will need to submit a :ref:`Contributor License Agreement <cla>`.
 * **Join the discussion** on IRC at `irc://irc.oftc.net/#philo <irc://irc.oftc.net/#philo>`_ if you have any questions or suggestions or just want to chat about the project. You can also keep in touch using the project mailing lists: `philo@ithinksw.org <mailto:philo@ithinksw.org>`_ and `philo-devel@ithinksw.org <mailto:philo-devel@ithinksw.org>`_.
 
 

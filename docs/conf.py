@@ -16,6 +16,7 @@ import sys, os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "_ext")))
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
@@ -54,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Philo'
-copyright = u'2009-2011, iThink Software'
+copyright = u'2009-2012, iThink Software'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

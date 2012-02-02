@@ -18,4 +18,4 @@ After installing philo and mptt on your PYTHONPATH, make sure to complete the fo
 4. Optionally add a root node to your current Site.
 5. (philo.contrib.gilbert) Add 'django.core.context_processors.request' to settings.TEMPLATE_CONTEXT_PROCESSORS.
 
-Philo should be ready to go! All that's left is to [learn more](http://docs.philocms.org/) and [contribute](http://docs.philocms.org/en/latest/contribute.html).
+Philo should be ready to go! All that's left is to [learn more](http://docs.philocms.org/) and [contribute](http://docs.philocms.org/en/latest/contributing.html).

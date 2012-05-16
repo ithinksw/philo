@@ -1,5 +1,5 @@
 .embed-widget{
-	float:left;
+	display:inline-block;
 }
 .embed-toolbar{
 	border:1px solid #CCC;

@@ -284,7 +284,7 @@ class Entity(models.Model):
 	"""An abstract class that simplifies access to related attributes. Most models provided by Philo subclass Entity."""
 	__metaclass__ = EntityBase
 	
-	attribute_set = generic.GenericRelation(Attribute, content_type_field='entity_content_type', object_id_field='entity_object_id')
+	attribute_set = generic.GenericRelation(Attribute, content_type_field='entity_content_type', object_id_field='entity_object_id', related_name='%(app_label)s_%(class)s_set')
 	
 	def get_attribute_mapper(self, mapper=AttributeMapper):
 		"""

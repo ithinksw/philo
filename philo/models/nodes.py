@@ -425,3 +425,4 @@ class File(View):
 
 
 register_value_model(Node)
+register_value_model(File)
